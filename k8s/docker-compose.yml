@@ -4,7 +4,6 @@ services:
     container_name: protonvpn
     environment:
       TZ: "Europe/Berlin"
-      DEBUG: 0
       PROTONVPN_PROTOCOL: udp
       PROTONVPN_COUNTRY: NL
     env_file:
@@ -47,25 +46,25 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - config:/config
       - ./downloads/:/downloads/:rw
-  pyldproxy:
-    container_name: pyldproxy
-    image: dperson/nginx
+  caddy:
+    container_name: caddy
+    image: caddy:2.0.0
+    command: caddy reverse-proxy --change-host-header  --from :80 --to protonvpn:8000
     depends_on:
       - pyload
     environment:
       TZ: "Europe/Berlin"
+    restart: unless-stopped
     networks:
       - traefik
-    ports:
-      - target: 80
-        published: 80
-        protocol: tcp
-    tmpfs:
-      - /run
-      - /tmp
-      - /var/cache/nginx
-    restart: unless-stopped
-    command: -w "http://protonvpn:8000/;/"
+    expose:
+      - 80
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.pyload.rule=Host(`pyload.lan`)"
+      - "traefik.http.routers.pyload.tls=true"
+      - "traefik.http.routers.pyload.entrypoints=websecure"
+      - "traefik.http.services.pyload.loadbalancer.server.port=80"
 volumes:
   config:
   protonvpn:

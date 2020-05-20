@@ -39,7 +39,7 @@ function gateway_check()
 
 function country_check()
 {
-  COUNTRY="$(curl -sL https://ipinfo.io | jq -r ".country")"
+  COUNTRY="$(curl -m 15 -sL https://api.protonvpn.ch/vpn/location | jq -r '.Country')"
   if [[ $COUNTRY == "${PROTONVPN_COUNTRY}" ]]; then
     echo "[Service Check] OK!"
   else
