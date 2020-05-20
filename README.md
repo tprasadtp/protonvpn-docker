@@ -2,7 +2,8 @@
 
 [![actions](https://github.com/tprasadtp/protonvpn-docker/workflows/build/badge.svg)](https://github.com/tprasadtp/protonvpn-docker/actions?workflow=build)
 [![actions](https://github.com/tprasadtp/protonvpn-docker/workflows/labels/badge.svg)](https://github.com/tprasadtp/protonvpn-docker/actions?workflow=labels)
-[![Docker Image Version (latest semver)](https://img.shields.io/docker/v/tprasadtp/protonvpn?logo=docker&label=latest&logoColor=white)](https://hub.docker.com/r/tprasadtp/protonvpn)
+![Docker Image Size](https://img.shields.io/docker/image-size/tprasadtp/protonvpn/latest)
+![Docker Image Version](https://img.shields.io/docker/v/tprasadtp/protonvpn?sort=semver)
 [![dependabot](https://api.dependabot.com/badges/status?host=github&repo=tprasadtp/protonvpn-docker)](https://app.dependabot.com)
 ![Analytics](https://ga-beacon.prasadt.com/UA-101760811-3/github/protonvpn-docker?pink&useReferer)
 
