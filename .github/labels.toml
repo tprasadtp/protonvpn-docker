@@ -65,7 +65,7 @@ description = "Issue/PR has been resolved"
 
 ["Review-Required"]
 color = "C4FF36"
-name = "Review Required"
+name = "Review-Required"
 description = "Further review required"
 
 ["Stale"]
