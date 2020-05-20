@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: runs-over-vpn
+spec:
+  containers:
+  - name: protonvpn
+    image: tprasadtp/protonvpn
+    securityContext:
+      privileged: true # REMOVE THIS if possible
+      capabilities:
+        add:
+          - NET_ADMIN
+    volumeMounts:
+      - mountPath: /dev/net/tun
+        name: dev-net-tun
+  - name: pyload
+    image: linuxserver/pyload
+    ports:
+      - containerPort: 8000
+    volumeMounts:
+      - mountPath: /mnt/downloads
+        name: downloads
+  dnsConfig:
+    nameservers:
+      - 1.1.1.3
+      - 1.0.0.3
+    searches:
+      - sparrow.svc.cluster.local
+      - svc.cluster.local
+  volumes:
+    - hostPath:
+        path: /dev/net/tun
+      name: dev-net-tun
+    - hostPath:
+        path: /dev/net/tun
+      name: downloads

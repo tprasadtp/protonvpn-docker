@@ -1,0 +1,129 @@
+["Actor: Dependabot"]
+color = "025E8C"
+name = "Actor: Dependabot"
+description = "Action by Dependabot"
+
+["Priority: Critical"]
+color = "FF0000"
+name = "Priority: Critical"
+description = "Urgent/Extremely important"
+
+["Priority: High"]
+color = "FFA500"
+name = "Priority: High"
+description = "High importance"
+
+["Priority: Low"]
+color = "85e595"
+name = "Priority: Low"
+description = "Low prioirty tasks"
+
+["Priority: Medium"]
+color = "fbca04"
+name = "Priority: Medium"
+description = "Medium priority PR/issues"
+
+["Awaiting-Response"]
+color = "00b1ed"
+name = "Awaiting-Response"
+description = ""
+
+["Keep-Open"]
+color = "00b1ed"
+name = "Keep-Open"
+description = ""
+
+["Abandoned"]
+color = "000000"
+name = "Abandoned"
+description = "Issue/feature has been abandoned."
+
+["Done"]
+color = "00FF9F"
+name = "Done"
+description = "Completed and closed tasks/pr/issues"
+
+["In-Progress"]
+color = "FFD649"
+name = "In-Progress"
+description = "PR/Bug-fix WIP"
+
+["Invalid"]
+color = "cccccc"
+name = "Invalid"
+description = "Invalid"
+
+["Pending"]
+color = "fef2c0"
+name = "Pending"
+description = "Pending Tests and some more work"
+
+["Resolved"]
+color = "00D100"
+name = "Resolved"
+description = "Issue/PR has been resolved"
+
+["Review-Required"]
+color = "C4FF36"
+name = "Review Required"
+description = "Further review required"
+
+["Stale"]
+color = "ffffff"
+name = "Stale"
+description = ""
+
+["WontFix"]
+color = "AFAFED"
+name = "WontFix"
+description = "Works as intended/beyond scope"
+
+["Bug"]
+color = "e11d21"
+name = "Bug"
+description = "Issue is a bug, Add BugFix for PR"
+
+["Documentation"]
+color = "fca6da"
+name = "Documentation"
+description = "Docs"
+
+["Duplicate"]
+color = "C8A2C8"
+name = "Duplicate"
+description = "Issue or PR is duplicate"
+
+["Enhancement"]
+color = "84b6eb"
+name = "Enhancement"
+description = "Improve existing feature"
+
+["Feature"]
+color = "7eed76"
+name = "Feature"
+description = "Feature request/new feature"
+
+["Maintenance"]
+color = "f4aea1"
+name = "Maintenance"
+description = "Maintenance tasks/package updates/prettify etc"
+
+["Question"]
+color = "cc317c"
+name = "Question"
+description = "Questions"
+
+["Security"]
+color = "f75d68"
+name = "Security"
+description = "Security fixes"
+
+["Docker"]
+color = "ceef86"
+name = "Docker"
+description = ""
+
+["Python"]
+color = "ceef86"
+name = "Python"
+description = "Python Deps"

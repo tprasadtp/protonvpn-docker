@@ -1,0 +1,88 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+set -eo pipefail
+
+if [[ -z "$PROTONVPN_USERNAME" ]]; then
+  echo "No Username specified!"
+  exit 2
+fi
+
+if [[ -z "$PROTONVPN_PASSWORD" ]]; then
+  echo "No Password specified!"
+  exit 3
+fi
+
+echo "[Path Init] Creating folders"
+mkdir -p /root/.pvpn-cli/
+
+# permissions
+echo "[Path Init] Permissions"
+chown root:root /root/.pvpn-cli/
+
+case ${PROTONVPN_TIER} in
+  0 | free | Free | FREE)       echo "[VPN-Config-Setup] Free Plan";CFG_TIER=0;;
+  1 | basic | Basic | BASIC)    echo "[VPN-Config-Setup] Basic Plan";CFG_TIER=1;;
+  2 | plus | Plus | PLUS)       echo "[VPN-Config-Setup] Plus Plan";CFG_TIER=2;;
+  3 | visionary | Visionary | VISIONARY) echo "Yo Dwag! You have Visionary Plan!";PROTONVPN_TIER=3;;
+  *)                            echo "Invalid ProtonVPN Tier, Can only accept 0-3";exit 4;;
+esac
+
+case ${PROTONVPN_PROTOCOL} in
+  tcp | TCP)                    echo "[VPN-Config-Setup] UDP";CFG_PROTO="tcp";;
+  udp | UDP)                    echo "[VPN-Config-Setup] TCP";CFG_PROTO="udp";;
+  *)                            echo "[VPN-Config-Setup] Invalid Proto ${PROTONVPN_PROTOCOL}, Falling back to UDP";
+                                CFG_PROTO="udp";;
+esac
+
+# Pull Server Info
+echo "[VPN-Config-Setup] Getting Server List"
+curl -sSfL https://api.protonvpn.ch/vpn/logicals -o /root/.pvpn-cli/serverinfo.json
+
+__METADATA_PULL_DATE="$(date +%s)"
+
+echo "[VPN-Config-Setup] Writing config file"
+cat > /root/.pvpn-cli/pvpn-cli.cfg <<EOF
+[USER]
+username = ${PROTONVPN_USERNAME}
+# Proton VPN Plan ${PROTONVPN_TIER:-NA}
+tier = ${CFG_TIER}
+default_protocol = ${CFG_PROTO}
+initialized = 1
+dns_leak_protection = 0
+custom_dns = None
+check_update_interval = 3
+killswitch = 0
+split_tunnel = 1
+
+[metadata]
+last_api_pull = ${__METADATA_PULL_DATE}
+last_update_check = 0
+EOF
+
+if [[ ! -f /root/.pvpn-cli/split_tunnel.txt  ]]; then
+  echo "[VPN-Config-Setup] Writing Split Tunnel Config file"
+  cat > /root/.pvpn-cli/split_tunnel.txt <<EOF
+192.168.0.0/16
+172.16.0.0/12
+10.0.0.0/8
+169.254.0.0/16
+EOF
+else
+  echo "[VPN-Config-Setup] Respecting existing split tunnel config"
+fi
+
+if [[ ! -f /root/.pvpn-cli/template.ovpn  ]]; then
+  echo "[VPN-Config-Setup] No existing template file found, copying default template"
+  cp /etc/protonvpn/template.ovpn /root/.pvpn-cli/template.ovpn
+else
+  echo "[VPN-Config-Setup] template file already exists"
+fi
+
+echo "[VPN-Config-Setup] Writing credentials file"
+cat > /root/.pvpn-cli/pvpnpass <<EOF
+${PROTONVPN_USERNAME}
+${PROTONVPN_PASSWORD}
+EOF
+
+echo "[VPN-Config-Setup] Restrict credentials file"
+chmod 600 /root/.pvpn-cli/pvpn-cli.cfg

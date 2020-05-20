@@ -1,0 +1,79 @@
+version: '3.4'
+services:
+  protonvpn:
+    container_name: protonvpn
+    environment:
+      TZ: "Europe/Berlin"
+      DEBUG: 0
+      PROTONVPN_PROTOCOL: udp
+      PROTONVPN_COUNTRY: NL
+    env_file:
+      - .protonvpn.env
+    image: tprasadtp/protonvpn
+    restart: unless-stopped
+    networks:
+      - internet
+      - traefik
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    dns:
+      - 1.1.1.3
+      - 1.0.0.3
+    dns_search:
+      - cluster.local
+      - scv.cluster.local
+      - lan
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - protonvpn:/root/.pvpn-cli
+  pyload:
+    depends_on:
+      - protonvpn
+    container_name: pyload
+    environment:
+      TZ: "Europe/Berlin"
+      PGID: "1000"
+      PUID: "1000"
+    image: linuxserver/pyload:latest
+    restart: unless-stopped
+    userns_mode: host
+    network_mode: service:protonvpn
+    # networks:
+    #   - web
+    #   - traefik
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - pyload_config:/config
+      - ./downloads/:/downloads/:rw
+  pyldproxy:
+    container_name: pyldproxy
+    image: caddy:2.0.0-alpine
+    depends_on:
+      - pyload
+    environment:
+      TZ: "Europe/Berlin"
+    networks:
+      - traefik
+    ports:
+      - target: 80
+        published: 80
+        protocol: tcp
+    tmpfs:
+      - /run
+      - /tmp
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: unless-stopped
+    command: caddy reverse-proxy --to http://protonvpn:8000
+volumes:
+  pyload_config:
+  caddy_data:
+  caddy_config:
+  protonvpn:
+networks:
+  internet:
+  traefik:
+    internal: true

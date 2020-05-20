@@ -1,0 +1,86 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+
+
+function connect_vpn()
+{
+  if [[ -z "$PROTONVPN_SERVER" ]]; then
+    echo "[Service Connect] Using Fastest Server from ${PROTONVPN_COUNTRY}"
+    PVPN_DEBUG="${DEBUG:-0}" /usr/local/bin/protonvpn c --cc "${PROTONVPN_COUNTRY:-NL}"
+  else
+    echo "[Service Connect] Using Server ${PROTONVPN_SERVER}"
+    PVPN_DEBUG="${DEBUG:-0}" /usr/local/bin/protonvpn connect "${PROTONVPN_SERVER}"
+  fi
+}
+
+
+function reconnect_vpn()
+{
+  echo "[Service Reconnect] Attempting..."
+  if PVPN_DEBUG="${DEBUG:-0}" /usr/local/bin/protonvpn r; then
+    echo "[Service Reconnect] Successful"
+  else
+    echo "[Service Reconnect] Failure!"
+    echo "[Service Reconnect] Trying with a fresh connection!"
+    connect_vpn
+  fi
+}
+
+function ping_check()
+{
+  primary_gw="$(route -n | grep 'proton' | grep 'UG[ \t]' | awk '{print $2}' | head -1)"
+  if ping -q -i 0.1 -c 5 -W 5 "${primary_gw}"; then
+    echo "[Service OK] Gateway Reachable"
+  else
+    echo "[Service Connectivity] Error reaching gateway!, Reconnecting VPN"
+    reconnect_vpn
+  fi
+}
+
+function country_check()
+{
+  COUNTRY="$(curl -sL https://ipinfo.io | jq -r ".country")"
+  if [[ $COUNTRY == $PROTONVPN_COUNTRY ]]; then
+    echo "[Service Check] DNS Appears Good!"
+  else
+    echo "[Service Check] Connectivity Check failed, connected to #${COUNTRY} instead of #$PROTONVPN_COUNTRY"
+    reconnect_vpn
+  fi
+}
+
+function check_vpn()
+{
+# Because protonvpn-cli is a mess. Yes they too check it with PIDs no API is available to verify it.
+# It is giant mess of subprocess.call(***). They are improving it though...
+if [[ -z "$(pgrep -x openvpn)" ]]; then
+  echo "[Service process] There is no OpenVPN Process!!"
+  reconnect_vpn
+else
+  echo "[Service process] Process is alive!"
+  country_check
+fi
+}
+
+
+function main()
+{
+  echo "[Service Init] checking orphaned openvpn process"
+  OVPN_PROCESS="$(pgrep -x openvpn)"
+  if [[ -z ${OVPN_PROCESS} ]]; then
+    echo "[Service Init] This appears to be a fresh start!"
+    connect_vpn
+  else
+    echo "[Service Init] This appears to be a restart!, reconnecting to VPN with old settings"
+    reconnect_vpn
+  fi
+
+  # Checks
+  while :
+  do
+    echo "[Service Healthcheck] Ran on $(date)"
+    check_vpn
+    sleep 10
+  done
+}
+
+main "$@"
