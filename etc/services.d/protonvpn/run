@@ -26,13 +26,13 @@ function reconnect_vpn()
   fi
 }
 
-function ping_check()
+function gateway_check()
 {
   primary_gw="$(route -n | grep 'proton' | grep 'UG[ \t]' | awk '{print $2}' | head -1)"
   if ping -q -i 0.1 -c 5 -W 5 "${primary_gw}"; then
-    echo "[Service OK] Gateway Reachable"
+    echo "[Service Check] Gateway Reachable"
   else
-    echo "[Service Connectivity] Error reaching gateway!, Reconnecting VPN"
+    echo "[Service Check] Error reaching gateway!, Reconnecting VPN"
     reconnect_vpn
   fi
 }
@@ -40,10 +40,10 @@ function ping_check()
 function country_check()
 {
   COUNTRY="$(curl -sL https://ipinfo.io | jq -r ".country")"
-  if [[ $COUNTRY == $PROTONVPN_COUNTRY ]]; then
-    echo "[Service Check] DNS Appears Good!"
+  if [[ $COUNTRY == "${PROTONVPN_COUNTRY}" ]]; then
+    echo "[Service Check] OK!"
   else
-    echo "[Service Check] Connectivity Check failed, connected to #${COUNTRY} instead of #$PROTONVPN_COUNTRY"
+    echo "[Service Check] Failed, connected to #${COUNTRY} instead of #$PROTONVPN_COUNTRY"
     reconnect_vpn
   fi
 }
@@ -53,13 +53,20 @@ function check_vpn()
 # Because protonvpn-cli is a mess. Yes they too check it with PIDs no API is available to verify it.
 # It is giant mess of subprocess.call(***). They are improving it though...
 if [[ -z "$(pgrep -x openvpn)" ]]; then
-  echo "[Service process] There is no OpenVPN Process!!"
+  echo "[Service Check] Error!! There is no OpenVPN Process!!"
   reconnect_vpn
 else
-  echo "[Service process] Process is alive!"
-  country_check
+  echo "[Service Check] Process is alive!"
+  case ${PROTONVPN_CHECK_MODE} in
+    gateway | Gateway | Gateway)  echo "[Service Check] Mode is set to gateway";gateway_check;;
+    country | Country | COUNTRY)  echo "[Service Check] Mode is set to country";country_check;;
+    *)                            echo "[Service Check] Mode ${PROTONVPN_CHECK_MODE}, is INVALID. Falling back to gateway";
+                                  gateway_check;;
+  esac
 fi
 }
+
+
 
 
 function main()
@@ -77,7 +84,7 @@ function main()
   # Checks
   while :
   do
-    echo "[Service Healthcheck] Ran on $(date)"
+    echo "[Service Check] Running on $(date)"
     check_vpn
     sleep 10
   done

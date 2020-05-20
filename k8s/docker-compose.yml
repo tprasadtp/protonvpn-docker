@@ -45,11 +45,11 @@ services:
     #   - traefik
     volumes:
       - /etc/localtime:/etc/localtime:ro
-      - pyload_config:/config
+      - config:/config
       - ./downloads/:/downloads/:rw
   pyldproxy:
     container_name: pyldproxy
-    image: caddy:2.0.0-alpine
+    image: dperson/nginx
     depends_on:
       - pyload
     environment:
@@ -63,15 +63,11 @@ services:
     tmpfs:
       - /run
       - /tmp
-    volumes:
-      - caddy_data:/data
-      - caddy_config:/config
+      - /var/cache/nginx
     restart: unless-stopped
-    command: caddy reverse-proxy --to http://protonvpn:8000
+    command: -w "http://protonvpn:8000/;/"
 volumes:
-  pyload_config:
-  caddy_data:
-  caddy_config:
+  config:
   protonvpn:
 networks:
   internet:

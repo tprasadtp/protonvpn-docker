@@ -1,6 +1,6 @@
 WATCHTOWER_BASE := $(strip $(patsubst %/, %, $(dir $(realpath $(firstword $(MAKEFILE_LIST))))))
 # Set Help, default goal and WATCHTOWER_BASE
-include makefiles/help.mk
+include $(WATCHTOWER_BASE)/makefiles/help.mk
 
 # Name of the project and docker image
 NAME  := protonvpn
@@ -20,7 +20,7 @@ UPSTREAM_PRESENT := true
 UPSTREAM_AUTHOR  := Proton Technologies AG
 UPSTREAM_URL     := https://github.com/ProtonVPN/linux-cli
 
-include makefiles/docker.mk
+include $(WATCHTOWER_BASE)/makefiles/docker.mk
 
 .PHONY: shellcheck
 shellcheck: ## Runs shellcheck

@@ -1,6 +1,7 @@
 FROM python:3.8.3-slim-buster
 
 ENV PROTONVPN_COUNTRY="NL" \
+    PROTONVPN_CHECK_MODE="gateway" \
     PROTONVPN_VERSION="2.2.2" \
     S6_OVERLAY_VERSION="2.0.0.1" \
     LANG="C.UTF-8" \

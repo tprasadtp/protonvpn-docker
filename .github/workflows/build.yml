@@ -19,7 +19,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Lint
-        run: make docker-lint
+        run: |
+          make docker-lint
+          make shellcheck
   # Build docker images
   docker:
     needs: lint
