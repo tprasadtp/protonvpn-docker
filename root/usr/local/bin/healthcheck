@@ -1,0 +1,11 @@
+#!/bin/bash
+set -eo pipefail
+
+CONNECTED_COUNTRY="$(curl -sSfL https://api.protonvpn.ch/vpn/location | jq -r '.Country')"
+
+if [[ ${CONNECTED_COUNTRY} == "${PROTONVPN_COUNTRY}" ]]; then
+  echo "[$(date)] Health Check: OK";
+else
+  echo "[$(date)] Health Check : Failed"
+  exit 10
+fi

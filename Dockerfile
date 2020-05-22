@@ -56,6 +56,6 @@ RUN S6_OVERLAY_VERSION=2.0.0.1 \
       /root/.pvpn-cli
 
 VOLUME [/root/.pvpn-cli]
-COPY etc /etc/
+COPY root/ /
 
 ENTRYPOINT ["/init"]

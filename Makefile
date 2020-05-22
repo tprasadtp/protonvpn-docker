@@ -15,7 +15,7 @@ IMAGE_DOCUMENTATION     := https://github.com/tprasadtp/protonvpn-docker
 
 # Relative to
 DOCKER_CONTEXT_DIR := $(WATCHTOWER_BASE)# Version
-VERSION          := 2.2.2-hotfix-1
+VERSION          := 2.2.2-hotfix-2
 UPSTREAM_PRESENT := true
 UPSTREAM_AUTHOR  := Proton Technologies AG
 UPSTREAM_URL     := https://github.com/ProtonVPN/linux-cli
@@ -25,5 +25,6 @@ include $(WATCHTOWER_BASE)/makefiles/docker.mk
 .PHONY: shellcheck
 shellcheck: ## Runs shellcheck
 	@echo -e "\033[92m➜ $@ \033[0m"
-	shellcheck -e SC1008 $(WATCHTOWER_BASE)/etc/cont-init.d/*
-	shellcheck -e SC1008 $(WATCHTOWER_BASE)/etc/services.d/*/run
+	shellcheck -e SC1008 $(WATCHTOWER_BASE)/root/etc/cont-init.d/*
+	shellcheck -e SC1008 $(WATCHTOWER_BASE)/root/etc/services.d/*/run
+	shellcheck -e SC1008 $(WATCHTOWER_BASE)/root/usr/local/bin/*

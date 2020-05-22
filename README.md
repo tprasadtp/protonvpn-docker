@@ -40,3 +40,7 @@ docker run \
 -e PROTONVPN_COUNTRY=NL \
 tprasadtp/protonvpn:2.2.2
 ```
+
+## Healthcheck
+
+There is a `healthcheck` script available under /usr/local/bin (Added in 2.2.2-hotfix2)
