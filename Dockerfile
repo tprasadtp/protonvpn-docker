@@ -28,9 +28,7 @@ RUN apt-get update && apt-get install -qq -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # S6 Overlay and Users
-RUN S6_OVERLAY_VERSION=2.0.0.1 \
-    && export S6_OVERLAY_VERSION \
-    && ARCH="$(uname -m)" \
+RUN ARCH="$(uname -m)" \
     && export ARCH \
     && echo "Arch is $ARCH" \
     && if [ "$ARCH" = "x86_64" ]; then \
