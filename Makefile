@@ -15,7 +15,7 @@ IMAGE_DOCUMENTATION     := https://github.com/tprasadtp/protonvpn-docker
 
 # Relative to
 DOCKER_CONTEXT_DIR := $(WATCHTOWER_BASE)# Version
-VERSION          := 2.2.2-hotfix-2
+VERSION          := 2.2.2-hotfix-4
 UPSTREAM_PRESENT := true
 UPSTREAM_AUTHOR  := Proton Technologies AG
 UPSTREAM_URL     := https://github.com/ProtonVPN/linux-cli

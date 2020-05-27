@@ -8,6 +8,10 @@ function connect_vpn()
     echo "[Service Connect] Using Fastest Server from ${PROTONVPN_COUNTRY}"
     PVPN_DEBUG="${DEBUG:-0}" /usr/local/bin/protonvpn c --cc "${PROTONVPN_COUNTRY:-NL}"
   else
+    if [[ -z "${PROTONVPN_COUNTRY}" ]]; then
+      echo "ProtonVPN server is specified but country is empty!"
+      exit 4
+    fi
     echo "[Service Connect] Using Server ${PROTONVPN_SERVER}"
     PVPN_DEBUG="${DEBUG:-0}" /usr/local/bin/protonvpn connect "${PROTONVPN_SERVER}"
   fi
@@ -26,22 +30,19 @@ function reconnect_vpn()
   fi
 }
 
-function gateway_check()
-{
-  primary_gw="$(route -n | grep 'proton' | grep 'UG[ \t]' | awk '{print $2}' | head -1)"
-  if ping -q -i 0.1 -c 5 -W 5 "${primary_gw}"; then
-    echo "[Service Check] Gateway Reachable"
-  else
-    echo "[Service Check] Error reaching gateway!, Reconnecting VPN"
-    reconnect_vpn
-  fi
-}
 
-function country_check()
+function api_check()
 {
-  COUNTRY="$(curl -m 15 -sL https://api.protonvpn.ch/vpn/location | jq -r '.Country')"
-  if [[ $COUNTRY == "${PROTONVPN_COUNTRY}" ]]; then
+  COUNTRY="$(curl -m 20 -sL https://api.protonvpn.ch/vpn/location | jq -r '.Country')"
+  if [[ $COUNTRY == "" ]]; then
+    echo "[Service Check] #$(( ++thrshold_f )) Timed out!"
+      if [[ $thrshold_f -gt "${RECONNECT_THRESHOLD}" ]];then
+        echo "[Service Check] failed > allowed times(${RECONNECT_THRESHOLD}), reconnecting!"
+        reconnect_vpn
+      fi
+  elif [[ $COUNTRY == "${PROTONVPN_COUNTRY}" ]]; then
     echo "[Service Check] OK!"
+    thrshold_f=0
   else
     echo "[Service Check] Failed, connected to #${COUNTRY} instead of #$PROTONVPN_COUNTRY"
     reconnect_vpn
@@ -56,37 +57,46 @@ if [[ -z "$(pgrep -x openvpn)" ]]; then
   echo "[Service Check] Error!! There is no OpenVPN Process!!"
   reconnect_vpn
 else
-  echo "[Service Check] Process is alive!"
-  case ${PROTONVPN_CHECK_MODE} in
-    gateway | Gateway | Gateway)  echo "[Service Check] Mode is set to gateway";gateway_check;;
-    country | Country | COUNTRY)  echo "[Service Check] Mode is set to country";country_check;;
-    *)                            echo "[Service Check] Mode ${PROTONVPN_CHECK_MODE}, is INVALID. Falling back to gateway";
-                                  gateway_check;;
-  esac
+  api_check
 fi
 }
 
 
-
-
 function main()
 {
+
+  re='^[0-9]+$'
+  if ! [[ $LIVE_PROBE_INTERVAL =~ $re ]] ; then
+    echo "LIVE_PROBE_INTERVAL can only be an integer!, will default to 120 seconds"
+    LIVE_PROBE_INTERVAL=120
+  else
+    echo "Daemon check interval is set to #$LIVE_PROBE_INTERVAL"
+  fi
+
+  if ! [[ $RECONNECT_THRESHOLD =~ $re ]] ; then
+    echo "RECONNECT_THRESHOLD can only be an integer!, will default to 10"
+    RECONNECT_THRESHOLD=10
+  else
+    echo "Reconnect treshold is #$RECONNECT_THRESHOLD"
+  fi
+
   echo "[Service Init] checking orphaned openvpn process"
   OVPN_PROCESS="$(pgrep -x openvpn)"
   if [[ -z ${OVPN_PROCESS} ]]; then
     echo "[Service Init] This appears to be a fresh start!"
+    thrshold_f=0
     connect_vpn
   else
     echo "[Service Init] This appears to be a restart!, reconnecting to VPN with old settings"
+    thrshold_f=0
     reconnect_vpn
   fi
 
   # Checks
   while :
   do
-    echo "[Service Check] Running on $(date)"
     check_vpn
-    sleep 10
+    sleep "${LIVE_PROBE_INTERVAL}"
   done
 }
 
