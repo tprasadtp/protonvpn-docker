@@ -14,7 +14,7 @@
 
 | Name | Default | Required | Description
 |------|---------|----------|-------------
-| `PROTONVPN_TIER`     | None   | Yes | Proton VPN Tier
+| `PROTONVPN_TIER`     | None   | Yes | Proton VPN Tier (0=Free, 1=Basic, 2=Pro, 3=Visionary)
 | `PROTONVPN_USERNAME` | None   | Yes | OpenVPN Username. This is NOT your Proton Account Username.
 | `PROTONVPN_PASSWORD` | None   | Yes | OpenVPN Password. This is NOT your Proton Account Password.
 | `PROTONVPN_PROTOCOL` | `udp`  | No  | Protocol to use
@@ -24,6 +24,7 @@
 ## Run
 
 ```bash
+docker pull tprasadtp/protonvpn:latest
 docker run \
 --rm \
 -d \
@@ -37,9 +38,18 @@ docker run \
 -e PROTONVPN_TIER=0 \
 -e PROTONVPN_PROTOCOL=udp \
 -e PROTONVPN_COUNTRY=NL \
-tprasadtp/protonvpn:2.2.2
+tprasadtp/protonvpn:latest
 ```
 
 ## Healthcheck
 
 There is a `healthcheck` script available under /usr/local/bin (Added in 2.2.2-hotfix2)
+
+
+## Known issues
+
+- Currently `--dns` argument MUST be specified as /etc/resove.conf is not editable inside containers.
+- Kill switch is not reliable. This is due to the way protonvpn cli works because on issuing reconnect they remove
+re-initialize iptable rules which removes block on outgoing connections for a short duration until iptable rules are applied again.
+- DNS Leaks prevention cannot be enabled due to how DNS is handled in docker. I recommend using DNS over TLS or DNS over HTTP on the host
+to enhance your privacy.
