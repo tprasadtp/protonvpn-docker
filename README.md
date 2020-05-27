@@ -19,7 +19,7 @@
 | `PROTONVPN_PASSWORD` | None   | Yes | OpenVPN Password. This is NOT your Proton Account Password.
 | `PROTONVPN_PROTOCOL` | `udp`  | No  | Protocol to use
 | `PROTONVPN_SERVER`   |        | No  | ProtonVPN server to connect to.
-| `PROTONVPN_COUNTRY`  | `NL`   | Yes if Server is specified  | ProtonVPN Country. This will chose the faster server from the country. This wil also be used to check if you are connected to the correct VPN and reconnect if necessary. So when specifying `PROTONVPN_SERVER` also specify this to match the country
+| `PROTONVPN_COUNTRY`  | `NL`   | Yes if Server is specified  | ProtonVPN Country. This will choose the fastest server from the country. This wil also be used to check if you are connected to the correct VPN and reconnect if necessary. So when specifying `PROTONVPN_SERVER` also specify this to match the country
 
 ## Run
 
