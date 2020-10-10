@@ -1,4 +1,4 @@
-FROM python:3.8.6-slim-buster
+FROM python:3.9.0-slim-buster
 
 ENV PROTONVPN_COUNTRY="NL" \
     PROTONVPN_VERSION="2.2.2" \
