@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/with-contenv bash
 set -eo pipefail
 
 if [[ -z ${PROTONVPN_COUNTRY} ]]; then
@@ -20,5 +20,5 @@ if [[ ${CONNECTED_COUNTRY} == "${PROTONVPN_COUNTRY}" ]]; then
   echo "[$(date)] Health Check : OK";
 else
   echo "[$(date)] Health Check : Failed"
-  exit 10
+  exit 1
 fi

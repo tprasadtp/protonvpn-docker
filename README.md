@@ -12,16 +12,20 @@ Images are published on,
 - [DockerHub](https://hub.docker.com/r/tprasadtp/protonvpn-docker/tags)
 - [GitHub Package registry](https://github.com/users/tprasadtp/packages/container/package/docker-socket-proxy)
 
+> GitHub container registry is preferred. Though currently there is no plan to discontinue updating images on DockerHub, its advised that you switch to GitHub registry.
+
 ## Environment Variables
 
 | Name | Default | Required | Description
 |------|---------|----------|-------------
-| `PROTONVPN_TIER`     | None   | Yes | Proton VPN Tier (0=Free, 1=Basic, 2=Pro, 3=Visionary)
-| `PROTONVPN_USERNAME` | None   | Yes | OpenVPN Username. This is NOT your Proton Account Username.
-| `PROTONVPN_PASSWORD` | None   | Yes | OpenVPN Password. This is NOT your Proton Account Password.
-| `PROTONVPN_PROTOCOL` | `udp`  | No  | Protocol to use
-| `PROTONVPN_SERVER`   |        | No  | ProtonVPN server to connect to.
-| `PROTONVPN_COUNTRY`  | `NL`   | Yes if Server is specified  | ProtonVPN Country. This will choose the fastest server from the country. This wil also be used to check if you are connected to the correct VPN and reconnect if necessary. So when specifying `PROTONVPN_SERVER` also specify this to match the country
+| `PROTONVPN_TIER`          | None   | Yes | Proton VPN Tier (0=Free, 1=Basic, 2=Pro, 3=Visionary)
+| `PROTONVPN_USERNAME`      | None   | Yes | OpenVPN Username. This is NOT your Proton Account Username.
+| `PROTONVPN_PASSWORD`      | None   | Yes | OpenVPN Password. This is NOT your Proton Account Password.
+| `PROTONVPN_PROTOCOL`      | `udp`  | No  | Protocol to use
+| `PROTONVPN_SERVER`        |        | No  | ProtonVPN server to connect to.
+| `PROTONVPN_COUNTRY`       | `NL`   | Yes if Server is specified  | ProtonVPN Country. This will choose the fastest server from the country. This wil also be used to check if you are connected to the correct VPN and reconnect if necessary. So when specifying `PROTONVPN_SERVER` also specify this to match the country
+| `PROTONVPN_EXCLUDE_CIDRS` | `169.254.169.264/32,169.254.169.123/32`| No | Comma separated list of CIDRs to exclude from VPN. Uses split tunnel.
+| `PROTONVPN_DNS_SERVERS`   |        | No  | Comma separated list of IP addresses of DNS servers to use. Setting this will disable DNS leak protection!. By default this is not set and will use Default DNS servers provided by ProtonVPN and enable DNS leak protection.
 
 ## Run Container
 
@@ -58,7 +62,7 @@ docker run \
 
 ## Health-checks
 
-There is a `healthcheck` script available under /usr/local/bin (Added in 2.2.2-hotfix2). It will use `https://api.protonvpn.ch` to verify the country to which VPN is connected. By default service will keep checking every `LIVE_PROBE_INTERVAL` _(default = 120)_ seconds using the same api endpoint.
+There is a `healthcheck` script available under /usr/local/bin (Added in 2.2.2-hotfix2). It will use `https://api.protonvpn.ch` to verify the country to which VPN is connected. By default service will keep checking every `LIVE_PROBE_INTERVAL` _(default = 60)_ seconds using the same api endpoint, script is only added for convenience.
 
 ## Known issues
 
@@ -68,4 +72,4 @@ re-initialize iptable rules which removes block on outgoing connections for a sh
 ## Kubernetes
 
 This is currently not tested on Kubernetes!. If you are interested in testing the container on k8s
-Open an issue to start the discussion.
+Open an issue to start the discussion. You may need to tweak your `PROTONVPN_EXCLUDE_CIDRS` and set `PROTONVPN_DNS_SERVERS` depending on your cluster and network settings.

@@ -41,18 +41,17 @@ function api_check()
     --header 'x-pm-apiversion: 3' \
     --header 'Accept: application/vnd.protonmail.v1+json' \
     https://api.protonvpn.ch/vpn/location | jq -r '.Country')"
-  if [[ $COUNTRY == "" ]]; then
-    echo "[Service Check] #$(( ++thrshold_f )) Timed out!"
-      if [[ $thrshold_f -gt "${RECONNECT_THRESHOLD}" ]];then
-        echo "[Service Check] failed > allowed times(${RECONNECT_THRESHOLD}), reconnecting!"
-        reconnect_vpn
-      fi
-  elif [[ $COUNTRY == "${PROTONVPN_COUNTRY}" ]]; then
+
+  if [[ $COUNTRY == "${PROTONVPN_COUNTRY}" ]]; then
     echo "[Service Check] OK!"
     thrshold_f=0
   else
-    echo "[Service Check] Failed, connected to #${COUNTRY} instead of #$PROTONVPN_COUNTRY"
-    reconnect_vpn
+    echo "[Service Check] #$(( ++thrshold_f )) Failed!"
+    echo "[Service Check] connected to #${COUNTRY} instead of #${PROTONVPN_COUNTRY}"
+    if [[ $thrshold_f -gt "${RECONNECT_THRESHOLD}" ]];then
+      echo "[Service Check] failed > allowed times(${RECONNECT_THRESHOLD}), reconnecting!"
+      reconnect_vpn
+    fi
   fi
 }
 
@@ -74,8 +73,8 @@ function main()
 
   re='^[0-9]+$'
   if ! [[ $LIVE_PROBE_INTERVAL =~ $re ]] ; then
-    echo "LIVE_PROBE_INTERVAL can only be an integer!, will default to 120 seconds"
-    LIVE_PROBE_INTERVAL=120
+    echo "LIVE_PROBE_INTERVAL can only be an integer!, will default to 60 seconds"
+    LIVE_PROBE_INTERVAL=60
   else
     echo "Daemon check interval is set to #$LIVE_PROBE_INTERVAL"
   fi

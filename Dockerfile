@@ -1,7 +1,10 @@
 FROM python:3.8.5-slim-buster
 
 ENV PROTONVPN_COUNTRY="NL" \
+    PROTONVPN_EXCLUDE_CIDRS="169.254.169.254/32,169.254.169.123/32" \
     S6_OVERLAY_VERSION="2.1.0.2" \
+    LIVE_PROBE_INTERVAL=60 \
+    RECONNECT_THRESHOLD=3 \
     LANG="C.UTF-8" \
     S6_BEHAVIOUR_IF_STAGE2_FAILS=2 \
     S6_CMD_WAIT_FOR_SERVICES=1
@@ -45,10 +48,7 @@ RUN ARCH="$(uname -m)" \
     && export S6_ARCH \
     && curl -sSfL "https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-${S6_ARCH}.tar.gz" -o /tmp/s6-overlay.tar.gz \
     && gunzip -c /tmp/s6-overlay.tar.gz | tar -xf - -C /  \
-    && rm -f /tmp/s6-overlay.tar.gz \
-    && mkdir -p \
-      /config \
-      /root/.pvpn-cli
+    && rm -f /tmp/s6-overlay.tar.gz
 
 COPY root/ /
 
