@@ -1,10 +1,23 @@
 #!/bin/bash
 set -eo pipefail
 
-CONNECTED_COUNTRY="$(curl -sSfL https://api.protonvpn.ch/vpn/location | jq -r '.Country')"
+if [[ -z ${PROTONVPN_COUNTRY} ]]; then
+  echo "[$(date)] Health Check : Undefined Variable - PROTONVPN_COUNTRY";
+  exit 1
+fi
+
+CONNECTED_COUNTRY="$(curl \
+    --max-time 20 \
+    --silent \
+    --location \
+    --user-agent 'protonvpn-cli-docker' \
+    --header 'x-pm-appversion: LinuxVPN_2.2.6' \
+    --header 'x-pm-apiversion: 3' \
+    --header 'Accept: application/vnd.protonmail.v1+json' \
+    https://api.protonvpn.ch/vpn/location | jq -r '.Country')"
 
 if [[ ${CONNECTED_COUNTRY} == "${PROTONVPN_COUNTRY}" ]]; then
-  echo "[$(date)] Health Check: OK";
+  echo "[$(date)] Health Check : OK";
 else
   echo "[$(date)] Health Check : Failed"
   exit 10

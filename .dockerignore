@@ -39,3 +39,4 @@ LICENSE
 Makefile
 .envrc
 build/
+k8s/

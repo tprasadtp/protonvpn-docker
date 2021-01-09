@@ -1,7 +1,6 @@
 #!/usr/bin/with-contenv bash
 # shellcheck shell=bash
 
-
 function connect_vpn()
 {
   if [[ -z "$PROTONVPN_SERVER" ]]; then
@@ -33,7 +32,15 @@ function reconnect_vpn()
 
 function api_check()
 {
-  COUNTRY="$(curl -m 20 -sL https://api.protonvpn.ch/vpn/location | jq -r '.Country')"
+  COUNTRY="$(curl \
+    --max-time 20 \
+    --silent \
+    --location \
+    --user-agent 'protonvpn-cli-docker' \
+    --header 'x-pm-appversion: LinuxVPN_2.2.6' \
+    --header 'x-pm-apiversion: 3' \
+    --header 'Accept: application/vnd.protonmail.v1+json' \
+    https://api.protonvpn.ch/vpn/location | jq -r '.Country')"
   if [[ $COUNTRY == "" ]]; then
     echo "[Service Check] #$(( ++thrshold_f )) Timed out!"
       if [[ $thrshold_f -gt "${RECONNECT_THRESHOLD}" ]];then

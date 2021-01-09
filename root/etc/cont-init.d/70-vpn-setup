@@ -34,21 +34,36 @@ case ${PROTONVPN_PROTOCOL} in
                                 CFG_PROTO="udp";;
 esac
 
-# Pull Server Info
-echo "[VPN-Config-Setup] Getting Server List"
-curl -sSfL https://api.protonvpn.ch/vpn/logicals -o /root/.pvpn-cli/serverinfo.json
+# # Pull Server Info
+# echo "[VPN-Config-Setup] Getting Server List"
+# curl --fail \
+#     --location \
+#     --silent \
+#     --show-error \
+#     --max-time 20 \
+#     --silent \
+#     --location \
+#     --user-agent 'protonvpn-cli-docker' \
+#     --header 'x-pm-appversion: LinuxVPN_2.2.6' \
+#     --header 'x-pm-apiversion: 3' \
+#     --header 'Accept: application/vnd.protonmail.v1+json' \
+#     --output /root/.pvpn-cli/serverinfo.json \
+#     https://api.protonvpn.ch/vpn/logicals
 
-__METADATA_PULL_DATE="$(date +%s)"
+# __METADATA_PULL_DATE="$(date +%s)"
 
 echo "[VPN-Config-Setup] Writing config file"
 cat > /root/.pvpn-cli/pvpn-cli.cfg <<EOF
 [USER]
+# API endpoint
+api_domain = https://api.protonvpn.ch
 username = ${PROTONVPN_USERNAME}
 # Proton VPN Plan ${PROTONVPN_TIER:-NA}
 tier = ${CFG_TIER}
 default_protocol = ${CFG_PROTO}
+# Indicates that protonvpn init has been successful
 initialized = 1
-dns_leak_protection = 0
+dns_leak_protection = 1
 custom_dns = None
 check_update_interval = 3
 killswitch = 0
@@ -71,16 +86,10 @@ else
   echo "[VPN-Config-Setup] Respecting existing split tunnel config"
 fi
 
-if [[ ! -f /root/.pvpn-cli/template.ovpn  ]]; then
-  echo "[VPN-Config-Setup] No existing template file found, copying default template"
-  cp /etc/protonvpn/template.ovpn /root/.pvpn-cli/template.ovpn
-else
-  echo "[VPN-Config-Setup] template file already exists"
-fi
-
 echo "[VPN-Config-Setup] Writing credentials file"
+# https://github.com/ProtonVPN/linux-cli/blob/089af8d309cf774adc31c158a62a27733ae39ee0/protonvpn_cli/utils.py#L530
 cat > /root/.pvpn-cli/pvpnpass <<EOF
-${PROTONVPN_USERNAME}
+${PROTONVPN_USERNAME}+plc
 ${PROTONVPN_PASSWORD}
 EOF
 

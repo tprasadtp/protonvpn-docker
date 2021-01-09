@@ -1,14 +1,16 @@
-# protonvpn docker image
+# ProtonVPN - Docker
 
 [![actions](https://github.com/tprasadtp/protonvpn-docker/workflows/build/badge.svg)](https://github.com/tprasadtp/protonvpn-docker/actions?workflow=build)
-[![actions](https://github.com/tprasadtp/protonvpn-docker/workflows/labels/badge.svg)](https://github.com/tprasadtp/protonvpn-docker/actions?workflow=labels)
-![Docker Image Size](https://img.shields.io/docker/image-size/tprasadtp/protonvpn/latest)
-![Docker Image Version](https://img.shields.io/docker/v/tprasadtp/protonvpn?sort=semver)
+[![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/tprasadtp/protonvpn-docker?label=version&logo=github&sort=semver)](https://github.com/tprasadtp/protonvpn-docker/releases/latest)
+[![Docker Pulls](https://img.shields.io/docker/pulls/tprasadtp/protonvpn?color=0db7ed&label=hub.docker.com&logo=docker&logoColor=0db7ed)](https://hub.docker.com/r/tprasadtp/protonvpn)
+[![Docker Image Size (tag)](https://img.shields.io/docker/image-size/tprasadtp/protonvpn/latest?color=0db7ed&logo=docker&logoColor=0db7ed)](https://hub.docker.com/r/tprasadtp/protonvpn)
 [![dependabot](https://api.dependabot.com/badges/status?host=github&repo=tprasadtp/protonvpn-docker)](https://app.dependabot.com)
 ![Analytics](https://ga-beacon.prasadt.com/UA-101760811-3/github/protonvpn-docker?pink&useReferer)
 
-- Images are published both on
-  - [DockerHub](https://hub.docker.com/r/tprasadtp/protonvpn-docker/tags) and ~~GitHub Package registry~~ [Waiting for  multi arch image support](https://github.community/t5/GitHub-API-Development-and/Handle-multi-arch-Docker-images-on-GitHub-Package-Registry/td-p/31650).
+Images are published on,
+
+- [DockerHub](https://hub.docker.com/r/tprasadtp/protonvpn-docker/tags)
+- [GitHub Package registry](https://github.com/users/tprasadtp/packages/container/package/docker-socket-proxy)
 
 ## Environment Variables
 
@@ -21,10 +23,12 @@
 | `PROTONVPN_SERVER`   |        | No  | ProtonVPN server to connect to.
 | `PROTONVPN_COUNTRY`  | `NL`   | Yes if Server is specified  | ProtonVPN Country. This will choose the fastest server from the country. This wil also be used to check if you are connected to the correct VPN and reconnect if necessary. So when specifying `PROTONVPN_SERVER` also specify this to match the country
 
-## Run
+## Run Container
 
 ```bash
-docker pull tprasadtp/protonvpn:latest
+# Pull Image
+docker pull ghcr.io/tprasadtp/protonvpn
+# Run in background
 docker run \
 --rm \
 -d \
@@ -38,18 +42,30 @@ docker run \
 -e PROTONVPN_TIER=0 \
 -e PROTONVPN_PROTOCOL=udp \
 -e PROTONVPN_COUNTRY=NL \
-tprasadtp/protonvpn:latest
+ghcr.io/tprasadtp/protonvpn
 ```
 
-## Healthcheck
+## Using VPN in other containers
 
-There is a `healthcheck` script available under /usr/local/bin (Added in 2.2.2-hotfix2)
+You can use
 
+```console
+docker run \
+--name conrainer-with-vpn \
+--net=container:vpn \
+<container>:<tag>
+```
+
+## Health-checks
+
+There is a `healthcheck` script available under /usr/local/bin (Added in 2.2.2-hotfix2). It will use `https://api.protonvpn.ch` to verify the country to which VPN is connected. By default service will keep checking every `LIVE_PROBE_INTERVAL` _(default = 120)_ seconds using the same api endpoint.
 
 ## Known issues
 
-- Currently `--dns` argument MUST be specified as /etc/resove.conf is not editable inside containers.
-- Kill switch is not reliable. This is due to the way protonvpn cli works because on issuing reconnect they remove
+- Kill switch is **NOT** reliable. This is due to the way protonvpn cli works because on issuing reconnect they remove
 re-initialize iptable rules which removes block on outgoing connections for a short duration until iptable rules are applied again.
-- DNS Leaks prevention cannot be enabled due to how DNS is handled in docker. I recommend using DNS over TLS or DNS over HTTP on the host
-to enhance your privacy.
+
+## Kubernetes
+
+This is currently not tested on Kubernetes!. If you are interested in testing the container on k8s
+Open an issue to start the discussion.
