@@ -10,7 +10,7 @@
 Images are published on,
 
 - [DockerHub](https://hub.docker.com/r/tprasadtp/protonvpn-docker/tags)
-- [GitHub Package registry](https://github.com/users/tprasadtp/packages/container/package/docker-socket-proxy)
+- [GitHub Package registry](https://github.com/users/tprasadtp/packages/container/package/protonvpn)
 
 > GitHub container registry is preferred. Though currently there is no plan to discontinue updating images on DockerHub, its advised that you switch to GitHub registry.
 
