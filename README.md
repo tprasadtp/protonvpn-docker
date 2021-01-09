@@ -23,9 +23,11 @@ Images are published on,
 | `PROTONVPN_PASSWORD`      | None   | Yes | OpenVPN Password. This is NOT your Proton Account Password.
 | `PROTONVPN_PROTOCOL`      | `udp`  | No  | Protocol to use
 | `PROTONVPN_SERVER`        |        | No  | ProtonVPN server to connect to.
-| `PROTONVPN_COUNTRY`       | `NL`   | Yes if Server is specified  | ProtonVPN Country. This will choose the fastest server from the country. This wil also be used to check if you are connected to the correct VPN and reconnect if necessary. So when specifying `PROTONVPN_SERVER` also specify this to match the country
-| `PROTONVPN_EXCLUDE_CIDRS` | `169.254.169.264/32,169.254.169.123/32,169.254.170.2`| No | Comma separated list of CIDRs to exclude from VPN. Uses split tunnel.
+| `PROTONVPN_COUNTRY`       | `NL`   |     | ProtonVPN Country. This will choose the fastest server from the country. This wil also be used to check if you are connected to the correct VPN and reconnect if necessary. So when specifying `PROTONVPN_SERVER` also specify this to match the country
+| `PROTONVPN_EXCLUDE_CIDRS` | see fotnotes | No | Comma separated list of CIDRs to exclude from VPN. Uses split tunnel.
 | `PROTONVPN_DNS_LEAK_PROTECT` |     | No  | Setting this to `0` or `false` will disable DNS leak protection. If you wish to specify custom DNS server via `--dns` option you **MUST** set this to `0`.
+
+> By default AWS IPs are in exclude list. Default CIDR includes `169.254.169.264/32,169.254.169.123/32,169.254.170.2`
 
 ## Run Container
 
