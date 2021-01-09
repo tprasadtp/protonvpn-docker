@@ -2,10 +2,10 @@
 
 ## 2.2.6
 
-- Support for specifying custom DNS servers via env variables.
 - Support split tunnel settings.
+- Support for disabling DNS leak protection
 - Update protonvpn-cli to 2.2.6
-- DNS argument(`--dns`) is no longer necessary while running docker commands (Though might be necessary on k8s)
+- DNS argument(`--dns`) is no longer mandatory to run the image
 - (Internal) Removes included templates as its handled by protonvpn-cli
 - (Internal) Removes fetching server configs as it is handled by updated cli
 - (Internal) Update s6 overlay

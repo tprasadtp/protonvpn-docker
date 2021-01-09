@@ -24,8 +24,8 @@ Images are published on,
 | `PROTONVPN_PROTOCOL`      | `udp`  | No  | Protocol to use
 | `PROTONVPN_SERVER`        |        | No  | ProtonVPN server to connect to.
 | `PROTONVPN_COUNTRY`       | `NL`   | Yes if Server is specified  | ProtonVPN Country. This will choose the fastest server from the country. This wil also be used to check if you are connected to the correct VPN and reconnect if necessary. So when specifying `PROTONVPN_SERVER` also specify this to match the country
-| `PROTONVPN_EXCLUDE_CIDRS` | `169.254.169.264/32,169.254.169.123/32`| No | Comma separated list of CIDRs to exclude from VPN. Uses split tunnel.
-| `PROTONVPN_DNS_SERVERS`   |        | No  | Comma separated list of IP addresses of DNS servers to use. Setting this will disable DNS leak protection!. By default this is not set and will use Default DNS servers provided by ProtonVPN and enable DNS leak protection.
+| `PROTONVPN_EXCLUDE_CIDRS` | `169.254.169.264/32,169.254.169.123/32,169.254.170.2`| No | Comma separated list of CIDRs to exclude from VPN. Uses split tunnel.
+| `PROTONVPN_DNS_LEAK_PROTECT` |     | No  | Setting this to `0` or `false` will disable DNS leak protection. If you wish to specify custom DNS server via `--dns` option you **MUST** set this to `0`.
 
 ## Run Container
 
@@ -38,7 +38,6 @@ docker run \
 -d \
 --name=protonvpn \
 --device=/dev/net/tun \
---dns=1.1.1.3 \
 --cap-add=NET_ADMIN \
 -e DEBUG=0 \
 -e PROTONVPN_USERNAME="xxxx" \
@@ -72,4 +71,4 @@ re-initialize iptable rules which removes block on outgoing connections for a sh
 ## Kubernetes
 
 This is currently not tested on Kubernetes!. If you are interested in testing the container on k8s
-Open an issue to start the discussion. You may need to tweak your `PROTONVPN_EXCLUDE_CIDRS` and set `PROTONVPN_DNS_SERVERS` depending on your cluster and network settings.
+Open an issue to start the discussion. You may need to tweak your `PROTONVPN_EXCLUDE_CIDRS` and **MUST** disable dns leak protection.

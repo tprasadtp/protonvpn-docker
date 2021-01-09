@@ -3,7 +3,7 @@ NAME  := protonvpn-docker
 export REPO_ROOT := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 
 # Define image names
-DOCKER_IMAGES          := ghcr.io/tprasadtp/protonvpn tprasadtp/protonvpn
+DOCKER_IMAGES           := ghcr.io/tprasadtp/protonvpn tprasadtp/protonvpn
 
 # OCI Metadata
 IMAGE_TITLE             := ProtonVPN

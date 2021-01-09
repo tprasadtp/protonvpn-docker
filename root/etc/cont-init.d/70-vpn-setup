@@ -17,7 +17,7 @@ SUBNET_REGEX='([0-9]|[12][0-9]|3[012])'
 
 cidrs_from_env=(${PROTONVPN_EXCLUDE_CIDRS//,/ })
 
-declare -g -a SPLIT_TUNNEL_CIDRS INVALID_CIDRS DNS_SERVERS INVALID_DNS_SERVERS
+declare -g -a SPLIT_TUNNEL_CIDRS INVALID_CIDRS
 
 # Split Tunnels
 if [[ ${#cidrs_from_env[@]} -gt 0 ]]; then
@@ -40,37 +40,14 @@ if [[ ${#INVALID_CIDRS[@]} -gt 0 ]];then
   exit 1
 fi
 
-# Custom DNS
-dns_servers=(${PROTONVPN_DNS_SERVERS//,/ })
-if [[ ${#dns_servers[@]} -eq 0 ]]; then
-  echo "[VPN-Config-DNS] Using ProtonVPN DNS"
-  echo "[VPN-Config-DNS] Enabling DNS leak protection"
-else
-  for dns in "${dns_servers[@]}"; do
-    if [[ $dns =~ ^$IP_ADD_REGEX(\.$IP_ADD_REGEX){3}$ ]]; then
-      echo "[VPN-Config-DNS] IP $dns is a valid IP"
-      DNS_SERVERS+=("$dns")
-    else
-      echo "[VPN-Config-DNS] IP $dns is an INVALID IP"
-      INVALID_DNS_SERVERS+=("$dns")
-    fi
-  done
-fi
 
-if [[ ${#INVALID_DNS_SERVERS[@]} -gt 0 ]];then
-  echo "[VPN-Config-DNS] Following DNS IPs were invalid: ${INVALID_DNS_SERVERS[*]}"
-  exit 1
-fi
-
-
-# Setup Custom DNS
-if [[ ${#DNS_SERVERS[@]} -gt 0 ]];then
-  echo "[VPN-Config-DNS] Using Custom DNS Servers ${DNS_SERVERS[*]}"
-  echo "[VPN-Config-DNS] Disabling DNS leak protection!"
+# Setup DNS leak protection
+if [[ ${PROTONVPN_DNS_LEAK_PROTECT} -eq 0 ]] || [[ ${PROTONVPN_DNS_LEAK_PROTECT} == "false" ]]; then
+  echo "[VPN-Config-DNS] Disabling DNS leak protection!!"
   DNS_LEAK_PROTECTION=0
 else
+  echo "[VPN-Config-DNS] Enabling DNS leak protection."
   DNS_LEAK_PROTECTION=1
-  DNS_SERVERS=("None")
 fi
 
 
@@ -135,7 +112,7 @@ default_protocol = ${CFG_PROTO}
 # Indicates that protonvpn init has been successful
 initialized = 1
 dns_leak_protection = ${DNS_LEAK_PROTECTION}
-custom_dns = ${DNS_SERVERS[*]}
+custom_dns = None
 check_update_interval = 3
 killswitch = 1
 split_tunnel = ${ENABLE_SPLIT_TUNNEL}
