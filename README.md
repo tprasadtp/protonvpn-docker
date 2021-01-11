@@ -26,10 +26,9 @@ Images are published on,
 | `PROTONVPN_SERVER`        |        | Yes | ProtonVPN server to connect to. This value is mutually exclusive with `PROTONVPN_COUNTRY`. Only one of them can be used.
 | `PROTONVPN_COUNTRY`       |        | Yes | ProtonVPN two letter country code. This will choose the fastest server from this country. This value is mutually exclusive with `PROTONVPN_SERVER`. Only one of them can be used.
 | `PROTONVPN_PROTOCOL`      | `udp`  | No  | Protocol to use
-| `PROTONVPN_EXCLUDE_CIDRS` | see footnotes | No | Comma separated list of CIDRs to exclude from VPN. Uses split tunnel.
+| `PROTONVPN_EXCLUDE_CIDRS` |        | No | Comma separated list of CIDRs to exclude from VPN. Uses split tunnel. Default is set to `169.254.169.254/32,169.254.169.123/32,169.254.170.2/32`
 | `PROTONVPN_DNS_LEAK_PROTECT` |  `1`  | No  | Setting this to `0` will disable DNS leak protection. If you wish to specify custom DNS server via `--dns` option you **MUST** set this to `0`.
 
-> Default CIDR includes `169.254.169.254/32,169.254.169.123/32,169.254.170.2/32`
 
 ## Run Container
 
@@ -89,7 +88,7 @@ docker run \
 --cap-add=NET_ADMIN \
 --env PROTONVPN_COUNTRY=NL \
 --env PROTONVPN_DNS_LEAK_PROTECT=0 \
---env PROTONVPN_EXCLUDE_CIDRS="169.254.169.254/32,169.254.169.123/32" \
+--env PROTONVPN_EXCLUDE_CIDRS="169.254.169.254/32,169.254.169.123/32,10.244.0.0/16" \
 --env PROTONVPN_TIER=0 \
 --env PROTONVPN_PASSWORD="xxxx" \
 --env PROTONVPN_USERNAME="xxxx" \
