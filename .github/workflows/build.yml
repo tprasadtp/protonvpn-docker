@@ -29,7 +29,17 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Make Variables for Debugging
+        run: |
+          make show-vars-base || true
+          make show-vars-docker || true
+
+      - name: Tag and Branch Relates stuff for Debugging
+        run: |
+          git tag --merged remotes/origin/master | sort -V || true
+          git branch --contains ${GITHUB_SHA} --color=never --format="%(refname)" || true
 
       - name: Download BuildX
         run: |
@@ -68,9 +78,7 @@ jobs:
         if: github.event_name	== 'push'
 
       - name: Docker Build [With Push]
-        run: |
-            make docker-show-vars
-            make docker
+        run: make docker
         env:
           BUILDX_PUSH: 1
           BUILDX_ENABLE: 1
