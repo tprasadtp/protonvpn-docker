@@ -3,7 +3,6 @@ services:
   protonvpn:
     container_name: protonvpn
     environment:
-      TZ: "Europe/Berlin"
       PROTONVPN_PROTOCOL: udp
       PROTONVPN_COUNTRY: NL
     env_file:
@@ -12,21 +11,11 @@ services:
     restart: unless-stopped
     networks:
       - internet
-      - traefik
+      - proxy
     cap_add:
       - NET_ADMIN
     devices:
       - /dev/net/tun:/dev/net/tun
-    dns:
-      - 1.1.1.3
-      - 1.0.0.3
-    dns_search:
-      - cluster.local
-      - scv.cluster.local
-      - lan
-    volumes:
-      - /etc/localtime:/etc/localtime:ro
-      - protonvpn:/root/.pvpn-cli
   pyload:
     depends_on:
       - protonvpn
@@ -39,11 +28,7 @@ services:
     restart: unless-stopped
     userns_mode: host
     network_mode: service:protonvpn
-    # networks:
-    #   - web
-    #   - traefik
     volumes:
-      - /etc/localtime:/etc/localtime:ro
       - config:/config
       - ./downloads/:/downloads/:rw
   caddy:
@@ -52,23 +37,15 @@ services:
     command: caddy reverse-proxy --change-host-header  --from :80 --to protonvpn:8000
     depends_on:
       - pyload
-    environment:
-      TZ: "Europe/Berlin"
     restart: unless-stopped
     networks:
-      - traefik
+      - proxy
     expose:
       - 80
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.pyload.rule=Host(`pyload.lan`)"
-      - "traefik.http.routers.pyload.tls=true"
-      - "traefik.http.routers.pyload.entrypoints=websecure"
-      - "traefik.http.services.pyload.loadbalancer.server.port=80"
 volumes:
   config:
   protonvpn:
 networks:
   internet:
-  traefik:
+  proxy:
     internal: true

@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: runs-over-vpn
+spec:
+  containers:
+    - name: protonvpn
+      image: ghcr.io/tprasadtp/protonvpn:2.2.6
+      env:
+        - name: PROTONVPN_COUNTRY
+          value: NL
+        - name: PROTONVPN_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: protonvpn
+              key: PROTONVPN_USERNAME
+        - name: PROTONVPN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: protonvpn
+              key: PROTONVPN_PASSWORD
+      securityContext:
+        capabilities:
+          add:
+            - NET_ADMIN
+      volumeMounts:
+        - mountPath: /dev/net/tun
+          name: dev-tun
+    - name: pyload
+      image: linuxserver/pyload
+      ports:
+        - containerPort: 8000
+  volumes:
+    - hostPath:
+        path: /dev/net/tun
+        type: CharDevice
+      name: dev-tun
