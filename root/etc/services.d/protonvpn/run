@@ -1,18 +1,24 @@
 #!/usr/bin/with-contenv bash
-# shellcheck shell=bash
+
+_term() {
+  echo "[Service Terminate] Caught SIGTERM signal!"
+  PVPN_DEBUG="${DEBUG:-0}" /usr/local/bin/protonvpn disconnect
+}
+
+trap _term SIGINT
+trap _term SIGTERM
 
 function connect_vpn()
 {
-  if [[ -z "$PROTONVPN_SERVER" ]]; then
+  if [[ -z "$PROTONVPN_SERVER" ]] &&  [[ -n ${PROTONVPN_COUNTRY} ]]; then
     echo "[Service Connect] Using Fastest Server from ${PROTONVPN_COUNTRY}"
-    PVPN_DEBUG="${DEBUG:-0}" /usr/local/bin/protonvpn c --cc "${PROTONVPN_COUNTRY:-NL}"
-  else
-    if [[ -z "${PROTONVPN_COUNTRY}" ]]; then
-      echo "ProtonVPN server is specified but country is empty!"
-      exit 4
-    fi
+    PVPN_DEBUG="${DEBUG:-0}" /usr/local/bin/protonvpn connect --cc "${PROTONVPN_COUNTRY}"
+  elif [[ -z "$PROTONVPN_COUNTRY" ]] &&  [[ -n ${PROTONVPN_SERVER} ]]; then
     echo "[Service Connect] Using Server ${PROTONVPN_SERVER}"
     PVPN_DEBUG="${DEBUG:-0}" /usr/local/bin/protonvpn connect "${PROTONVPN_SERVER}"
+  else
+    echo "[Service Error] Specify either PROTONVPN_SERVER(${PROTONVPN_SERVER}) or PROTONVPN_COUNTRY(${PROTONVPN_COUNTRY})"
+    exit 4
   fi
 }
 
@@ -36,11 +42,11 @@ function api_check()
     --max-time 20 \
     --silent \
     --location \
-    --user-agent 'protonvpn-cli-docker' \
-    --header 'x-pm-appversion: LinuxVPN_2.2.6' \
-    --header 'x-pm-apiversion: 3' \
-    --header 'Accept: application/vnd.protonmail.v1+json' \
-    https://api.protonvpn.ch/vpn/location | jq -r '.Country')"
+    https://ipinfo.io | jq -r '.country')"
+
+  if [[ -z ${PROTONVPN_COUNTRY} ]]; then
+    PROTONVPN_COUNTRY="$(python3 /usr/local/bin/proton-srv-country)"
+  fi
 
   if [[ $COUNTRY == "${PROTONVPN_COUNTRY}" ]]; then
     echo "[Service Check] OK!"
@@ -102,7 +108,8 @@ function main()
   while :
   do
     check_vpn
-    sleep "${LIVE_PROBE_INTERVAL}"
+    sleep "${LIVE_PROBE_INTERVAL}" &
+    wait $!
   done
 }
 

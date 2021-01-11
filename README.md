@@ -21,33 +21,32 @@ Images are published on,
 | `PROTONVPN_TIER`          | None   | Yes | Proton VPN Tier (0=Free, 1=Basic, 2=Pro, 3=Visionary)
 | `PROTONVPN_USERNAME`      | None   | Yes | OpenVPN Username. This is NOT your Proton Account Username.
 | `PROTONVPN_PASSWORD`      | None   | Yes | OpenVPN Password. This is NOT your Proton Account Password.
+| `PROTONVPN_SERVER`        | Exclusive | No  | ProtonVPN server to connect to. This value is mutually exclusive with `PROTONVPN_COUNTRY`. Only one of them can be used.
+| `PROTONVPN_COUNTRY`       | Exclusive |     | ProtonVPN two letter country code. This will choose the fastest server from this country.
+This value is mutually exclusive with `PROTONVPN_SERVER`. Only one of them can be used.
 | `PROTONVPN_PROTOCOL`      | `udp`  | No  | Protocol to use
-| `PROTONVPN_SERVER`        |        | No  | ProtonVPN server to connect to.
-| `PROTONVPN_COUNTRY`       | `NL`   |     | ProtonVPN Country. This will choose the fastest server from the country. This wil also be used to check if you are connected to the correct VPN and reconnect if necessary. So when specifying `PROTONVPN_SERVER` also specify this to match the country
-| `PROTONVPN_EXCLUDE_CIDRS` | see fotnotes | No | Comma separated list of CIDRs to exclude from VPN. Uses split tunnel.
-| `PROTONVPN_DNS_LEAK_PROTECT` |     | No  | Setting this to `0` or `false` will disable DNS leak protection. If you wish to specify custom DNS server via `--dns` option you **MUST** set this to `0`.
+| `PROTONVPN_EXCLUDE_CIDRS` | see footnotes | No | Comma separated list of CIDRs to exclude from VPN. Uses split tunnel.
+| `PROTONVPN_DNS_LEAK_PROTECT` |  `1`  | No  | Setting this to `0` will disable DNS leak protection. If you wish to specify custom DNS server via `--dns` option you **MUST** set this to `0`.
 
-> By default AWS IPs are in exclude list. Default CIDR includes `169.254.169.264/32,169.254.169.123/32,169.254.170.2`
+> By default AWS IPs are in exclude list. Default CIDR includes `169.254.169.264/32,169.254.169.123/32,169.254.170.2/32`
 
 ## Run Container
 
 ```bash
 # Pull Image
-docker pull ghcr.io/tprasadtp/protonvpn
+docker pull ghcr.io/tprasadtp/protonvpn:2.2.6
 # Run in background
 docker run \
 --rm \
--d \
+--detach \
 --name=protonvpn \
 --device=/dev/net/tun \
 --cap-add=NET_ADMIN \
--e DEBUG=0 \
--e PROTONVPN_USERNAME="xxxx" \
--e PROTONVPN_PASSWORD="xxxx" \
--e PROTONVPN_TIER=0 \
--e PROTONVPN_PROTOCOL=udp \
--e PROTONVPN_COUNTRY=NL \
-ghcr.io/tprasadtp/protonvpn
+--env PROTONVPN_USERNAME="xxxx" \
+--env PROTONVPN_PASSWORD="xxxx" \
+--env PROTONVPN_TIER=0 \
+--env PROTONVPN_COUNTRY=NL \
+ghcr.io/tprasadtp/protonvpn:2.2.6
 ```
 
 ## Using VPN in other containers
@@ -63,7 +62,7 @@ docker run \
 
 ## Health-checks
 
-There is a `healthcheck` script available under /usr/local/bin (Added in 2.2.2-hotfix2). It will use `https://api.protonvpn.ch` to verify the country to which VPN is connected. By default service will keep checking every `LIVE_PROBE_INTERVAL` _(default = 60)_ seconds using the same api endpoint, script is only added for convenience.
+There is a `healthcheck` script available under /usr/local/bin (Added in 2.2.2-hotfix2). It will use `https://ipinfo.io` to verify the country to which VPN is connected. By default service will keep checking every `LIVE_PROBE_INTERVAL` _(default = 60)_ seconds using the same api endpoint, script is only added for convenience.
 
 ## Known issues
 
