@@ -8,16 +8,22 @@ _term() {
 trap _term SIGINT
 trap _term SIGTERM
 
+readonly SVC_INIT="[Service - INIT]"
+readonly SVC_CONN="[Service - CONN]"
+readonly SVC_RCON="[Service - RCON]"
+readonly SVC_CHCK="[Service - CHCK]"
+
+
 function connect_vpn()
 {
   if [[ -z "$PROTONVPN_SERVER" ]] &&  [[ -n ${PROTONVPN_COUNTRY} ]]; then
-    echo "[Service Connect] Using Fastest Server from ${PROTONVPN_COUNTRY}"
+    echo "${SVC_CONN} Using Fastest Server from ${PROTONVPN_COUNTRY}"
     PVPN_DEBUG="${DEBUG:-0}" /usr/local/bin/protonvpn connect --cc "${PROTONVPN_COUNTRY}"
   elif [[ -z "$PROTONVPN_COUNTRY" ]] &&  [[ -n ${PROTONVPN_SERVER} ]]; then
-    echo "[Service Connect] Using Server ${PROTONVPN_SERVER}"
+    echo "${SVC_CONN} Using Server ${PROTONVPN_SERVER}"
     PVPN_DEBUG="${DEBUG:-0}" /usr/local/bin/protonvpn connect "${PROTONVPN_SERVER}"
   else
-    echo "[Service Error] Specify either PROTONVPN_SERVER(${PROTONVPN_SERVER}) or PROTONVPN_COUNTRY(${PROTONVPN_COUNTRY})"
+    echo "${SVC_CONN} Specify either PROTONVPN_SERVER(${PROTONVPN_SERVER}) or PROTONVPN_COUNTRY(${PROTONVPN_COUNTRY})"
     exit 4
   fi
 }
@@ -25,12 +31,12 @@ function connect_vpn()
 
 function reconnect_vpn()
 {
-  echo "[Service Reconnect] Attempting..."
+  echo "${SVC_RCON} Attempting..."
   if PVPN_DEBUG="${DEBUG:-0}" /usr/local/bin/protonvpn r; then
-    echo "[Service Reconnect] Successful"
+    echo "${SVC_RCON} Successful"
   else
-    echo "[Service Reconnect] Failure!"
-    echo "[Service Reconnect] Trying with a fresh connection!"
+    echo "${SVC_RCON} Failure!"
+    echo "${SVC_RCON} Trying with a fresh connection!"
     connect_vpn
   fi
 }
@@ -49,13 +55,13 @@ function api_check()
   fi
 
   if [[ $COUNTRY == "${PROTONVPN_COUNTRY}" ]]; then
-    echo "[Service Check] OK!"
+    echo "${SVC_CHCK} OK!"
     thrshold_f=0
   else
-    echo "[Service Check] #$(( ++thrshold_f )) Failed!"
-    echo "[Service Check] connected to #${COUNTRY} instead of #${PROTONVPN_COUNTRY}"
+    echo "${SVC_CHCK} #$(( ++thrshold_f )) Failed!"
+    echo "${SVC_CHCK} connected to #${COUNTRY} instead of #${PROTONVPN_COUNTRY}"
     if [[ $thrshold_f -gt "${RECONNECT_THRESHOLD}" ]];then
-      echo "[Service Check] failed > allowed times(${RECONNECT_THRESHOLD}), reconnecting!"
+      echo "${SVC_CHCK} failed > allowed times(${RECONNECT_THRESHOLD}), reconnecting!"
       reconnect_vpn
     fi
   fi
@@ -66,7 +72,7 @@ function check_vpn()
 # Because protonvpn-cli is a mess. Yes they too check it with PIDs no API is available to verify it.
 # It is giant mess of subprocess.call(***). They are improving it though...
 if [[ -z "$(pgrep -x openvpn)" ]]; then
-  echo "[Service Check] Error!! There is no OpenVPN Process!!"
+  echo "${SVC_CHCK} Error!! There is no OpenVPN Process!!"
   reconnect_vpn
 else
   api_check
@@ -79,27 +85,27 @@ function main()
 
   re='^[0-9]+$'
   if ! [[ $LIVE_PROBE_INTERVAL =~ $re ]] ; then
-    echo "LIVE_PROBE_INTERVAL can only be an integer!, will default to 60 seconds"
+    echo "${SVC_INIT} LIVE_PROBE_INTERVAL can only be an integer!, will default to 60 seconds"
     LIVE_PROBE_INTERVAL=60
   else
-    echo "Daemon check interval is set to #$LIVE_PROBE_INTERVAL"
+    echo "${SVC_INIT} Daemon check interval is set to #$LIVE_PROBE_INTERVAL"
   fi
 
   if ! [[ $RECONNECT_THRESHOLD =~ $re ]] ; then
-    echo "RECONNECT_THRESHOLD can only be an integer!, will default to 10"
+    echo "${SVC_INIT} RECONNECT_THRESHOLD can only be an integer!, will default to 10"
     RECONNECT_THRESHOLD=10
   else
-    echo "Reconnect treshold is #$RECONNECT_THRESHOLD"
+    echo "${SVC_INIT} Reconnect treshold is #$RECONNECT_THRESHOLD"
   fi
 
-  echo "[Service Init] checking orphaned openvpn process"
+  echo "${SVC_INIT} checking orphaned openvpn process"
   OVPN_PROCESS="$(pgrep -x openvpn)"
   if [[ -z ${OVPN_PROCESS} ]]; then
-    echo "[Service Init] This appears to be a fresh start!"
+    echo "${SVC_INIT} This appears to be a fresh start!"
     thrshold_f=0
     connect_vpn
   else
-    echo "[Service Init] This appears to be a restart!, reconnecting to VPN with old settings"
+    echo "${SVC_INIT} This appears to be a restart!, reconnecting to VPN with old settings"
     thrshold_f=0
     reconnect_vpn
   fi

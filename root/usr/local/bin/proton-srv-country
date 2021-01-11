@@ -3,21 +3,27 @@ import configparser
 import json
 from pathlib import Path
 
-CFG_DIR = Path('/root/.pvpn-cli/')
-SRV_INFO = Path('serverinfo.json')
-CFG_FILE = Path('pvpn-cli.cfg')
+CFG_DIR = Path("/root/.pvpn-cli/")
+SRV_INFO = Path("serverinfo.json")
+CFG_FILE = Path("pvpn-cli.cfg")
+
 
 def get_server_value(servername, key):
     """Return the value of a key for a given server."""
     with open(CFG_DIR / SRV_INFO, "r") as f:
         servers = json.load(f)
-    value = [server[key] for server in servers["LogicalServers"] if server['Name'] == servername]
+    value = [
+        server[key]
+        for server in servers["LogicalServers"]
+        if server["Name"] == servername
+    ]
     return value[0]
+
 
 config = configparser.ConfigParser()
 config.read(CFG_DIR / CFG_FILE)
 
-connected = config.get('metadata', 'connected_server', fallback="None")
+connected = config.get("metadata", "connected_server", fallback="None")
 
 country_code = get_server_value(connected, "ExitCountry")
 print(f"{country_code}")

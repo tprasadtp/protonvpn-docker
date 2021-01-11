@@ -4,10 +4,10 @@
 # But **AFTER** defining all variables.
 
 # Docker build context directory. If not specified, . is assumed!
-DOCKER_BUILD_CONTEXT   ?= .
+DOCKER_BUILD_CONTEXT ?= .
 
 # Full path, including filename for Dockerfile. If not specified, ./Dockerfile is assumed
-DOCKER_FILE_PATH  ?= ./Dockerfile
+DOCKER_FILE_PATH ?= ./Dockerfile
 
 # Extra Arguments, useful to pass --build-arg.
 # DOCKER_EXTRA_ARGS
@@ -46,14 +46,13 @@ $(call check_defined, IMAGE_ALWAYS_TAG_LATEST, Always add tag latest if on defau
 $(call check_defined, DOCKER_FILE_PATH, Full path to Dockerfile (default=./Dockerfile))
 $(call check_defined, DOCKER_BUILD_CONTEXT, Docker build context (default=.))
 
-
 # Will add tag latest if,
 #   a. Commit is not tagged, branch is master, Git tree is clean and IMAGE_ALWAYS_TAG_LATEST is set to true
 # 	b. Commit is tagged, and latest tag is same as version (version bulding handles git tree state,
 #      so if tree is dirty, latest tag wont be added)
 ADD_LATEST_TAG := $(shell \
 if [[ "$(GIT_TAG_PRESENT)" != "true" ]] && [[ "$(GIT_BRANCH)" == master ]] \
-  && [[ "$(IMAGE_ALWAYS_TAG_LATEST)" == "true" ]] && [[ $(GIT_TREE_STATE) == "clean" ]]; then \
+	&& [[ "$(IMAGE_ALWAYS_TAG_LATEST)" == "true" ]] && [[ $(GIT_TREE_STATE) == "clean" ]]; then \
 	echo "true"; \
 elif [[ "$(GIT_TAG_PRESENT)" == "true" ]] && [[ "$(VERSION)" == "$(LATEST_SEMVER)" ]]; then \
 	echo "true"; \
@@ -90,44 +89,52 @@ ifneq ($(DOCKER_BUILD_TARGET),)
 	DOCKER_BUILD_COMMAND += --target "$(DOCKER_BUILD_TARGET)"
 endif
 
+# Print Docker Tags
+define print_docker_tags
+	@for tag in $(DOCKER_TAGS); do echo "🐳 $${tag}"; done
+endef
+
 
 .PHONY: docker-lint
-docker-lint: ## Runs the linter on Dockerfiles.
+docker-lint: ## Runs the linter on Dockerfile.
 	@echo -e "\033[92m➜ $@ \033[0m"
 	docker run --rm -i hadolint/hadolint < "$(DOCKER_FILE_PATH)"
+
 
 .PHONY: docker
 docker: ## Build docker image.
 	@echo -e "\033[92m➜ $@ \033[0m"
 	@echo -e "\033[92m🐳 Building Docker Image \033[0m"
 	DOCKER_BUILDKIT=$(DOCKER_BUILDKIT) docker \
-    $(DOCKER_BUILD_COMMAND) \
-    $(DOCKER_TAG_ARGS) \
-    $(DOCKER_EXTRA_ARGS) \
-    --label org.opencontainers.image.created="$(IMAGE_BUILD_DATE)" \
-    --label org.opencontainers.image.description="$(IMAGE_DESC)" \
-    --label org.opencontainers.image.documentation="$(IMAGE_DOCUMENTATION)" \
-    --label org.opencontainers.image.licenses="$(IMAGE_LICENSES)" \
-    --label org.opencontainers.image.revision="$(GIT_COMMIT)" \
-    --label org.opencontainers.image.source="$(IMAGE_SOURCE)" \
-    --label org.opencontainers.image.title="$(IMAGE_TITLE)" \
-    --label org.opencontainers.image.url="$(IMAGE_URL)" \
-    --label org.opencontainers.image.vendor="$(VENDOR)" \
-    --label org.opencontainers.image.version="$(VERSION)" \
-    --label io.github.tprasadtp.metadata.version="5" \
-    --label io.github.tprasadtp.metadata.buildSystem="$(BUILD_SYSTEM)" \
-    --label io.github.tprasadtp.metadata.buildNumber="$(BUILD_NUMBER)" \
-    --label io.github.tprasadtp.metadata.buildHost="$(BUILD_HOST)" \
-    --label io.github.tprasadtp.metadata.gitCommit="$(GIT_COMMIT)" \
-    --label io.github.tprasadtp.metadata.gitBranch="$(GIT_BRANCH)" \
-    --label io.github.tprasadtp.metadata.gitTreeState="$(GIT_TREE_STATE)" \
-    --file $(DOCKER_FILE_PATH) \
-    $(DOCKER_BUILD_CONTEXT)
+		$(DOCKER_BUILD_COMMAND) \
+		$(DOCKER_TAG_ARGS) \
+		$(DOCKER_EXTRA_ARGS) \
+		--label org.opencontainers.image.created="$(IMAGE_BUILD_DATE)" \
+		--label org.opencontainers.image.description="$(IMAGE_DESC)" \
+		--label org.opencontainers.image.documentation="$(IMAGE_DOCUMENTATION)" \
+		--label org.opencontainers.image.licenses="$(IMAGE_LICENSES)" \
+		--label org.opencontainers.image.revision="$(GIT_COMMIT)" \
+		--label org.opencontainers.image.source="$(IMAGE_SOURCE)" \
+		--label org.opencontainers.image.title="$(IMAGE_TITLE)" \
+		--label org.opencontainers.image.url="$(IMAGE_URL)" \
+		--label org.opencontainers.image.vendor="$(VENDOR)" \
+		--label org.opencontainers.image.version="$(VERSION)" \
+		--label io.github.tprasadtp.metadata.version="5" \
+		--label io.github.tprasadtp.metadata.buildSystem="$(BUILD_SYSTEM)" \
+		--label io.github.tprasadtp.metadata.buildNumber="$(BUILD_NUMBER)" \
+		--label io.github.tprasadtp.metadata.buildHost="$(BUILD_HOST)" \
+		--label io.github.tprasadtp.metadata.gitCommit="$(GIT_COMMIT)" \
+		--label io.github.tprasadtp.metadata.gitBranch="$(GIT_BRANCH)" \
+		--label io.github.tprasadtp.metadata.gitTreeState="$(GIT_TREE_STATE)" \
+		--file $(DOCKER_FILE_PATH) \
+		$(DOCKER_BUILD_CONTEXT)
+
 
 .PHONY: docker-inspect
 docker-inspect: ## Inspect Labels of the container [Build First!]
 	@echo -e "\033[92m➜ $@ \033[0m"
 	docker $(DOCKER_INSPECT_ARGS)
+
 
 .PHONY: docker-push
 docker-push: ## Push docker image.
@@ -137,16 +144,12 @@ docker-push: ## Push docker image.
 	docker push "$${img}"; \
 	done
 
-# Print Docker Tags
-define print_docker_tags
-	@for tag in $(DOCKER_TAGS); do echo "🐳 $${tag}"; done
-endef
-
 
 .PHONY: docker-show-tags
 docker-show-tags: ## Show Docker Image Tags
 	@echo "------------- Docker Tags --------------------"
 	$(call print_docker_tags)
+
 
 .PHONY: show-vars-docker
 show-vars-docker:
@@ -178,6 +181,7 @@ show-vars-docker:
 	@echo "BUILDX_PLATFORMS     : $(BUILDX_PLATFORMS)"
 	@echo "DOCKER_BUILD_COMMAND : $(DOCKER_BUILD_COMMAND)"
 	@echo "DOCKER_EXTRA_ARGS    : $(DOCKER_EXTRA_ARGS)"
+
 
 # diana:{diana_version}:{remote}:{source}:{version}:{remote_path}:{type}
 # diana:0.2.7:github:tprasadtp/templates::makefiles/base.mk:static

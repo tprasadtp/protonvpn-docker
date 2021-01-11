@@ -20,3 +20,5 @@ exclusive. Only one of the can be used at a time.
 
 - Add Health-check script
 - Initial stable release
+
+> Please noe that this version is not available on GitHub package registry.
