@@ -61,7 +61,7 @@ jobs:
 
       - name: Download BuildX
         run: |
-          curl -sSfL https://github.com/docker/buildx/releases/download/v0.3.1/buildx-v0.3.1.linux-amd64 -o buildx
+          curl -sSfL https://github.com/docker/buildx/releases/download/v0.5.1/buildx-v0.5.1.linux-amd64 -o buildx
           mkdir -p ${HOME}/.docker/cli-plugins
           cp buildx ${HOME}/.docker/cli-plugins/docker-buildx
           chmod a+x ${HOME}/.docker/cli-plugins/docker-buildx

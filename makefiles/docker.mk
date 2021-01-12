@@ -89,7 +89,7 @@ ifneq ($(DOCKER_BUILD_TARGET),)
 	DOCKER_BUILD_COMMAND += --target "$(DOCKER_BUILD_TARGET)"
 endif
 
-ifeq ($(GITHUB_ACTIONS),true)
+ifeq ($(GITHUB_ACTIONS)-$(BUILDX_ENABLE),true-1)
 	DOCKER_BUILD_COMMAND += --progress=plain
 endif
 
