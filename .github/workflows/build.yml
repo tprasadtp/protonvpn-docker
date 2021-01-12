@@ -1,6 +1,8 @@
 name: build
 on:
   push:
+    branches:
+      - "*"
     paths-ignore:
       - ".gitignore"
       - ".envrc"
@@ -11,29 +13,55 @@ on:
       # Labels
       - ".github/labels.toml"
       - ".github/workflows/labels.yml"
+    tags:
+      - "[0-9]+.[0-9]+.[0-9]+"
+      - "[0-9]+.[0-9]+.[0-9]+rc[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+rc[0-9]+"
   pull_request:
 jobs:
-  # lint everything
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Lint
-        run: |
-          make docker-lint
-          make shellcheck
-  # Build docker images
-  docker:
-    needs: lint
+  shellcheck:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
         with:
-          persist-credentials: false
+          fetch-depth: 0
+      - name: Shellcheck
+        run: |
+          make show-vars-base
+          make shellcheck
+  docker-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Lint
+        run: |
+          make show-vars-base
+          make docker-lint
+  # Build docker images
+  docker:
+    needs: [shellcheck, docker-lint]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Make Variables for Debugging
+        run: |
+          make show-vars-base || true
+          make show-vars-docker || true
+
+      - name: Tag and Branch Relates stuff for Debugging
+        run: |
+          git tag --merged remotes/origin/master | sort -V || true
+          git branch --contains ${GITHUB_SHA} --color=never --format="%(refname)" || true
 
       - name: Download BuildX
         run: |
-          curl -sSfL https://github.com/docker/buildx/releases/download/v0.3.1/buildx-v0.3.1.linux-amd64 -o buildx
+          curl -sSfL https://github.com/docker/buildx/releases/download/v0.5.1/buildx-v0.5.1.linux-amd64 -o buildx
           mkdir -p ${HOME}/.docker/cli-plugins
           cp buildx ${HOME}/.docker/cli-plugins/docker-buildx
           chmod a+x ${HOME}/.docker/cli-plugins/docker-buildx
@@ -64,13 +92,11 @@ jobs:
       - name: Docker Login to DockerHub
         run: echo "$DOCKER_PASSWORD" | docker login -u tprasadtp --password-stdin
         env:
-          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_TOKEN }}
         if: github.event_name	== 'push'
 
       - name: Docker Build [With Push]
-        run: |
-            make docker-show-vars
-            make docker
+        run: make docker
         env:
           BUILDX_PUSH: 1
           BUILDX_ENABLE: 1
@@ -79,12 +105,33 @@ jobs:
       # No Push
       - name: Docker Build [Skip Push]
         run: |
-            make docker-show-vars
-            make docker
+          make docker
         env:
           BUILDX_PUSH: 0
           BUILDX_ENABLE: 1
         if: github.event_name == 'pull_request'
+
+      # Create a release if build is a tagged build
+      # and pushed by me
+      - name: Get the version (TAG-BUILD)
+        id: get_version
+        run: |
+          echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
+          echo "${VERSION}"
+        if: startsWith(github.ref, 'refs/tags/') && github.actor	== 'tprasadtp'
+
+      - name: Create Release (TAG-BUILD)
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.get_version.outputs.VERSION }}
+          release_name: Release ${{ steps.get_version.outputs.VERSION }}
+          body_path: CHANGELOG.md
+          draft: false
+          prerelease: false
+        if: startsWith(github.ref, 'refs/tags/') && github.actor	== 'tprasadtp'
 
       - name: Docker Cleanup
         run: |

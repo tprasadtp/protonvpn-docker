@@ -57,7 +57,7 @@ ifeq ($(GITHUB_ACTIONS),true)
 
 	# Builder Details
 	BUILD_NUMBER       := $(GITHUB_RUN_NUMBER)
-	BUILD_SYSTEM       := GH-$(GITHUB_WORKFLOW)
+	BUILD_SYSTEM       := $(shell echo "GH-$(GITHUB_WORKFLOW)" | tr '[:lower:]' '[:upper:]')
 	BUILD_HOST         := $(shell hostname -f)
 
 	# Determine Git Branch
@@ -65,14 +65,16 @@ ifeq ($(GITHUB_ACTIONS),true)
 	# 		  pr-{number} for pull-request builds
 	#         empty string otherwise
 	GIT_BRANCH := $(shell \
-	if [[ ${GITHUB_REF} == refs/heads/* ]]; then \
-		echo "${GITHUB_REF}" | sed -r 's/refs\/heads\///a'; \
-	elif [[ ${GITHUB_REF} == refs/pull/* ]]; then \
-		echo "${GITHUB_REF}" | sed -r 's/refs\/pull\/([0-9]*)\/merge/pr-\1/a''; \
+	if [[ $(GITHUB_REF) =~ refs/heads/* ]]; then \
+		echo "$${GITHUB_REF/refs\/heads\//}"; \
+	elif [[ $(GITHUB_REF) =~ refs/pull/* ]]; then \
+		echo "$${GITHUB_REF/refs\/pull\//}"; \
+	elif [[ $(GITHUB_REF) =~ refs/tags/* ]]; then \
+		echo "$${GITHUB_REF/refs\/tags\//}"; \
 	else \
 		echo ""; \
-	fi\
-	)
+	fi)
+
 
 	# We are running on Github actions,
 	# for sake of simplicity we ignore git tree state and assume that
@@ -100,26 +102,46 @@ else
 
 endif
 
+# Get Latest semver tag (which is in master).
+# This may not be latest tag!
+# We will strip prefix v!!
+ifeq ($(GITHUB_ACTIONS),true)
+	LATEST_SEMVER := $(subst v,,$(shell git tag --merged remotes/origin/master | sort -V | tail -1))
+else
+	LATEST_SEMVER := $(subst v,,$(shell git tag --merged master | sort -V | tail -1))
+endif
 
 # Version Tag handler
 # -------------------------------------
 
 ifeq ($(VERSION),)
-	# Get Version if not already defined
-	VERSION_UNDEFINED  := true
-	__VERSION_FROM_TAG := $(shell git describe --tags --always --dirty --broken)
-	VERSION            := $(__VERSION_FROM_TAG:v%=%)
+	# Get version from git tags if not already defined
+	VERSION_FROM_GIT := true
+	ifeq ($(GITHUB_ACTIONS),true)
+		# We ignore git tree state if running on github actions
+		VERSION := $(subst v,,$(shell git describe --tags --always))
+	else
+		VERSION := $(subst v,,$(shell git describe --tags --dirty --always --broken))
+	endif
 else
-	VERSION_UNDEFINED  := false
+	VERSION_FROM_GIT  := false
 endif
 
 # Identify if commit is tagged(will return true if commit is dirty!)
-GIT_TAGGED := $(shell \
+GIT_TAG_PRESENT := $(shell \
 	if git describe --exact-match --tags $(GIT_COMMIT) > /dev/null 2>&1; then \
 		echo "true"; \
 	else \
 		echo "false"; \
 	fi)
+
+# https://github.community/t/feature-request-protected-tags/1742/39
+# Currently disabled because it fails on github actions on tag builds
+# ifneq (,$(findstring refs/heads/master,$(shell git branch --contains $(GIT_COMMIT) --color=never --format="%(refname)")))
+# 	GIT_REF_IN_MASTER := true
+# else
+# 	GIT_REF_IN_MASTER := false
+# endif
 
 
 # Validate Auto Populated variables are not empty
@@ -129,7 +151,9 @@ $(call check_defined, \
 	BUILD_HOST \
 	GIT_COMMIT \
 	GIT_COMMIT_SHORT \
-	GIT_TAGGED, \
+	GIT_TAG_PRESENT, \
+	LATEST_SEMVER, \
+	GIT_BRANCH, \
 	Auto-populated Variable)
 
 # Check optional variables are not empty
@@ -145,50 +169,61 @@ $(call check_defined, REPO_ROOT, Repository Root)
 
 
 # Check if VERSION is defined or is actually polulated
-ifeq ($(VERSION_UNDEFINED),true)
+ifeq ($(VERSION_FROM_GIT),true)
 $(call check_defined, VERSION, Version(From Tags))
 else
 $(call check_defined, VERSION, Version(Pre defined))
 endif
 
 
-ifeq ($(shell if [[ ! $(VERSION) =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-((0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(\.(0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(\+([0-9a-zA-Z-]+(\.[0-9a-zA-Z-]+)*))?$$ ]]; then echo "1"; fi),1)
-$(error ✖ Invalid version ($(VERSION)) - expected x.y[.z], where x, y, and z are all integers.)
-endif
-
-
 # Export all
-export GIT_BRANCH GIT_COMMIT GIT_COMMIT_SHORT GIT_TAGGED GIT_TREE_STATE
+export DEFAULT_BRANCH
+export VENDOR
 
-export DEFAULT_BRANCH VENDOR
+export GIT_BRANCH
+export GIT_COMMIT
+export GIT_COMMIT_SHORT
+export GIT_TAG_PRESENT
+# export GIT_REF_IN_MASTER
+export GIT_TREE_STATE
 
-export VERSION VERSION_UNDEFINED
+export VERSION
+export VERSION_FROM_GIT
+export LATEST_SEMVER
 
-export BUILD_HOST BUILD_NUMBER BUILD_SYSTEM
+export BUILD_HOST
+export BUILD_NUMBER
+export BUILD_SYSTEM
 
 # Debug Stuff for base make template
 # -------------------------------------
 
-.PHONY: show-base-vars
-show-base-vars: ## Show Base variables and VERSION
-	@echo "VERSION           : $(VERSION)"
-	@echo "SHELL             : $(SHELL)"
-	@echo "------------ GIT VARIABLES ----------------"
-	@echo "DEFAULT_BRANCH    : $(DEFAULT_BRANCH)"
-	@echo "GIT_BRANCH        : $(GIT_BRANCH)"
-	@echo "GIT_COMMIT        : $(GIT_COMMIT)"
-	@echo "GIT_COMMIT_SHORT  : $(GIT_COMMIT_SHORT)"
-	@echo "GIT_TAGGED        : $(GIT_TAGGED)"
-	@echo "GIT_TREE_STATE    : $(GIT_TREE_STATE)"
-	@echo "--------- BASE BUILD VARIABLES ------------"
-	@echo "BUILD_HOST        : $(BUILD_HOST)"
-	@echo "BUILD_NUMBER      : $(BUILD_NUMBER)"
-	@echo "BUILD_SYSTEM      : $(BUILD_SYSTEM)"
-	@echo "---------- ACTION VARIABLES ---------------"
-	@echo "GITHUB_ACTIONS    : $(GITHUB_ACTIONS)"
-	@echo "GITHUB_WORKFLOW   : $(GITHUB_WORKFLOW)"
-	@echo "GITHUB_RUN_NUMBER : $(GITHUB_RUN_NUMBER)"
-	@echo "GITHUB_REF        : $(GITHUB_REF)"
+.PHONY: show-vars-base
+show-vars-base: ## Show Base variables like VERSION
+	@echo "VERSION              : $(VERSION)"
+	@echo "VERSION_FROM_GIT     : $(VERSION_FROM_GIT)"
+	@echo "SHELL                : $(SHELL)"
+	@echo ""
+
+	@echo "-------------- GIT VARIABLES -----------------"
+	@echo "GIT_BRANCH           : $(GIT_BRANCH)"
+	@echo "GIT_COMMIT           : $(GIT_COMMIT)"
+	@echo "GIT_COMMIT_SHORT     : $(GIT_COMMIT_SHORT)"
+	@echo "GIT_TAG_PRESENT      : $(GIT_TAG_PRESENT)"
+	@echo "GIT_TREE_STATE       : $(GIT_TREE_STATE)"
+	@echo "LATEST_SEMVER        : $(LATEST_SEMVER)"
+	@echo ""
+
+	@echo "----------- BASE BUILD VARIABLES -------------"
+	@echo "BUILD_HOST           : $(BUILD_HOST)"
+	@echo "BUILD_NUMBER         : $(BUILD_NUMBER)"
+	@echo "BUILD_SYSTEM         : $(BUILD_SYSTEM)"
+
+	@echo "----------- ACTION VARIABLES -----------------"
+	@echo "GITHUB_ACTIONS       : $(GITHUB_ACTIONS)"
+	@echo "GITHUB_WORKFLOW      : $(GITHUB_WORKFLOW)"
+	@echo "GITHUB_RUN_NUMBER    : $(GITHUB_RUN_NUMBER)"
+	@echo "GITHUB_REF           : $(GITHUB_REF)"
 
 
 # diana:{diana_version}:{remote}:{source}:{version}:{remote_path}:{type}
