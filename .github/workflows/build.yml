@@ -92,7 +92,7 @@ jobs:
       - name: Docker Login to DockerHub
         run: echo "$DOCKER_PASSWORD" | docker login -u tprasadtp --password-stdin
         env:
-          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_TOKEN }}
         if: github.event_name	== 'push'
 
       - name: Docker Build [With Push]
