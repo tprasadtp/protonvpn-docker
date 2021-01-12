@@ -89,6 +89,10 @@ ifneq ($(DOCKER_BUILD_TARGET),)
 	DOCKER_BUILD_COMMAND += --target "$(DOCKER_BUILD_TARGET)"
 endif
 
+ifeq ($(GITHUB_ACTIONS),true)
+	DOCKER_BUILD_COMMAND += --progress=plain
+endif
+
 # Print Docker Tags
 define print_docker_tags
 	@for tag in $(DOCKER_TAGS); do echo "🐳 $${tag}"; done
