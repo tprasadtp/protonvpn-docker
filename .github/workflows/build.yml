@@ -1,6 +1,8 @@
 name: build
 on:
   push:
+    branches:
+      - "*"
     paths-ignore:
       - ".gitignore"
       - ".envrc"
