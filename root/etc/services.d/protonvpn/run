@@ -16,10 +16,13 @@ readonly SVC_CHCK="[Service - CHCK]"
 
 function connect_vpn()
 {
-  if [[ -z "$PROTONVPN_SERVER" ]] &&  [[ -n ${PROTONVPN_COUNTRY} ]]; then
+  if [[ -z "$PROTONVPN_SERVER" ]] && [[ -n ${PROTONVPN_COUNTRY} ]]; then
     echo "${SVC_CONN} Using Fastest Server from ${PROTONVPN_COUNTRY}"
     PVPN_DEBUG="${DEBUG:-0}" /usr/local/bin/protonvpn connect --cc "${PROTONVPN_COUNTRY}"
-  elif [[ -z "$PROTONVPN_COUNTRY" ]] &&  [[ -n ${PROTONVPN_SERVER} ]]; then
+  elif [[ "${PROTONVPN_SERVER^^}" == "RANDOM" ]] && [[ -n ${PROTONVPN_COUNTRY} ]]; then
+    echo "${SVC_CONN} Using Random Server"
+    PVPN_DEBUG="${DEBUG:-0}" /usr/local/bin/protonvpn connect --random
+  elif [[ -z "$PROTONVPN_COUNTRY" ]] && [[ -n ${PROTONVPN_SERVER} ]]; then
     echo "${SVC_CONN} Using Server ${PROTONVPN_SERVER}"
     PVPN_DEBUG="${DEBUG:-0}" /usr/local/bin/protonvpn connect "${PROTONVPN_SERVER}"
   else
