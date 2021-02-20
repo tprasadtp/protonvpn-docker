@@ -29,6 +29,13 @@ IMAGE_ALWAYS_TAG_LATEST ?= false
 # We need to quote this to avoid issues with command
 IMAGE_BUILD_DATE := $(shell date --iso-8601=minutes --universal)
 
+# This is used for repackaging or forks
+# Defaults to false overrider this by setting either UPSTREAM_VERSION or
+# UPSTREAM_URL.
+UPSTREAM_PRESENT ?= false
+UPSTREAM_ARGS :=
+
+
 export IMAGE_ALWAYS_TAG_LATEST
 export DOCKER_FILE_PATH
 export DOCKER_BUILD_TARGET
@@ -93,6 +100,20 @@ ifeq ($(GITHUB_ACTIONS)-$(BUILDX_ENABLE),true-1)
 	DOCKER_BUILD_COMMAND += --progress=plain
 endif
 
+# UPSTREAM_VERSION is defined use it
+# and set upstream present to true
+ifneq ($(UPSTREAM_VERSION),)
+	UPSTREAM_PRESENT := true
+	UPSTREAM_ARGS    += --label io.github.tprasadtp.metadata.upstream.version="$(UPSTREAM_VERSION)"
+endif
+
+# UPSTREAM_VERSION is defined use it
+# and set upstream present to true
+ifneq ($(UPSTREAM_VERSION),)
+	UPSTREAM_PRESENT := true
+	UPSTREAM_ARGS    += --label io.github.tprasadtp.metadata.upstream.url="$(UPSTREAM_URL)"
+endif
+
 # Print Docker Tags
 define print_docker_tags
 	@for tag in $(DOCKER_TAGS); do echo "🐳 $${tag}"; done
@@ -123,13 +144,15 @@ docker: ## Build docker image.
 		--label org.opencontainers.image.url="$(IMAGE_URL)" \
 		--label org.opencontainers.image.vendor="$(VENDOR)" \
 		--label org.opencontainers.image.version="$(VERSION)" \
-		--label io.github.tprasadtp.metadata.version="5" \
-		--label io.github.tprasadtp.metadata.buildSystem="$(BUILD_SYSTEM)" \
-		--label io.github.tprasadtp.metadata.buildNumber="$(BUILD_NUMBER)" \
-		--label io.github.tprasadtp.metadata.buildHost="$(BUILD_HOST)" \
-		--label io.github.tprasadtp.metadata.gitCommit="$(GIT_COMMIT)" \
-		--label io.github.tprasadtp.metadata.gitBranch="$(GIT_BRANCH)" \
-		--label io.github.tprasadtp.metadata.gitTreeState="$(GIT_TREE_STATE)" \
+		--label io.github.tprasadtp.metadata.version="6" \
+		--label io.github.tprasadtp.metadata.build.system="$(BUILD_SYSTEM)" \
+		--label io.github.tprasadtp.metadata.build.number="$(BUILD_NUMBER)" \
+		--label io.github.tprasadtp.metadata.build.host="$(BUILD_HOST)" \
+		--label io.github.tprasadtp.metadata.git.commit="$(GIT_COMMIT)" \
+		--label io.github.tprasadtp.metadata.git.branch="$(GIT_BRANCH)" \
+		--label io.github.tprasadtp.metadata.git.treeState="$(GIT_TREE_STATE)" \
+		--label io.github.tprasadtp.metadata.upstream.present="$(UPSTREAM_PRESENT)" \
+	    $(UPSTREAM_ARGS) \
 		--file $(DOCKER_FILE_PATH) \
 		$(DOCKER_BUILD_CONTEXT)
 
@@ -185,7 +208,11 @@ show-vars-docker:
 	@echo "BUILDX_PLATFORMS     : $(BUILDX_PLATFORMS)"
 	@echo "DOCKER_BUILD_COMMAND : $(DOCKER_BUILD_COMMAND)"
 	@echo "DOCKER_EXTRA_ARGS    : $(DOCKER_EXTRA_ARGS)"
+	@echo ""
 
+	@echo "------------ UPSTREAM VARIABLES ---------------"
+	@echo "UPSTREAM_PRESENT     : $(UPSTREAM_PRESENT)"
+	@echo "UPSTREAM_ARGS        : $(UPSTREAM_ARGS)"
 
 # diana:{diana_version}:{remote}:{source}:{version}:{remote_path}:{type}
 # diana:0.2.7:github:tprasadtp/templates::makefiles/base.mk:static

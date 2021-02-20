@@ -13,6 +13,10 @@ IMAGE_SOURCE        := https://github.com/tprasadtp/protonvpn-docker
 IMAGE_DOCUMENTATION := https://github.com/tprasadtp/protonvpn-docker
 IMAGE_LICENSES      := GPLv3
 
+# Upstream Metadata
+UPSTREAM_VERSION := 2.2.6
+UPSTREAM_URL := https://github.com/ProtonVPN/linux-cli
+
 # Include makefiles
 include $(REPO_ROOT)/makefiles/base.mk
 include $(REPO_ROOT)/makefiles/docker.mk

@@ -1,5 +1,14 @@
 # Changelog
 
+## 3.0.0
+
+- **NEW**: (🍒) Support connecting to random server [#14](https://github.com/tprasadtp/protonvpn-docker/pull/14).
+by [Milutin Jovanović](https://github.com/tprasadtp/protonvpn-docker/pull/14).
+- **BREAKING CHANGE**: Version tags prior to this release always matched included protonvpn-cli version.
+From this release onwards that will no longer be the case. Use image label `io.github.tprasadtp.metadata.upstream.version`,
+to check version of included cli.
+- _(Fix)_ Config issues with visionary plan [#16](https://github.com/tprasadtp/protonvpn-docker/issues/16)
+
 ## 2.2.6
 
 - **BREAKING CHANGE**: `PROTONVPN_SERVER` and `PROTONVPN_COUNTRY` are now mutually exclusive.

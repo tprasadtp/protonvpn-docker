@@ -22,11 +22,11 @@ else
 fi
 
 case ${PROTONVPN_TIER} in
-  0 | free | Free | FREE)       echo "[VPN-Config-Setup] Free Plan";CFG_TIER=0;;
-  1 | basic | Basic | BASIC)    echo "[VPN-Config-Setup] Basic Plan";CFG_TIER=1;;
-  2 | plus | Plus | PLUS)       echo "[VPN-Config-Setup] Plus Plan";CFG_TIER=2;;
-  3 | visionary | Visionary | VISIONARY) echo "Yo Dwag! You have Visionary Plan!";PROTONVPN_TIER=3;;
-  *)                            echo "Invalid ProtonVPN Tier, Can only accept 0-3";exit 4;;
+  0 | free | Free | FREE)                echo "[VPN-Config-Setup] Free Plan";CFG_TIER=0;;
+  1 | basic | Basic | BASIC)             echo "[VPN-Config-Setup] Basic Plan";CFG_TIER=1;;
+  2 | plus | Plus | PLUS)                echo "[VPN-Config-Setup] Plus Plan";CFG_TIER=2;;
+  3 | visionary | Visionary | VISIONARY) echo "[VPN-Config-Setup] Visionary Plan";CFG_TIER=3;;
+  *)                                     echo "Invalid ProtonVPN Tier, Can only accept 0-3";exit 4;;
 esac
 
 case ${PROTONVPN_PROTOCOL} in
