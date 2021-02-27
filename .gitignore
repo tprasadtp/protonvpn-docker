@@ -65,6 +65,31 @@ pip-selfcheck.json
 
 # End of https://www.gitignore.io/api/vim,code,linux,virtualenv
 
+### Credentials and Tokens ###
+*.env
+.env
+**/.aws/credentials
+
+credentials
+credentials.csv
+credentials.json
+credentials.yml
+
+token.json
+token.yml
+token.toml
+
+auth.yml
+auth.toml
+
+hosts.yml
+hosts.toml
+hosts.json
+
+# Exclude samples
+!sample.env
+
+#### Project specific ###
 downloads/
 config/
 proton.sh

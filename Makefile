@@ -1,17 +1,18 @@
 SHELL := /bin/bash
 NAME  := protonvpn-docker
+
 export REPO_ROOT := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 
 # Define image names
-DOCKER_IMAGES       := ghcr.io/tprasadtp/protonvpn tprasadtp/protonvpn
+DOCKER_IMAGES         := ghcr.io/tprasadtp/protonvpn tprasadtp/protonvpn
 
 # OCI Metadata
-IMAGE_TITLE         := ProtonVPN
-IMAGE_DESC          := ProtonVPN Linux Client
-IMAGE_URL           := https://ghcr.io/tprasadtp/protonvpn
-IMAGE_SOURCE        := https://github.com/tprasadtp/protonvpn-docker
-IMAGE_DOCUMENTATION := https://github.com/tprasadtp/protonvpn-docker
-IMAGE_LICENSES      := GPLv3
+PROJECT_TITLE         := ProtonVPN
+PROJECT_DESC          := ProtonVPN Linux Client
+PROJECT_URL           := https://ghcr.io/tprasadtp/protonvpn
+PROJECT_SOURCE        := https://github.com/tprasadtp/protonvpn-docker
+PROJECT_DOCUMENTATION := https://github.com/tprasadtp/protonvpn-docker
+PROJECT_LICENSES      := GPLv3
 
 # Upstream Metadata
 UPSTREAM_VERSION := 2.2.6

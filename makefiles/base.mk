@@ -57,7 +57,7 @@ ifeq ($(GITHUB_ACTIONS),true)
 
 	# Builder Details
 	BUILD_NUMBER       := $(GITHUB_RUN_NUMBER)
-	BUILD_SYSTEM       := $(shell echo "GH-$(GITHUB_WORKFLOW)" | tr '[:lower:]' '[:upper:]')
+	BUILD_SYSTEM       := $(shell echo "actions-$(GITHUB_WORKFLOW)" | tr '[:upper:]' '[:lower:]')
 	BUILD_HOST         := $(shell hostname -f)
 
 	# Determine Git Branch
@@ -88,7 +88,7 @@ else
 
 	# Builder details
 	BUILD_NUMBER       := 0
-	BUILD_SYSTEM       := LOCAL
+	BUILD_SYSTEM       := local
 	BUILD_HOST         := localhost
 
 	# Determine git Branch
@@ -110,6 +110,15 @@ ifeq ($(GITHUB_ACTIONS),true)
 else
 	LATEST_SEMVER := $(subst v,,$(shell git tag --merged master | sort -V | tail -1))
 endif
+
+# Check if current commit is in master
+ifeq ($(GITHUB_ACTIONS),true)
+	__COMMIT_BRANCHES := $(subst v,,$(shell git branch --contains $(GIT_COMMIT) --all --color=never --format="%(refname)"))
+else
+	__COMMIT_BRANCHES := $(subst v,,$(shell git branch --contains $(GIT_COMMIT) --color=never --format="%(refname)"))
+endif
+
+GIT_REF_IN_MASTER := $(shell )
 
 # Version Tag handler
 # -------------------------------------
@@ -226,5 +235,5 @@ show-vars-base: ## Show Base variables like VERSION
 	@echo "GITHUB_REF           : $(GITHUB_REF)"
 
 
-# diana:{diana_version}:{remote}:{source}:{version}:{remote_path}:{type}
-# diana:0.2.7:github:tprasadtp/templates::makefiles/base.mk:static
+# diana:{diana_urn_flavor}:{remote}:{source}:{version}:{remote_path}:{type}
+# diana:2:github:tprasadtp/templates::makefiles/base.mk:static
