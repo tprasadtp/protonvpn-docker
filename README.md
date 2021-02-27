@@ -34,7 +34,7 @@ Images are published on,
 
 ```bash
 # Pull Image
-docker pull ghcr.io/tprasadtp/protonvpn:2.2.6
+docker pull ghcr.io/tprasadtp/protonvpn:latest
 # Run in background
 docker run \
 --rm \
@@ -46,7 +46,7 @@ docker run \
 --env PROTONVPN_PASSWORD="xxxx" \
 --env PROTONVPN_TIER=0 \
 --env PROTONVPN_COUNTRY=NL \
-ghcr.io/tprasadtp/protonvpn:2.2.6
+ghcr.io/tprasadtp/protonvpn:latest
 ```
 
 ## Using VPN in other containers
@@ -74,6 +74,7 @@ services:
       # Override these where applicable
       PROTONVPN_COUNTRY: ${PROTONVPN_COUNTRY:-NL}
       PROTONVPN_TIER: ${PROTONVPN_TIER:-0}
+    # Always use semver tags, avoid using tag latest!
     image: ghcr.io/tprasadtp/protonvpn:latest
     restart: unless-stopped
     networks:
