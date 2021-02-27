@@ -1,4 +1,4 @@
-FROM python:3.8.7-slim-buster
+FROM python:3.9.2-slim-buster
 
 ENV S6_OVERLAY_VERSION="2.1.0.2" \
     LIVE_PROBE_INTERVAL=60 \
