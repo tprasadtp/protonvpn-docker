@@ -3,11 +3,11 @@ services:
   protonvpn:
     container_name: protonvpn
     environment:
-      PROTONVPN_PROTOCOL: udp
       PROTONVPN_COUNTRY: NL
-    env_file:
-      - .protonvpn.env
-    image: tprasadtp/protonvpn
+      PROTONVPN_USERNAME: ${PROTONVPN_USERNAME}
+      PROTONVPN_PASSWORD: ${PROTONVPN_PASSWORD}
+      PROTONVPN_TIER: ${PROTONVPN_TIER:-0}
+    image: ghcr.io/tprasadtp/protonvpn:3.0.0-dirty
     restart: unless-stopped
     networks:
       - internet
@@ -16,6 +16,8 @@ services:
       - NET_ADMIN
     devices:
       - /dev/net/tun:/dev/net/tun
+    expose:
+      - 8000
   pyload:
     depends_on:
       - protonvpn
@@ -31,17 +33,6 @@ services:
     volumes:
       - config:/config
       - ./downloads/:/downloads/:rw
-  caddy:
-    container_name: caddy
-    image: caddy:2.0.0
-    command: caddy reverse-proxy --change-host-header  --from :80 --to protonvpn:8000
-    depends_on:
-      - pyload
-    restart: unless-stopped
-    networks:
-      - proxy
-    expose:
-      - 80
 volumes:
   config:
   protonvpn:

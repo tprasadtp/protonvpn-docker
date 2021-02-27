@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.1.0
+
+- **FIX** Unreachable ports/Connection Timeouts. Disable internal protonvpn's internal killswitch. This should fix #18, #15, #11. This was enabled in 2.2.6+. Killswitch is not reliable anyway inside container.
+- _(Internal)_ Update base docker image.
+
 ## 3.0.0
 
 - **NEW**: (🍒) Support connecting to random server [#14](https://github.com/tprasadtp/protonvpn-docker/pull/14).

@@ -5,7 +5,7 @@ metadata:
 spec:
   containers:
     - name: protonvpn
-      image: ghcr.io/tprasadtp/protonvpn:2.2.6
+      image: ghcr.io/tprasadtp/protonvpn:latest
       env:
         - name: PROTONVPN_COUNTRY
           value: NL

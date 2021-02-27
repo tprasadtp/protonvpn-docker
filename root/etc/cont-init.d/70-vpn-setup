@@ -122,7 +122,7 @@ initialized = 1
 dns_leak_protection = ${DNS_LEAK_PROTECTION}
 custom_dns = None
 check_update_interval = 3
-killswitch = 1
+killswitch = 0
 split_tunnel = ${ENABLE_SPLIT_TUNNEL}
 
 [metadata]

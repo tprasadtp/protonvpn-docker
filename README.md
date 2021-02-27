@@ -60,6 +60,64 @@ docker run \
 <container>:<tag>
 ```
 
+## Docker-Compose
+
+```yaml
+version: '3.4'
+services:
+  protonvpn:
+    container_name: protonvpn
+    environment:
+      # Credentials
+      PROTONVPN_USERNAME: ${PROTONVPN_USERNAME}
+      PROTONVPN_PASSWORD: ${PROTONVPN_PASSWORD}
+      # Override these where applicable
+      PROTONVPN_COUNTRY: ${PROTONVPN_COUNTRY:-NL}
+      PROTONVPN_TIER: ${PROTONVPN_TIER:-0}
+    image: ghcr.io/tprasadtp/protonvpn:latest
+    restart: unless-stopped
+    networks:
+      - internet
+      - proxy
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    # Expose pyload container's port here!
+    expose:
+      - 8000
+  # Your app using the VPN
+  # Here we use pyload as an example
+  pyload:
+    depends_on:
+      - protonvpn
+    container_name: pyload
+    environment:
+      TZ: "Europe/Berlin"
+      PGID: "1000"
+      PUID: "1000"
+    image: linuxserver/pyload:latest
+    restart: unless-stopped
+    userns_mode: host
+    # Do not apply any networking configs
+    # on this container!
+    # All networking labels and settings should be defined
+    # on the vpn container.
+    network_mode: service:protonvpn
+    volumes:
+      - config:/config
+      - ./downloads/:/downloads/:rw
+volumes:
+  config:
+networks:
+  internet:
+  proxy:
+    internal: true
+```
+
+- It is essential to apply labes and expose port on protonvpn container instead of your application. This is because your application container shares network namepsce of protonvpn container.
+- If using Traefik, apply labels to protonvpn container, and expose your application ports.
+
 ## Health-checks
 
 There is a `healthcheck` script available under /usr/local/bin (Added in 2.2.2-hotfix2). It will use `https://ipinfo.io` to verify the country to which VPN is connected. By default service will keep checking every `LIVE_PROBE_INTERVAL` _(default = 60)_ seconds using the same api endpoint, script is only added for convenience.
@@ -71,29 +129,12 @@ re-initialize iptable rules which removes block on outgoing connections for a sh
 
 ## DNS & Split Tunneling
 
-- To use custom DNS servers, you MUST specify servers via DNS arguments AND disable DNS leak protection by setting `PROTONVPN_DNS_LEAK_PROTECT=0`
+- To use custom DNS servers, you MUST disable DNS leak protection by setting `PROTONVPN_DNS_LEAK_PROTECT=0`
 - You can specify list of CIDR blocks to exclude from VPN via `PROTONVPN_EXCLUDE_CIDRS` environment variable.
 This will use split tunneling feature to exclude routing these CIDR blocks over VPN connection.
 By default instance metadata IPs which are commonly used on cloud environments are excluded.
 - Split tunneling can be disabled by setting `PROTONVPN_EXCLUDE_CIDRS` to empty string.
 
-```bash
-docker run \
---rm \
---detach \
---name=protonvpn \
---dns=1.1.1.3 \
---dns=1.0.0.1 \
---device=/dev/net/tun \
---cap-add=NET_ADMIN \
---env PROTONVPN_COUNTRY=NL \
---env PROTONVPN_DNS_LEAK_PROTECT=0 \
---env PROTONVPN_EXCLUDE_CIDRS="169.254.169.254/32,169,10.244.0.0/16" \
---env PROTONVPN_TIER=0 \
---env PROTONVPN_PASSWORD="xxxx" \
---env PROTONVPN_USERNAME="xxxx" \
-ghcr.io/tprasadtp/protonvpn
-```
 
 ## Kubernetes
 
