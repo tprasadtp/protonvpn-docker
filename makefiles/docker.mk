@@ -27,13 +27,13 @@ BUILDX_PLATFORMS ?= linux/amd64,linux/arm64,linux/arm/v7
 IMAGE_ALWAYS_TAG_LATEST ?= false
 
 # We need to quote this to avoid issues with command
-IMAGE_BUILD_DATE := $(shell date --iso-8601=minutes --universal)
+IMAGE_BUILD_DATE := $(shell date --universal --iso-8601=s)
 
 # This is used for repackaging or forks
 # Defaults to false overrider this by setting either UPSTREAM_VERSION or
 # UPSTREAM_URL.
 UPSTREAM_PRESENT ?= false
-UPSTREAM_ARGS :=
+UPSTREAM_ARGS    :=
 
 
 export IMAGE_ALWAYS_TAG_LATEST
@@ -41,14 +41,18 @@ export DOCKER_FILE_PATH
 export DOCKER_BUILD_TARGET
 export DOCKER_BUILD_CONTEXT
 
+# Check for common Project vars
+$(call check_defined, PROJECT_TITLE, Project title for OCI annotations)
+$(call check_defined, PROJECT_DESC, Project description for OCI annotations)
+$(call check_defined, PROJECT_URL, Project description for OCI annotations)
+$(call check_defined, PROJECT_SOURCE, Project Source URL for OCI annotations)
+$(call check_defined, PROJECT_LICENSES, Project License in SPDX License Expression format)
+$(call check_defined, PROJECT_DOCUMENTATION, Project Documentation URL for OCI annotations)
+
 # Check if required vars are defined
 $(call check_defined, DOCKER_IMAGES, Docker Images)
-$(call check_defined, IMAGE_TITLE, Image title for OCI annotations)
-$(call check_defined, IMAGE_DESC, Image description for OCI annotations)
-$(call check_defined, IMAGE_URL, Image description for OCI annotations)
-$(call check_defined, IMAGE_SOURCE, Image Source URL for OCI annotations)
-$(call check_defined, IMAGE_LICENSES, Licenses in SPDX License Expression format)
-$(call check_defined, IMAGE_DOCUMENTATION, Image Documentation URL for OCI annotations)
+
+# Optional
 $(call check_defined, IMAGE_ALWAYS_TAG_LATEST, Always add tag latest if on default branch)
 $(call check_defined, DOCKER_FILE_PATH, Full path to Dockerfile (default=./Dockerfile))
 $(call check_defined, DOCKER_BUILD_CONTEXT, Docker build context (default=.))
@@ -105,12 +109,6 @@ endif
 ifneq ($(UPSTREAM_VERSION),)
 	UPSTREAM_PRESENT := true
 	UPSTREAM_ARGS    += --label io.github.tprasadtp.metadata.upstream.version="$(UPSTREAM_VERSION)"
-endif
-
-# UPSTREAM_VERSION is defined use it
-# and set upstream present to true
-ifneq ($(UPSTREAM_VERSION),)
-	UPSTREAM_PRESENT := true
 	UPSTREAM_ARGS    += --label io.github.tprasadtp.metadata.upstream.url="$(UPSTREAM_URL)"
 endif
 
@@ -135,13 +133,13 @@ docker: ## Build docker image.
 		$(DOCKER_TAG_ARGS) \
 		$(DOCKER_EXTRA_ARGS) \
 		--label org.opencontainers.image.created="$(IMAGE_BUILD_DATE)" \
-		--label org.opencontainers.image.description="$(IMAGE_DESC)" \
-		--label org.opencontainers.image.documentation="$(IMAGE_DOCUMENTATION)" \
-		--label org.opencontainers.image.licenses="$(IMAGE_LICENSES)" \
+		--label org.opencontainers.image.description="$(PROJECT_DESC)" \
+		--label org.opencontainers.image.documentation="$(PROJECT_DOCUMENTATION)" \
+		--label org.opencontainers.image.licenses="$(PROJECT_LICENSES)" \
 		--label org.opencontainers.image.revision="$(GIT_COMMIT)" \
-		--label org.opencontainers.image.source="$(IMAGE_SOURCE)" \
-		--label org.opencontainers.image.title="$(IMAGE_TITLE)" \
-		--label org.opencontainers.image.url="$(IMAGE_URL)" \
+		--label org.opencontainers.image.source="$(PROJECT_SOURCE)" \
+		--label org.opencontainers.image.title="$(PROJECT_TITLE)" \
+		--label org.opencontainers.image.url="$(PROJECT_URL)" \
 		--label org.opencontainers.image.vendor="$(VENDOR)" \
 		--label org.opencontainers.image.version="$(VERSION)" \
 		--label io.github.tprasadtp.metadata.version="6" \
@@ -152,7 +150,7 @@ docker: ## Build docker image.
 		--label io.github.tprasadtp.metadata.git.branch="$(GIT_BRANCH)" \
 		--label io.github.tprasadtp.metadata.git.treeState="$(GIT_TREE_STATE)" \
 		--label io.github.tprasadtp.metadata.upstream.present="$(UPSTREAM_PRESENT)" \
-	    $(UPSTREAM_ARGS) \
+	       $(UPSTREAM_ARGS) \
 		--file $(DOCKER_FILE_PATH) \
 		$(DOCKER_BUILD_CONTEXT)
 
@@ -172,14 +170,14 @@ docker-push: ## Push docker image.
 	done
 
 
-.PHONY: docker-show-tags
-docker-show-tags: ## Show Docker Image Tags
+.PHONY: docker-tags
+docker-tags: ## Show Docker Image Tags
 	@echo "------------- Docker Tags --------------------"
 	$(call print_docker_tags)
 
 
 .PHONY: show-vars-docker
-show-vars-docker:
+show-vars-docker: ## Show docker variables
 	@echo "----------- VCS BASED VARIABLES --------------"
 	@echo "VERSION              : $(VERSION)"
 	@echo "GIT_BRANCH           : $(GIT_BRANCH)"
