@@ -1,0 +1,14 @@
+version: 2
+updates:
+- package-ecosystem: docker
+  directory: "/"
+  schedule:
+    interval: weekly
+    day: saturday
+    time: "21:00"
+  open-pull-requests-limit: 10
+  target-branch: master
+  assignees:
+  - tprasadtp
+  labels:
+  - Docker
