@@ -1,12 +1,22 @@
 #!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+
+# Reset disconnect mode flag
+PROTONVPN_SVC_DISCONNECTING=0
 
 _term() {
   echo "[Service Terminate] Caught SIGTERM signal!"
-  PVPN_DEBUG="${DEBUG:-0}" /usr/local/bin/protonvpn disconnect
+  # Dont reconnect if already in term mode
+  PROTONVPN_SVC_DISCONNECTING=1
+  echo "[Service Terminate] Disconnecting!"
+  if PVPN_DEBUG="${DEBUG:-0}" protonvpn disconnect; then
+    echo "[Service Terminate] Diconnected"
+  else
+    echo "[Service Terminate] Failed"
+  fi
 }
 
-trap _term SIGINT
-trap _term SIGTERM
+trap _term SIGTERM SIGINT
 
 readonly SVC_INIT="[Service - INIT]"
 readonly SVC_CONN="[Service - CONN]"
@@ -18,13 +28,13 @@ function connect_vpn()
 {
   if [[ -z $PROTONVPN_SERVER ]] && [[ -n ${PROTONVPN_COUNTRY} ]]; then
     echo "${SVC_CONN} Using Fastest Server from ${PROTONVPN_COUNTRY}"
-    PVPN_DEBUG="${DEBUG:-0}" /usr/local/bin/protonvpn connect --cc "${PROTONVPN_COUNTRY}"
+    PVPN_DEBUG="${DEBUG:-0}" protonvpn connect --cc "${PROTONVPN_COUNTRY}"
   elif [[ ${PROTONVPN_SERVER} == "RANDOM" ]] && [[ -n ${PROTONVPN_COUNTRY} ]]; then
     echo "${SVC_CONN} Using Random Server"
-    PVPN_DEBUG="${DEBUG:-0}" /usr/local/bin/protonvpn connect --random
+    PVPN_DEBUG="${DEBUG:-0}" protonvpn connect --random
   elif [[ -z $PROTONVPN_COUNTRY ]] && [[ -n ${PROTONVPN_SERVER} ]]; then
     echo "${SVC_CONN} Using Server ${PROTONVPN_SERVER}"
-    PVPN_DEBUG="${DEBUG:-0}" /usr/local/bin/protonvpn connect "${PROTONVPN_SERVER}"
+    PVPN_DEBUG="${DEBUG:-0}" protonvpn connect "${PROTONVPN_SERVER}"
   else
     echo "${SVC_CONN} Specify either PROTONVPN_SERVER(${PROTONVPN_SERVER}) or PROTONVPN_COUNTRY(${PROTONVPN_COUNTRY})"
     exit 4
@@ -35,7 +45,7 @@ function connect_vpn()
 function reconnect_vpn()
 {
   echo "${SVC_RCON} Attempting..."
-  if PVPN_DEBUG="${DEBUG:-0}" /usr/local/bin/protonvpn r; then
+  if PVPN_DEBUG="${DEBUG:-0}" protonvpn r; then
     echo "${SVC_RCON} Successful"
   else
     echo "${SVC_RCON} Failure!"
@@ -63,8 +73,8 @@ function api_check()
   else
     echo "${SVC_CHCK} #$(( ++thrshold_f )) Failed!"
     echo "${SVC_CHCK} connected to #${COUNTRY} instead of #${PROTONVPN_COUNTRY}"
-    if [[ $thrshold_f -gt "${RECONNECT_THRESHOLD}" ]];then
-      echo "${SVC_CHCK} failed > allowed times(${RECONNECT_THRESHOLD}), reconnecting!"
+    if [[ $thrshold_f -gt "${PROTONVPN_FAIL_THRESHOLD}" ]];then
+      echo "${SVC_CHCK} failed > allowed times(${PROTONVPN_FAIL_THRESHOLD}), reconnecting!"
       reconnect_vpn
     fi
   fi
@@ -72,14 +82,17 @@ function api_check()
 
 function check_vpn()
 {
-# Because protonvpn-cli is a mess. Yes they too check it with PIDs no API is available to verify it.
-# It is giant mess of subprocess.call(***). They are improving it though...
-if [[ -z "$(pgrep -x openvpn)" ]]; then
-  echo "${SVC_CHCK} Error!! There is no OpenVPN Process!!"
-  reconnect_vpn
-else
-  api_check
-fi
+  # Check if openvpnv process is running.
+  if [[ ${PROTONVPN_SVC_DISCONNECTING} -ne 1 ]]; then
+    if [[ -z "$(pgrep -x openvpn)" ]]; then
+      echo "${SVC_CHCK} Error!! There is no OpenVPN Process!!"
+      reconnect_vpn
+    else
+      api_check
+    fi
+  else
+    echo "${SVC_CHCK} Skipped checks beacuse we are terminating"
+  fi
 }
 
 
@@ -87,18 +100,18 @@ function main()
 {
 
   re='^[0-9]+$'
-  if ! [[ $LIVE_PROBE_INTERVAL =~ $re ]] ; then
-    echo "${SVC_INIT} LIVE_PROBE_INTERVAL can only be an integer!, will default to 60 seconds"
-    LIVE_PROBE_INTERVAL=60
+  if ! [[ $PROTONVPN_CHECK_INTERVAL =~ $re ]] ; then
+    echo "${SVC_INIT} PROTONVPN_CHECK_INTERVAL can only be an integer!, will default to 60 seconds"
+    PROTONVPN_CHECK_INTERVAL=60
   else
-    echo "${SVC_INIT} Daemon check interval is set to #$LIVE_PROBE_INTERVAL"
+    echo "${SVC_INIT} Daemon check interval is set to #$PROTONVPN_CHECK_INTERVAL"
   fi
 
-  if ! [[ $RECONNECT_THRESHOLD =~ $re ]] ; then
-    echo "${SVC_INIT} RECONNECT_THRESHOLD can only be an integer!, will default to 10"
-    RECONNECT_THRESHOLD=10
+  if ! [[ $PROTONVPN_FAIL_THRESHOLD =~ $re ]] ; then
+    echo "${SVC_INIT} PROTONVPN_FAIL_THRESHOLD can only be an integer!, will default to 10"
+    PROTONVPN_FAIL_THRESHOLD=10
   else
-    echo "${SVC_INIT} Reconnect treshold is #$RECONNECT_THRESHOLD"
+    echo "${SVC_INIT} Reconnect treshold is #$PROTONVPN_FAIL_THRESHOLD"
   fi
 
   echo "${SVC_INIT} checking orphaned openvpn process"
@@ -116,8 +129,9 @@ function main()
   # Checks
   while :
   do
+    echo "${SVC_INIT} PROTONVPN_SVC_DISCONNECTING: ${PROTONVPN_SVC_DISCONNECTING}"
     check_vpn
-    sleep "${LIVE_PROBE_INTERVAL}" &
+    sleep "${PROTONVPN_CHECK_INTERVAL}" &
     wait $!
   done
 }

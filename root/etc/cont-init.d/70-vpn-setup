@@ -12,9 +12,9 @@ if [[ -z "$PROTONVPN_PASSWORD" ]]; then
   exit 3
 fi
 
-if [[ -z "$PROTONVPN_SERVER" ]] &&  [[ ! -z ${PROTONVPN_COUNTRY} ]]; then
+if [[ -z "$PROTONVPN_SERVER" ]] &&  [[ -n ${PROTONVPN_COUNTRY} ]]; then
   echo "[VPN-Config-Setup] Using Fastest Server from ${PROTONVPN_COUNTRY}"
-elif [[ -z "$PROTONVPN_COUNTRY" ]] &&  [[ ! -z ${PROTONVPN_SERVER} ]]; then
+elif [[ -z "$PROTONVPN_COUNTRY" ]] &&  [[ -n ${PROTONVPN_SERVER} ]]; then
   echo "[VPN-Config-Setup] Using Server ${PROTONVPN_SERVER}"
 else
   echo "[VPN-Config-Setup] Specify either PROTONVPN_SERVER(${PROTONVPN_SERVER}) or PROTONVPN_COUNTRY(${PROTONVPN_COUNTRY})"
@@ -40,6 +40,7 @@ esac
 IP_ADD_REGEX='([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])'
 SUBNET_REGEX='([0-9]|[12][0-9]|3[012])'
 
+# shellcheck disable=SC2206
 cidrs_from_env=(${PROTONVPN_EXCLUDE_CIDRS//,/ })
 
 declare -g -a SPLIT_TUNNEL_CIDRS INVALID_CIDRS
