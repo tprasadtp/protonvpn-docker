@@ -93,3 +93,5 @@ hosts.json
 downloads/
 config/
 proton.sh
+dist/
+logs/
