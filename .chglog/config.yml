@@ -1,0 +1,56 @@
+style: github
+template: CHANGELOG.tpl.md
+info:
+  title: CHANGELOG
+  repository_url: https://github.com/tprasadtp/protonvpn-docker
+options:
+  commits:
+    # filters:
+    #   Type:
+    #     - feat
+    #     - fix
+    #     - perf
+    #     - refactor
+  commit_groups:
+    title_maps:
+      feat: "🍒 Features"
+      fix: "🐛 Bug Fixes"
+      perf: "🚀 Performance Improvements"
+      docs: "📖 Documentation"
+      refactor: "☀️ Code Refactoring"
+      chore: "🥺 Chore"
+      ci: "🤖 Continuous Integration & Automation"
+  header:
+    pattern: "^(\\w*)(?:\\(([\\w\\$\\.\\-\\*\\s]*)\\))?\\:\\s(.*)$"
+    pattern_maps:
+      - Type
+      - Scope
+      - Subject
+  notes:
+    keywords:
+      - BREAKING CHANGES
+      - SECURITY UPDATES
+      - CVE
+
+  issues:
+    prefix:
+      - "#"
+
+  refs:
+    actions:
+      - Closes
+      - Fixes
+      - Resolves
+
+  merges:
+    pattern: "^Merge branch '(\\w+)'$"
+    pattern_maps:
+      - Source
+
+  reverts:
+    pattern: "^Revert \"([\\s\\S]*)\"$"
+    pattern_maps:
+      - Header
+
+# diana:{diana_version}:{remote}:{source}:{version}:{remote_path}:{type}
+# diana:0.2.7:github:tprasadtp/templates::chglog/config.yml:static
