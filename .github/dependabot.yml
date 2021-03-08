@@ -1,14 +1,74 @@
 version: 2
 updates:
-- package-ecosystem: docker
-  directory: "/"
-  schedule:
-    interval: weekly
-    day: saturday
-    time: "21:00"
-  open-pull-requests-limit: 10
-  target-branch: master
-  assignees:
-  - tprasadtp
-  labels:
-  - Docker
+  # Docker Updates
+  - package-ecosystem: docker
+    labels:
+      - "Actor:Dependabot"
+      - "Deps:Docker"
+    # Common settings
+    commit-message:
+      prefix: "chore(deps):"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 10
+    pull-request-branch-name:
+      separator: "-"
+    assignees:
+      - tprasadtp
+
+  - package-ecosystem: pip
+    labels:
+      - "Actor:Dependabot"
+      - "Deps:Python"
+    # Common settings
+    commit-message:
+      prefix: "chore(deps):"
+    directory: "/root"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 10
+    pull-request-branch-name:
+      separator: "-"
+    assignees:
+      - tprasadtp
+
+  # Actions
+  - package-ecosystem: github-actions
+    labels:
+      - "Actor:Dependabot"
+      - "Deps:Actions"
+    commit-message:
+      prefix: "ci(deps):"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 10
+    pull-request-branch-name:
+      separator: "-"
+    assignees:
+      - tprasadtp
+    ignore:
+      # We trust official actions by GitHub
+      # we trust them for not breaking stuff
+      # and security.
+      - dependency-name: "actions/checkout"
+      - dependency-name: "actions/cache"
+      - dependency-name: "actions/upload-artifact"
+      - dependency-name: "actions/download-script"
+      - dependency-name: "actions/github-script"
+
+      # Official Setup Actions
+      - dependency-name: "actions/setup-go"
+      - dependency-name: "actions/setup-node"
+      - dependency-name: "actions/setup-python"
+      - dependency-name: "actions/setup-dotnet"
+
+      # Labels is Frozen
+      - dependency-name: "tprasadtp/labels"
+
+      # Trust docker provided actions to
+      # not break stuff.
+      - dependency-name: docker/login-action
+      - dependency-name: docker/setup-buildx-action
+      - dependency-name: docker/setup-qemu-action
