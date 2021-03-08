@@ -31,6 +31,7 @@ options:
       - BREAKING CHANGES
       - SECURITY UPDATES
       - CVE
+      - FIX
 
   issues:
     prefix:

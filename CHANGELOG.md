@@ -1,6 +1,44 @@
-# Changelog
+<!-- markdownlint-disable MD033 -->
 
-## 3.1.0
+## Changelog
+
+<p align="center">
+  <a href="https://protonvpn.com" target="_blank" rel="noreferrer">
+    <img src="https://static.prasadt.com/logos/proton/scalable/protonvpn-wide.svg" height="64" alt="protonvpn">
+  </a>
+  <a href="https://ghcr.io/tprasadtp/protonvpn" target="_blank" rel="noreferrer">
+    <img src="https://static.prasadt.com/logos/software/docker-engine-wide.svg" height="64" alt="protonvpn">
+  </a>
+</p>
+
+<a name="unreleased"></a>
+## [Unreleased]
+
+### 🍒 Features
+- update base image and files ([9458734](https://github.com/tprasadtp/protonvpn-docker/commits/945873487018d8b45acea891003cad0437cb812f))
+
+### 🤖 Continuous Integration & Automation
+- prepare to use goreleaser ([790ed6f](https://github.com/tprasadtp/protonvpn-docker/commits/790ed6f853f50fd147ab07730e5ec38cf3499252))
+- **labels:** Manage issue labels via tprasadtp/labels ([65bb5db](https://github.com/tprasadtp/protonvpn-docker/commits/65bb5db05c12994525af46d9a69a4df5c86f72a4))
+
+### 🥺 Chore
+- **automation:** PR automation via kodiak ([25fc41c](https://github.com/tprasadtp/protonvpn-docker/commits/25fc41c9e25daf30f53fddbd53420216bd3f43f9))
+- **automation:** enable dependabot ([e8cf292](https://github.com/tprasadtp/protonvpn-docker/commits/e8cf2927773a4ee76cd0fe32751d35fec7ca2800))
+- **changelog:** use git-chglog for changelog generation ([4c75f1a](https://github.com/tprasadtp/protonvpn-docker/commits/4c75f1a4cb365f89b27fa2d870ac4c49b2cb7470))
+
+### BREAKING CHANGES
+- `LIVE_PROBE_INTERVAL` is now `PROTONVPN_CHECK_INTERVAL`
+- `RECONNECT_THRESHOLD` is now `PROTONVPN_FAIL_THRESHOLD`
+- Verify s6-overlay GPG signature before install
+- `S6_KILL_GRACETIME` to 10000 (10s) to avoid timeouts
+
+FIXES:
+- `SIGTERM` and `SIGINT` not being handled properly
+
+<a name="3.1.0"></a>
+## [3.1.0] - 2021-02-27
+<!-- old changelog ported here for compatibility -->
+<!-- header 3.1.0 is added by the git-chglog -->
 
 - **FIX** Unreachable ports/Connection Timeouts. Disable internal protonvpn's internal killswitch. This should fix #18, #15, #11. This was enabled in 2.2.6+. Killswitch is not reliable anyway inside container.
 - _(Internal)_ Update base docker image.
@@ -29,7 +67,8 @@ to check version of included cli.
 - _(CI/CD)_ Added support for GitHub container registry.
 - _(Internal)_ Changes health-check url to `https://ipinfo.io` as ProtonVPN API is inconsistent.
 
-## 2.2.2-hotfix-2
 
-- Add Health-check script
-- Initial stable release
+<!-- tag references -->
+[Unreleased]: https://github.com/tprasadtp/protonvpn-docker/compare/3.1.0...HEAD
+[3.1.0]: https://github.com/tprasadtp/protonvpn-docker/compare/3.0.0...3.1.0
+
