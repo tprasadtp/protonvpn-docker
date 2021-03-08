@@ -16,3 +16,6 @@ jobs:
       uses: tprasadtp/labels@master
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
+
+# diana:{diana_urn_flavor}:{remote}:{source}:{version}:{remote_path}:{type}
+# diana:2:github:tprasadtp/templates::common/github/workflows/labels.yml:static
