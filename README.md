@@ -35,7 +35,7 @@
 
   <a href="https://hub.docker.com/r/tprasadtp/protonvpn" target="_blank" rel="noreferrer">
     <img src="https://img.shields.io/docker/image-size/tprasadtp/protonvpn/latest?label=size&logo=docker&logoColor=white
-&labelColor=3a3a3a" align="center" alt="releases">
+&labelColor=3a3a3a" align="center" alt="img-size">
   </a>
 
   <a href="https://github.com/tprasadtp/protonvpn-docker/releases/latest" target="_blank" rel="noreferrer">
