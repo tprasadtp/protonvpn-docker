@@ -161,28 +161,28 @@ docker_manifests:
     - 'tprasadtp/{{.ProjectName}}:{{ .Version }}-arm'
 
   # MAJOR.MINOR
-  - name_template: 'ghcr.io/tprasadtp/{{.ProjectName}}:{{ .Major }}.{{ .Minor }}{{ if .Prerelease }}-PRE-REL{{ end }}'
+  - name_template: 'ghcr.io/tprasadtp/{{.ProjectName}}:{{ .Major }}.{{ .Minor }}{{ if .Prerelease }}-unstable{{ end }}'
     image_templates:
     - 'ghcr.io/tprasadtp/{{.ProjectName}}:{{ .Version }}-amd64'
     - 'ghcr.io/tprasadtp/{{.ProjectName}}:{{ .Version }}-arm64'
     - 'ghcr.io/tprasadtp/{{.ProjectName}}:{{ .Version }}-arm'
 
   # MAJOR.MINOR DockerHub
-  - name_template: 'tprasadtp/{{.ProjectName}}:{{ .Major }}.{{ .Minor }}{{ if .Prerelease }}-PRE-REL{{ end }}'
+  - name_template: 'tprasadtp/{{.ProjectName}}:{{ .Major }}.{{ .Minor }}{{ if .Prerelease }}-unstable{{ end }}'
     image_templates:
     - 'tprasadtp/{{.ProjectName}}:{{ .Version }}-amd64'
     - 'tprasadtp/{{.ProjectName}}:{{ .Version }}-arm64'
     - 'tprasadtp/{{.ProjectName}}:{{ .Version }}-arm'
 
   # Latest
-  - name_template: 'ghcr.io/tprasadtp/{{.ProjectName}}:{{ if .Prerelease }}PRE-REL{{else}}latest{{ end }}'
+  - name_template: 'ghcr.io/tprasadtp/{{.ProjectName}}:{{ if .Prerelease }}unstable{{else}}latest{{ end }}'
     image_templates:
     - 'ghcr.io/tprasadtp/{{.ProjectName}}:{{ .Version }}-amd64'
     - 'ghcr.io/tprasadtp/{{.ProjectName}}:{{ .Version }}-arm64'
     - 'ghcr.io/tprasadtp/{{.ProjectName}}:{{ .Version }}-arm'
 
   # Latest DockerHub
-  - name_template: 'tprasadtp/{{.ProjectName}}:{{ if .Prerelease }}PRE-REL{{else}}latest{{ end }}'
+  - name_template: 'tprasadtp/{{.ProjectName}}:{{ if .Prerelease }}unstable{{else}}latest{{ end }}'
     image_templates:
     - 'tprasadtp/{{.ProjectName}}:{{ .Version }}-amd64'
     - 'tprasadtp/{{.ProjectName}}:{{ .Version }}-arm64'
