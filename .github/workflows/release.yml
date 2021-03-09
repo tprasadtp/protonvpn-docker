@@ -46,4 +46,4 @@ jobs:
       - name: Run GoReleaser
         run: make release-prod
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
