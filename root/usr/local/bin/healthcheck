@@ -1,6 +1,10 @@
 #!/usr/bin/with-contenv bash
 set -eo pipefail
 
+if [[ ${1} == "silent" ]] || [[ ${1} == "--silent" ]]; then
+  PROTONVPN_HEALTHCHECK_SILENT=1
+fi
+
 if [[ -z ${PROTONVPN_COUNTRY} ]]; then
   PROTONVPN_COUNTRY="$(python3 /usr/local/bin/proton-srv-country)"
 fi
@@ -12,8 +16,13 @@ CONNECTED_COUNTRY="$(curl \
     https://ipinfo.io | jq -r '.country')"
 
 if [[ ${CONNECTED_COUNTRY} == "${PROTONVPN_COUNTRY}" ]]; then
-  echo "OK";
+  if [[ ${PROTONVPN_HEALTHCHECK_SILENT} -ne 1 ]]; then
+    echo "OK"
+  fi
+  exit 0
 else
-  echo "FAIL"
+  if [[ ${PROTONVPN_HEALTHCHECK_SILENT} -ne 1 ]]; then
+    echo "FAIL"
+  fi
   exit 1
 fi
