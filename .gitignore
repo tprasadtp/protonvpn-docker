@@ -89,7 +89,21 @@ hosts.json
 # Exclude samples
 !sample.env
 
+### CI & Generated Files ###
+
+# Ignore release notes generated
+RELEASE_NOTES.*
+release-notes.*
+
 #### Project specific ###
+downloads/
+config/
+proton.sh
+dist/
+logs/
+
+
+### Project Specific ###
 downloads/
 config/
 proton.sh
