@@ -1,0 +1,46 @@
+# Enable Kodiak
+version = 1
+
+[merge]
+# Require label
+require_automerge_label = true
+
+# Labels for Automerge
+automerge_label = "Luna:AutoMerge"
+
+# Methods
+method = "squash"
+
+# Blacklisted Labels
+# Block WIP,
+blocking_labels = ["Status:Abandoned", "Status:WIP", "Luna:WIP", "Status:Blocked", "Deps:Actions", "Status:WontFix", "Status:Stale"]
+
+# Priority
+priority_merge_label = "Priority:Critical"
+
+# Cleanup stale branches
+delete_branch_on_merge = true
+
+# On conflicts, remove automerge labels
+notify_on_conflict = true
+
+# Wait to Pass checks
+optimistic_updates = false
+
+[merge.automerge_dependencies]
+# only auto merge "minor" and "patch" version upgrades.
+# do not automerge "major" version upgrades.
+versions = ["minor", "patch"]
+usernames = ["dependabot"]
+
+
+[update]
+# Autoupdate requires automerge labes
+require_automerge_label = true
+# Auto update label is sharedwith Luna
+autoupdate_label = "Luna:AutoUpdate"
+# Ignore bots or other apps with automerge built in
+ignored_usernames = ["valarie-ci-bot", "dependabot-preview", "luna-bot"]
+
+# diana:{diana_version}:{remote}:{source}:{version}:{remote_path}:{type}
+# diana:0.2.5:github:tprasadtp/templates::bots/kodiak.toml:static
