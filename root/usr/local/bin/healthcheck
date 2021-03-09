@@ -1,0 +1,40 @@
+#!/bin/sh
+set -e
+
+readonly DOCKERHUB_IMAGE="tprasadtp/protonvpn"
+readonly GHCR_IMAGE="tprasadtp/protonvpn"
+
+cat <<EOT
+----------------------- Deprecation of DockerHub Images -------------------------------
+
+- You are running this docker image (${DOCKERHUB_IMAGE}) from Docker Hub.
+- Please migrate to GitHub Container Registry Image - ghcr.io/${GHCR_IMAGE}.
+- If you were using tprasadtp/protonvpn change it to ghcr.io/tprasadtp/protonvpn.
+
+------------------------------------ WHY ----------------------------------------------
+
+- This is being done due to Docker Hub Image Retention Policy changes.
+- Old images will stay on DockerHub but will no longer receive any updates.
+- They might become affected by image retention policy changes in the future!
+
+-------------------------------- How to Migrate ---------------------------------------
+
+- Migration is really simple. Instread of running
+  docker run ${DOCKERHUB_IMAGE}, you would replace it with
+  docker run ghcr.io/${DOCKERHUB_IMAGE}
+- If you were using docker-compose, change from
+
+    image: ${DOCKERHUB_IMAGE}
+
+  to
+
+    image: ghcr.io/${GHCR_IMAGE}
+
+--------------------------------- Exit Status -----------------------------------------
+
+- This script will exit with status 1 indicating the need to migrate to GHCR images.
+- If you used healthcheck script earlier, healthchecks will fail unless you migrate to
+  GHCR images.
+EOT
+
+exit 1
