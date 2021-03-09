@@ -64,12 +64,12 @@
 
 ## Docker Registries
 
-Images are published on,
+Images are published on [GitHub Conrainer Registry][ghcr].
 
-- [DockerHub][dockerhub]
-- [GitHub Package registry][ghcr]
+## DockerHub Image Deprecation
 
-> GitHub container registry is preferred. Though currently there is no plan to discontinue updating images on DockerHub, its advised that you switch to GitHub registry.
+Images on [DockerHub][dockerhub] are deprecated and will no longer receive updates. Its recommended that you switch to GitHub Container Registry.
+
 
 ## Environment Variables
 
