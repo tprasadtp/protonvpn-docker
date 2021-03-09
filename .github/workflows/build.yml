@@ -1,5 +1,8 @@
 name: build
 on:
+  # Manually dispatch
+  workflow_dispatch:
+  # Push
   push:
     branches:
       - "*"

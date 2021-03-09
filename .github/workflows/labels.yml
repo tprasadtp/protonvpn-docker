@@ -1,4 +1,7 @@
 on:
+  # Manually dispatch
+  workflow_dispatch:
+  # Push
   push:
     branches:
       - master
@@ -12,10 +15,10 @@ jobs:
     name: labels
     runs-on: ubuntu-latest
     steps:
-    - name: sync labels
-      uses: tprasadtp/labels@master
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
+      - name: sync labels
+        uses: tprasadtp/labels@master
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
 # diana:{diana_urn_flavor}:{remote}:{source}:{version}:{remote_path}:{type}
 # diana:2:github:tprasadtp/templates::common/github/workflows/labels.yml:static
