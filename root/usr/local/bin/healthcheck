@@ -19,9 +19,9 @@ cat <<EOT
 
 -------------------------------- How to Migrate ---------------------------------------
 
-- Migration is really simple. Instread of running
-  docker run ${DOCKERHUB_IMAGE}, you would replace it with
-  docker run ghcr.io/${DOCKERHUB_IMAGE}
+- Migration is really simple. Instead of running
+  docker run <flags> ${DOCKERHUB_IMAGE}, you would replace it with
+  docker run <flags> ghcr.io/${DOCKERHUB_IMAGE}
 - If you were using docker-compose, change from
 
     image: ${DOCKERHUB_IMAGE}
