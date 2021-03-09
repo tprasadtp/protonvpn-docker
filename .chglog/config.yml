@@ -5,12 +5,15 @@ info:
   repository_url: https://github.com/tprasadtp/protonvpn-docker
 options:
   commits:
-    # filters:
-    #   Type:
-    #     - feat
-    #     - fix
-    #     - perf
-    #     - refactor
+    filters:
+      Type:
+        - feat
+        - fix
+        - perf
+        - refactor
+        - ci
+        - docs
+        - chore
   commit_groups:
     title_maps:
       feat: "🍒 Features"
@@ -31,7 +34,7 @@ options:
       - BREAKING CHANGES
       - SECURITY UPDATES
       - CVE
-      - FIX
+      - FIXES
 
   issues:
     prefix:
