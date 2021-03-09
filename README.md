@@ -1,13 +1,68 @@
-# ProtonVPN - Docker
+<!-- markdownlint-disable MD033 -->
 
-[![actions](https://github.com/tprasadtp/protonvpn-docker/workflows/build/badge.svg)](https://github.com/tprasadtp/protonvpn-docker/actions?workflow=build)
-[![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/tprasadtp/protonvpn-docker?label=version&logo=github&sort=semver)][releases]
-[![Docker Image Version (latest semver)](https://img.shields.io/docker/v/tprasadtp/protonvpn?color=2496ED&label=hub.docker.com&logo=docker&logoColor=2496ED&sort=semver)][dockerhub]
-[![Docker Pulls](https://img.shields.io/docker/pulls/tprasadtp/protonvpn?color=2496ED&label=hub.docker.com&logo=docker&logoColor=2496ED)][dockerhub]
-[![Docker Image Size (tag)](https://img.shields.io/docker/image-size/tprasadtp/protonvpn/latest?color=2496ED&label=size&logo=docker&logoColor=2496ED)][dockerhub]
-[![dependabot](https://api.dependabot.com/badges/status?host=github&repo=tprasadtp/protonvpn-docker)](https://app.dependabot.com)
-![Analytics](https://ga-beacon.prasadt.com/UA-101760811-3/github/protonvpn-docker?pink&useReferer)
-[![License](https://img.shields.io/github/license/tprasadtp/protonvpn-docker?color=ee70a6)](https://github.com/tprasadtp/protonvpn-docker/blob/master/LICENSE)
+<h1 align="center">protonvpn-docker</h1>
+
+<p align="center">
+  <a href="https://protonvpn.com" target="_blank" rel="noreferrer">
+    <img src="https://static.prasadt.com/logos/proton/scalable/protonvpn-wide.svg" height="64" alt="protonvpn">
+  </a>
+  <a href="https://ghcr.io/tprasadtp/protonvpn" target="_blank" rel="noreferrer">
+    <img src="https://static.prasadt.com/logos/software/docker-engine-wide.svg" height="64" alt="protonvpn">
+  </a>
+</p>
+
+<!-- CI Badges -->
+
+<p align="center">
+
+  <a href="https://github.com/tprasadtp/protonvpn-docker/actions?workflow=build" target="_blank" rel="noreferrer">
+    <img src="https://github.com/tprasadtp/protonvpn-docker/workflows/build/badge.svg" align="center" alt="action-build">
+  </a>
+
+  <a href="https://github.com/tprasadtp/protonvpn-docker/actions?workflow=release" target="_blank" rel="noreferrer">
+    <img src="https://github.com/tprasadtp/protonvpn-docker/workflows/release/badge.svg"align="center" alt="action-release">
+  </a>
+
+</p>
+
+<!-- Version and Release Badges -->
+
+<p align="center">
+
+  <a href="https://hub.docker.com/r/tprasadtp/protonvpn" target="_blank" rel="noreferrer">
+    <img src="https://img.shields.io/docker/v/tprasadtp/protonvpn?label=hub.docker.com&logo=docker&logoColor=white&sort=semver&labelColor=3a3a3a" align="center" alt="releases">
+  </a>
+
+  <a href="https://hub.docker.com/r/tprasadtp/protonvpn" target="_blank" rel="noreferrer">
+    <img src="https://img.shields.io/docker/image-size/tprasadtp/protonvpn/latest?label=size&logo=docker&logoColor=white
+&labelColor=3a3a3a" align="center" alt="img-size">
+  </a>
+
+  <a href="https://github.com/tprasadtp/protonvpn-docker/releases/latest" target="_blank" rel="noreferrer">
+    <img src="https://img.shields.io/github/v/tag/tprasadtp/protonvpn-docker?label=version&sort=semver&logo=semver&color=7f50a6&labelColor=3a3a3a" align="center" alt="releases">
+  </a>
+
+  <a href="https://goreleaser.com" target="_blank" rel="noreferrer">
+    <img src="https://img.shields.io/badge/powered--by-goreleaser-7f50a6?logo=semver&labelColor=3a3a3a" align="center" alt="powerd-by">
+  </a>
+
+</p>
+
+
+<!-- Other Badges -->
+
+<p align="center">
+
+  <a href="https://github.com/tprasadtp/protonvpn-docker/blob/master/LICENSE" target="_blank" rel="noreferrer">
+    <img src="https://img.shields.io/github/license/tprasadtp/protonvpn-docker?logo=github&labelColor=3A3A3A" align="center" alt="license">
+  </a>
+
+  <img src="https://ga-beacon.prasadt.com/UA-101760811-3/github/gfilt" align="center" alt="action-release">
+
+</p>
+
+
+## Docker Registries
 
 Images are published on,
 
@@ -21,13 +76,15 @@ Images are published on,
 | Name | Required | Description
 |---|---|---
 | `PROTONVPN_TIER`          | Yes | Proton VPN Tier (0=Free, 1=Basic, 2=Pro, 3=Visionary)
-| `PROTONVPN_USERNAME`      | Yes | OpenVPN Username. This is NOT your Proton Account Username.
-| `PROTONVPN_PASSWORD`      | Yes | OpenVPN Password. This is NOT your Proton Account Password.
+| `PROTONVPN_USERNAME`      | Yes | OpenVPN Username. This is **NOT** your Proton Account Username.
+| `PROTONVPN_PASSWORD`      | Yes | OpenVPN Password. This is **NOT** your Proton Account Password.
 | `PROTONVPN_SERVER`        | Yes | ProtonVPN server to connect to. This value is mutually exclusive with `PROTONVPN_COUNTRY`. Only one of them can be used. Set it to `RANDOM` to connect to a random server.
 | `PROTONVPN_COUNTRY`       | Yes | ProtonVPN two letter country code. This will choose the fastest server from this country. This value is mutually exclusive with `PROTONVPN_SERVER`. Only one of them can be used.
 | `PROTONVPN_PROTOCOL`      | No  | Protocol to use. By default `udp` is used.
-| `PROTONVPN_EXCLUDE_CIDRS` | No | Comma separated list of CIDRs to exclude from VPN. Uses split tunnel. Default is set to `169.254.169.254/32,169.254.170.2/32`
+| `PROTONVPN_EXCLUDE_CIDRS` | No  | Comma separated list of CIDRs to exclude from VPN. Uses split tunnel. Default is set to `169.254.169.254/32,169.254.170.2/32`
 | `PROTONVPN_DNS_LEAK_PROTECT` | No  | Setting this to `0` will disable DNS leak protection. If you wish to specify custom DNS server via `--dns` option you **MUST** set this to `0`.
+| `PROTONVPN_CHECK_INTERVAL`   | No  | Interval between internal healthchecks in seconds. Defaults to 60 if not specified or invalid.
+| `PROTONVPN_FAIL_THRESHOLD`   | No  | Number of allowed consecutive internal healthchecks failures before which attempt to reconnect is made. Defaults to 3 if invalid or not specified.
 
 
 ## Run Container
@@ -121,7 +178,7 @@ networks:
 
 ## Health-checks
 
-There is a `healthcheck` script available under /usr/local/bin (Added in 2.2.2-hotfix2). It will use `https://ipinfo.io` to verify the country to which VPN is connected. By default service will keep checking every `LIVE_PROBE_INTERVAL` _(default = 60)_ seconds using the same api endpoint, script is only added for convenience.
+There is a `healthcheck` script available under /usr/local/bin (Added in 2.2.2-hotfix2). It will use `https://ipinfo.io` to verify the country to which VPN is connected. By default service will keep checking every `PROTONVPN_CHECK_INTERVAL` _(default = 60)_ seconds using the same api endpoint, script is only added for convenience.
 
 ## Known issues
 
