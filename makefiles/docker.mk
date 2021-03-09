@@ -145,14 +145,6 @@ docker-tags: ## Show docker image tags
 
 .PHONY: show-vars-docker
 show-vars-docker: ## Show docker variables
-	@echo "----------- VCS BASED VARIABLES --------------"
-	@echo "VERSION              : $(VERSION)"
-	@echo "GIT_BRANCH           : $(GIT_BRANCH)"
-	@echo "GIT_TAG_PRESENT      : $(GIT_TAG_PRESENT)"
-	@echo "GIT_TREE_STATE       : $(GIT_TREE_STATE)"
-	@echo "LATEST_SEMVER        : $(LATEST_SEMVER)"
-	@echo ""
-
 	@echo "-------------- DOCKER TAGS -------------------"
 	$(call print_docker_tags)
 	@echo ""
