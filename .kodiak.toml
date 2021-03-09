@@ -6,7 +6,7 @@ version = 1
 require_automerge_label = true
 
 # Labels for Automerge
-automerge_label = ["Luna:AutoMerge"]
+automerge_label = "Luna:AutoMerge"
 
 # Methods
 method = "squash"
