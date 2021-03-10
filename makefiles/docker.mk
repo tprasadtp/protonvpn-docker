@@ -10,107 +10,74 @@ DOCKER_BUILD_CONTEXT ?= .
 DOCKER_FILE_PATH ?= ./Dockerfile
 
 # Extra Arguments, useful to pass --build-arg.
-# DOCKER_EXTRA_ARGS
+DOCKER_EXTRA_ARGS ?=
+
 
 # Enable Buidkit if not already disabled
-DOCKER_BUILDKIT  ?= 1
-
-# buildx settings
-BUILDX_ENABLE    ?= 0
-BUILDX_PUSH      ?= 0
-BUILDX_PLATFORMS ?= linux/amd64,linux/arm64,linux/arm/v7
-
-# Latest tag settings
-# This toggles whether to add tag latest to all commits of default branch
-# Default is disabled. Set this to true ONLY if repackaging from upstream
-# and updates are usually handled by dependabot or other bots.
-IMAGE_ALWAYS_TAG_LATEST ?= false
+DOCKER_BUILDKIT ?= 1
 
 # We need to quote this to avoid issues with command
 IMAGE_BUILD_DATE := $(shell date --universal --iso-8601=s)
 
-# This is used for repackaging or forks
-# Defaults to false overrider this by setting either UPSTREAM_VERSION or
-# UPSTREAM_URL.
-UPSTREAM_PRESENT ?= false
-UPSTREAM_ARGS    :=
-
-
-export IMAGE_ALWAYS_TAG_LATEST
 export DOCKER_FILE_PATH
 export DOCKER_BUILD_TARGET
 export DOCKER_BUILD_CONTEXT
 
+# Image URL
+export DOCKER_IMAGE_URL
+
+
 # Check for common Project vars
 $(call check_defined, PROJECT_TITLE, Project title for OCI annotations)
 $(call check_defined, PROJECT_DESC, Project description for OCI annotations)
-$(call check_defined, PROJECT_URL, Project description for OCI annotations)
+$(call check_defined, PROJECT_URL, Project URL for OCI annotations)
+$(call check_defined, PROJECT_LICENSE, Project License in SPDX License Expression format)
 $(call check_defined, PROJECT_SOURCE, Project Source URL for OCI annotations)
-$(call check_defined, PROJECT_LICENSES, Project License in SPDX License Expression format)
-$(call check_defined, PROJECT_DOCUMENTATION, Project Documentation URL for OCI annotations)
 
 # Check if required vars are defined
 $(call check_defined, DOCKER_IMAGES, Docker Images)
+$(call check_defined, DOCKER_IMAGE_URL, Docker Image URL)
 
 # Optional
-$(call check_defined, IMAGE_ALWAYS_TAG_LATEST, Always add tag latest if on default branch)
 $(call check_defined, DOCKER_FILE_PATH, Full path to Dockerfile (default=./Dockerfile))
 $(call check_defined, DOCKER_BUILD_CONTEXT, Docker build context (default=.))
-
-# Will add tag latest if,
-#   a. Commit is not tagged, branch is master, Git tree is clean and IMAGE_ALWAYS_TAG_LATEST is set to true
-# 	b. Commit is tagged, and latest tag is same as version (version bulding handles git tree state,
-#      so if tree is dirty, latest tag wont be added)
-ADD_LATEST_TAG := $(shell \
-if [[ "$(GIT_TAG_PRESENT)" != "true" ]] && [[ "$(GIT_BRANCH)" == master ]] \
-	&& [[ "$(IMAGE_ALWAYS_TAG_LATEST)" == "true" ]] && [[ $(GIT_TREE_STATE) == "clean" ]]; then \
-	echo "true"; \
-elif [[ "$(GIT_TAG_PRESENT)" == "true" ]] && [[ "$(VERSION)" == "$(LATEST_SEMVER)" ]]; then \
-	echo "true"; \
-else \
-	echo "false"; \
-fi)
-
-# Latest tag setting
-$(call check_defined, ADD_LATEST_TAG, Add Latest Tag(Auto-populated))
 
 # Build Full Tags
 DOCKER_TAGS  := $(foreach __REG,$(DOCKER_IMAGES),$(__REG):$(VERSION))
 
-# Now start building docker tags
-# If we are on default branch add tag latest
-ifeq ($(ADD_LATEST_TAG),true)
-	DOCKER_TAGS += $(foreach __REG,$(DOCKER_IMAGES),$(__REG):latest)
-endif
-
-# Check if we have buildx enabled
-ifeq ($(BUILDX_ENABLE),1)
-	DOCKER_BUILD_COMMAND  := buildx build --platform $(BUILDX_PLATFORMS) $(shell if [[ "$(BUILDX_PUSH)" == "1" ]]; then echo "--push"; fi)
-	DOCKER_INSPECT_ARGS   := buildx imagetools inspect --raw $(firstword $(DOCKER_TAGS)) | jq "."
-else
-	DOCKER_BUILD_COMMAND  := build
-	DOCKER_INSPECT_ARGS   := image inspect $(firstword $(DOCKER_TAGS)) | jq ".[].Config.Labels"
-endif
+DOCKER_BUILD_COMMAND ?= build
+DOCKER_INSPECT_ARGS  ?= image inspect $(firstword $(DOCKER_TAGS)) | jq ".[].Config.Labels"
 
 # Build --tag argument
 DOCKER_TAG_ARGS := $(addprefix --tag ,$(DOCKER_TAGS))
 
-# IF DOCKER_BUILD_TARGET is defined, use it
+# IF: DOCKER_BUILD_TARGET is defined, use it
 ifneq ($(DOCKER_BUILD_TARGET),)
 	DOCKER_BUILD_COMMAND += --target "$(DOCKER_BUILD_TARGET)"
 endif
 
+# IF: running in actions and using buildx, enable plain progress bar
 ifeq ($(GITHUB_ACTIONS)-$(BUILDX_ENABLE),true-1)
 	DOCKER_BUILD_COMMAND += --progress=plain
 endif
 
-# UPSTREAM_VERSION is defined use it
-# and set upstream present to true
+
+# IF: UPSTREAM_VERSION is defined use it and set upstream present to true
 ifneq ($(UPSTREAM_VERSION),)
 	UPSTREAM_PRESENT := true
 	UPSTREAM_ARGS    += --label io.github.tprasadtp.metadata.upstream.version="$(UPSTREAM_VERSION)"
 	UPSTREAM_ARGS    += --label io.github.tprasadtp.metadata.upstream.url="$(UPSTREAM_URL)"
+else
+	UPSTREAM_PRESENT := false
+	UPSTREAM_URL     :=
 endif
+
+$(call check_defined, UPSTREAM_PRESENT, Upstream Medatada(default=false))
+
+export UPSTREAM_URL
+export UPSTREAM_VERSION
+export UPSTREAM_PRESENT
+
 
 # Print Docker Tags
 define print_docker_tags
@@ -119,27 +86,27 @@ endef
 
 
 .PHONY: docker-lint
-docker-lint: ## Runs the linter on Dockerfile.
+docker-lint: ## Lint dockerfiles
 	@echo -e "\033[92m➜ $@ \033[0m"
-	docker run --rm -i hadolint/hadolint < "$(DOCKER_FILE_PATH)"
+	docker run --network=none --rm -i hadolint/hadolint < $(DOCKER_FILE_PATH)
 
 
 .PHONY: docker
-docker: ## Build docker image.
+docker: ## Build docker image
 	@echo -e "\033[92m➜ $@ \033[0m"
 	@echo -e "\033[92m🐳 Building Docker Image \033[0m"
 	DOCKER_BUILDKIT=$(DOCKER_BUILDKIT) docker \
 		$(DOCKER_BUILD_COMMAND) \
 		$(DOCKER_TAG_ARGS) \
 		$(DOCKER_EXTRA_ARGS) \
-		--label org.opencontainers.image.created="$(IMAGE_BUILD_DATE)" \
+		--label org.opencontainers.image.created="$(shell date --universal --iso-8601=s)" \
 		--label org.opencontainers.image.description="$(PROJECT_DESC)" \
-		--label org.opencontainers.image.documentation="$(PROJECT_DOCUMENTATION)" \
-		--label org.opencontainers.image.licenses="$(PROJECT_LICENSES)" \
+		--label org.opencontainers.image.documentation="$(PROJECT_URL)" \
+		--label org.opencontainers.image.licenses="$(PROJECT_LICENSE)" \
 		--label org.opencontainers.image.revision="$(GIT_COMMIT)" \
 		--label org.opencontainers.image.source="$(PROJECT_SOURCE)" \
 		--label org.opencontainers.image.title="$(PROJECT_TITLE)" \
-		--label org.opencontainers.image.url="$(PROJECT_URL)" \
+		--label org.opencontainers.image.url="$(DOCKER_IMAGE_URL)" \
 		--label org.opencontainers.image.vendor="$(VENDOR)" \
 		--label org.opencontainers.image.version="$(VERSION)" \
 		--label io.github.tprasadtp.metadata.version="6" \
@@ -155,37 +122,27 @@ docker: ## Build docker image.
 		$(DOCKER_BUILD_CONTEXT)
 
 
-.PHONY: docker-inspect
-docker-inspect: ## Inspect Labels of the container [Build First!]
+.PHONY: docker-labels
+docker-labels: ## Inspect labels of the container
 	@echo -e "\033[92m➜ $@ \033[0m"
 	docker $(DOCKER_INSPECT_ARGS)
 
-
-.PHONY: docker-push
-docker-push: ## Push docker image.
-	@echo -e "\033[92m➜ $@ \033[0m"
-	@for tag in $(DOCKER_TAGS); do \
-		echo -e "\033[92m🐳 Pushing $${tag}\033[0m\n" \
-	docker push "$${img}"; \
-	done
-
+.PHONY: docker-setup-binfmt
+docker-setup-binfmt: ## Register ARM binaries via binfmt
+	docker run \
+		--rm \
+		--userns=host \
+		--network=none  \
+		--privileged \
+		docker/binfmt@sha256:7e54e474ac8998c01367f11edcbe2bbfcb38d9d8bd87defbc407edfa0fd6cca8
 
 .PHONY: docker-tags
-docker-tags: ## Show Docker Image Tags
-	@echo "------------- Docker Tags --------------------"
+docker-tags: ## Show docker image tags
 	$(call print_docker_tags)
 
 
 .PHONY: show-vars-docker
 show-vars-docker: ## Show docker variables
-	@echo "----------- VCS BASED VARIABLES --------------"
-	@echo "VERSION              : $(VERSION)"
-	@echo "GIT_BRANCH           : $(GIT_BRANCH)"
-	@echo "GIT_TAG_PRESENT      : $(GIT_TAG_PRESENT)"
-	@echo "GIT_TREE_STATE       : $(GIT_TREE_STATE)"
-	@echo "LATEST_SEMVER        : $(LATEST_SEMVER)"
-	@echo ""
-
 	@echo "-------------- DOCKER TAGS -------------------"
 	$(call print_docker_tags)
 	@echo ""
@@ -196,21 +153,13 @@ show-vars-docker: ## Show docker variables
 	@echo ""
 
 	@echo "------------- BUILD VARIABLES ----------------"
-	@echo "ALWAYS_TAG_LATEST    : $(IMAGE_ALWAYS_TAG_LATEST)"
-	@echo "ADD_LATEST_TAG       : $(ADD_LATEST_TAG)"
 	@echo "DOCKER_IMAGES        : $(DOCKER_IMAGES)"
 	@echo "DOCKER_BUILD_TARGET  : $(DOCKER_BUILD_TARGET)"
 	@echo "DOCKER_BUILDKIT      : $(DOCKER_BUILDKIT)"
-	@echo "BUILDX_ENABLE        : $(BUILDX_ENABLE)"
-	@echo "BUILDX_PUSH          : $(BUILDX_PUSH)"
-	@echo "BUILDX_PLATFORMS     : $(BUILDX_PLATFORMS)"
 	@echo "DOCKER_BUILD_COMMAND : $(DOCKER_BUILD_COMMAND)"
 	@echo "DOCKER_EXTRA_ARGS    : $(DOCKER_EXTRA_ARGS)"
 	@echo ""
 
-	@echo "------------ UPSTREAM VARIABLES ---------------"
-	@echo "UPSTREAM_PRESENT     : $(UPSTREAM_PRESENT)"
-	@echo "UPSTREAM_ARGS        : $(UPSTREAM_ARGS)"
 
 # diana:{diana_version}:{remote}:{source}:{version}:{remote_path}:{type}
-# diana:0.2.7:github:tprasadtp/templates::makefiles/base.mk:static
+# diana:0.2.7:github:tprasadtp/templates::makefiles/docker.mk:static

@@ -1,0 +1,166 @@
+# This is goreleaser template.
+project_name: protonvpn
+
+# Snapshot Template
+snapshot:
+  name_template: "{{ .Version }}-{{.ShortCommit}}-SNAPSHOT"
+
+# Skip builds
+builds:
+  - skip: true
+# Build docker images
+dockers:
+  # amd64 image
+  - image_templates:
+      # GHCR Images
+      - 'ghcr.io/tprasadtp/{{ .ProjectName }}:{{.Version}}-amd64'
+
+    build_flag_templates:
+      - --label=org.opencontainers.image.created={{.Date}}
+      - --label=org.opencontainers.image.revision={{.FullCommit}}
+      - --label=org.opencontainers.image.version={{.Version}}
+      # Vendor
+      - --label=org.opencontainers.image.vendor="{{.Env.VENDOR}}"
+      # Populated from Makefile Env
+      # We do not use GitURL because it might be SSH.
+      - --label=org.opencontainers.image.source={{.Env.PROJECT_SOURCE}}
+      - --label=org.opencontainers.image.title={{.Env.PROJECT_TITLE}}
+      - --label=org.opencontainers.image.description={{.Env.PROJECT_DESC}}
+      - --label=org.opencontainers.image.documentation={{.Env.PROJECT_URL}}
+      - --label=org.opencontainers.image.licenses={{.Env.PROJECT_LICENSE}}
+      - --label=org.opencontainers.image.url={{.Env.DOCKER_IMAGE_URL}}
+      # Custom Metadata
+      - --label=io.github.tprasadtp.metadata.version=6
+      # Build system Info. Useful to trace flaky builds on build machines
+      - --label=io.github.tprasadtp.metadata.build.system={{.Env.BUILD_SYSTEM }}-release
+      - --label=io.github.tprasadtp.metadata.build.number={{.Env.BUILD_NUMBER }}
+      - --label=io.github.tprasadtp.metadata.build.host={{.Env.BUILD_HOST }}
+      # Git Info
+      - --label=io.github.tprasadtp.metadata.git.commit={{.FullCommit}}
+      - --label=io.github.tprasadtp.metadata.git.branch={{.Branch }}
+      - --label=io.github.tprasadtp.metadata.git.treeState={{.Env.GIT_TREE_STATE}}
+      # We have an upstream!
+      - --label=io.github.tprasadtp.metadata.upstream.present=true
+      - --label=io.github.tprasadtp.metadata.upstream.version={{.Env.UPSTREAM_VERSION}}
+      - --label=io.github.tprasadtp.metadata.upstream.url={{.Env.UPSTREAM_URL}}
+      # Platform
+      - --platform=linux/amd64
+
+    <<: &docker_defaults
+      dockerfile: Dockerfile
+      use_buildx: true
+      extra_files:
+        # Scripts
+        - root/usr/local/bin/healthcheck
+        - root/usr/local/bin/proton-srv-country
+        # Service Init Files
+        - root/etc/cont-init.d/70-vpn-setup
+        # Service Files
+        - root/etc/services.d/protonvpn/run
+        # Pip
+        - root/requirements.txt
+
+#   # ARM64 image
+  - image_templates:
+      # GHCR Images
+      - 'ghcr.io/tprasadtp/{{ .ProjectName }}:{{.Version}}-arm64'
+
+    build_flag_templates:
+      - --label=org.opencontainers.image.created={{.Date}}
+      - --label=org.opencontainers.image.revision={{.FullCommit}}
+      - --label=org.opencontainers.image.version={{.Version}}
+      # Vendor
+      - --label=org.opencontainers.image.vendor="{{.Env.VENDOR}}"
+      # Populated from Makefile Env
+      # We do not use GitURL because it might be SSH.
+      - --label=org.opencontainers.image.source={{.Env.PROJECT_SOURCE}}
+      - --label=org.opencontainers.image.title={{.Env.PROJECT_TITLE}}
+      - --label=org.opencontainers.image.description={{.Env.PROJECT_DESC}}
+      - --label=org.opencontainers.image.documentation={{.Env.PROJECT_URL}}
+      - --label=org.opencontainers.image.licenses={{.Env.PROJECT_LICENSE}}
+      - --label=org.opencontainers.image.url={{.Env.DOCKER_IMAGE_URL}}
+      # Custom Metadata
+      - --label=io.github.tprasadtp.metadata.version=6
+      # Build system Info. Useful to trace flaky builds on build machines
+      - --label=io.github.tprasadtp.metadata.build.system={{.Env.BUILD_SYSTEM }}-release
+      - --label=io.github.tprasadtp.metadata.build.number={{.Env.BUILD_NUMBER }}
+      - --label=io.github.tprasadtp.metadata.build.host={{.Env.BUILD_HOST }}
+      # Git Info
+      - --label=io.github.tprasadtp.metadata.git.commit={{.FullCommit}}
+      - --label=io.github.tprasadtp.metadata.git.branch={{.Branch }}
+      - --label=io.github.tprasadtp.metadata.git.treeState={{.Env.GIT_TREE_STATE}}
+      # We have an upstream!
+      - --label=io.github.tprasadtp.metadata.upstream.present=true
+      - --label=io.github.tprasadtp.metadata.upstream.version={{.Env.UPSTREAM_VERSION}}
+      - --label=io.github.tprasadtp.metadata.upstream.url={{.Env.UPSTREAM_URL}}
+      # Platform
+      - --platform=linux/arm64
+
+    # Import defaults
+    <<: *docker_defaults
+
+  # ARM 32 Bit image
+  - image_templates:
+      # GHCR Images
+      - 'ghcr.io/tprasadtp/{{ .ProjectName }}:{{.Version}}-arm'
+
+    build_flag_templates:
+      - --label=org.opencontainers.image.created={{.Date}}
+      - --label=org.opencontainers.image.revision={{.FullCommit}}
+      - --label=org.opencontainers.image.version={{.Version}}
+      # Vendor
+      - --label=org.opencontainers.image.vendor="{{.Env.VENDOR}}"
+      # Populated from Makefile Env
+      # We do not use GitURL because it might be SSH.
+      - --label=org.opencontainers.image.source={{.Env.PROJECT_SOURCE}}
+      - --label=org.opencontainers.image.title={{.Env.PROJECT_TITLE}}
+      - --label=org.opencontainers.image.description={{.Env.PROJECT_DESC}}
+      - --label=org.opencontainers.image.documentation={{.Env.PROJECT_URL}}
+      - --label=org.opencontainers.image.licenses={{.Env.PROJECT_LICENSE}}
+      - --label=org.opencontainers.image.url={{.Env.DOCKER_IMAGE_URL}}
+      # Custom Metadata
+      - --label=io.github.tprasadtp.metadata.version=6
+      # Build system Info. Useful to trace flaky builds on build machines
+      - --label=io.github.tprasadtp.metadata.build.system={{.Env.BUILD_SYSTEM }}-release
+      - --label=io.github.tprasadtp.metadata.build.number={{.Env.BUILD_NUMBER }}
+      - --label=io.github.tprasadtp.metadata.build.host={{.Env.BUILD_HOST }}
+      # Git Info
+      - --label=io.github.tprasadtp.metadata.git.commit={{.FullCommit}}
+      - --label=io.github.tprasadtp.metadata.git.branch={{.Branch }}
+      - --label=io.github.tprasadtp.metadata.git.treeState={{.Env.GIT_TREE_STATE}}
+      # We have an upstream!
+      - --label=io.github.tprasadtp.metadata.upstream.present=true
+      - --label=io.github.tprasadtp.metadata.upstream.version={{.Env.UPSTREAM_VERSION}}
+      - --label=io.github.tprasadtp.metadata.upstream.url={{.Env.UPSTREAM_URL}}
+      # Platform
+      - --platform=linux/arm
+
+    # Import defaults
+    <<: *docker_defaults
+
+# # Build manifests
+docker_manifests:
+  # Full Version
+  - name_template: 'ghcr.io/tprasadtp/{{.ProjectName}}:{{ .Version }}'
+    image_templates:
+    - 'ghcr.io/tprasadtp/{{.ProjectName}}:{{ .Version }}-amd64'
+    - 'ghcr.io/tprasadtp/{{.ProjectName}}:{{ .Version }}-arm64'
+    - 'ghcr.io/tprasadtp/{{.ProjectName}}:{{ .Version }}-arm'
+
+  # MAJOR.MINOR
+  - name_template: 'ghcr.io/tprasadtp/{{.ProjectName}}:{{ .Major }}.{{ .Minor }}{{ if .Prerelease }}-unstable{{ end }}'
+    image_templates:
+    - 'ghcr.io/tprasadtp/{{.ProjectName}}:{{ .Version }}-amd64'
+    - 'ghcr.io/tprasadtp/{{.ProjectName}}:{{ .Version }}-arm64'
+    - 'ghcr.io/tprasadtp/{{.ProjectName}}:{{ .Version }}-arm'
+
+  # Latest
+  - name_template: 'ghcr.io/tprasadtp/{{.ProjectName}}:{{ if .Prerelease }}unstable{{else}}latest{{ end }}'
+    image_templates:
+    - 'ghcr.io/tprasadtp/{{.ProjectName}}:{{ .Version }}-amd64'
+    - 'ghcr.io/tprasadtp/{{.ProjectName}}:{{ .Version }}-arm64'
+    - 'ghcr.io/tprasadtp/{{.ProjectName}}:{{ .Version }}-arm'
+
+# Github Releases
+release:
+  prerelease: auto

@@ -29,15 +29,6 @@
 
 <p align="center">
 
-  <a href="https://hub.docker.com/r/tprasadtp/protonvpn" target="_blank" rel="noreferrer">
-    <img src="https://img.shields.io/docker/v/tprasadtp/protonvpn?label=hub.docker.com&logo=docker&logoColor=white&sort=semver&labelColor=3a3a3a" align="center" alt="releases">
-  </a>
-
-  <a href="https://hub.docker.com/r/tprasadtp/protonvpn" target="_blank" rel="noreferrer">
-    <img src="https://img.shields.io/docker/image-size/tprasadtp/protonvpn/latest?label=size&logo=docker&logoColor=white
-&labelColor=3a3a3a" align="center" alt="img-size">
-  </a>
-
   <a href="https://github.com/tprasadtp/protonvpn-docker/releases/latest" target="_blank" rel="noreferrer">
     <img src="https://img.shields.io/github/v/tag/tprasadtp/protonvpn-docker?label=version&sort=semver&logo=semver&color=7f50a6&labelColor=3a3a3a" align="center" alt="releases">
   </a>
@@ -66,10 +57,9 @@
 
 Images are published on [GitHub Conrainer Registry][ghcr].
 
-## DockerHub Image Deprecation
+### DockerHub Image Deprecation
 
-Images on [DockerHub][dockerhub] are deprecated and will no longer receive updates. Its recommended that you switch to GitHub Container Registry.
-
+Images on [DockerHub][dockerhub] are deprecated and will no longer receive updates. Its recommended that you switch to GitHub container registry image `ghcr.io/tprasadtp/protonvpn`.
 
 ## Environment Variables
 
