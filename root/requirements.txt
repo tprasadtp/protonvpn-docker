@@ -4,6 +4,5 @@
 Jinja2==2.11.3
 protonvpn-cli==2.2.6
 requests==2.25.1
-# disabled for now
-# urllib3==1.26.3
-# pytoml==0.1.21
+urllib3==1.26.3
+pytoml==0.1.21
