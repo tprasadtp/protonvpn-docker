@@ -5,6 +5,9 @@ on:
       - "*"
 jobs:
   goreleaser:
+    environment:
+      name: production
+      url: https://ghcr.io/tprasadtp/protonvpn
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
