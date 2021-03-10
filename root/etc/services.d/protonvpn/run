@@ -108,8 +108,8 @@ function main()
   fi
 
   if ! [[ $PROTONVPN_FAIL_THRESHOLD =~ $re ]] ; then
-    echo "${SVC_INIT} PROTONVPN_FAIL_THRESHOLD can only be an integer!, will default to 10"
-    PROTONVPN_FAIL_THRESHOLD=10
+    echo "${SVC_INIT} PROTONVPN_FAIL_THRESHOLD can only be an integer!, will default to 3"
+    PROTONVPN_FAIL_THRESHOLD=3
   else
     echo "${SVC_INIT} Reconnect treshold is #$PROTONVPN_FAIL_THRESHOLD"
   fi

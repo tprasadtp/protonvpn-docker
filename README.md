@@ -55,7 +55,7 @@
 
 ## Docker Registries
 
-Images are published on [GitHub Conrainer Registry][ghcr].
+Images are published on [GitHub Container Registry][ghcr].
 
 ### DockerHub Image Deprecation
 
@@ -73,8 +73,8 @@ Images on [DockerHub][dockerhub] are deprecated and will no longer receive updat
 | `PROTONVPN_PROTOCOL`      | No  | Protocol to use. By default `udp` is used.
 | `PROTONVPN_EXCLUDE_CIDRS` | No  | Comma separated list of CIDRs to exclude from VPN. Uses split tunnel. Default is set to `169.254.169.254/32,169.254.170.2/32`
 | `PROTONVPN_DNS_LEAK_PROTECT` | No  | Setting this to `0` will disable DNS leak protection. If you wish to specify custom DNS server via `--dns` option you **MUST** set this to `0`.
-| `PROTONVPN_CHECK_INTERVAL`   | No  | Interval between internal healthchecks in seconds. Defaults to 60 if not specified or invalid.
-| `PROTONVPN_FAIL_THRESHOLD`   | No  | Number of allowed consecutive internal healthchecks failures before which attempt to reconnect is made. Defaults to 3 if invalid or not specified.
+| `PROTONVPN_CHECK_INTERVAL`   | No  | (Integer) Interval between internal healthchecks in seconds. Defaults to 60 if not specified or invalid.
+| `PROTONVPN_FAIL_THRESHOLD`   | No  | (Integer) Number of allowed consecutive internal healthchecks failures before an attempt to reconnect is made. Defaults to 3 if invalid or not specified.
 
 
 ## Run Container

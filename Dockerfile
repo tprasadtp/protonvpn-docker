@@ -15,7 +15,7 @@ ENV PROTONVPN_DNS_LEAK_PROTECT=1 \
 
 ARG S6_OVERLAY_VERSION="2.2.0.3"
 
-# Install Pacakges
+# Install Packages
 # hadolint ignore=DL3008
 RUN apt-get -qq -o=Dpkg::Use-Pty=0 update \
     && apt-get -qq -o=Dpkg::Use-Pty=0 install --no-install-recommends --yes \
