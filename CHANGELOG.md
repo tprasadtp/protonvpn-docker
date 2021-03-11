@@ -12,25 +12,8 @@
 </p>
 
 
-<a name="4.0.0-beta3"></a>
-## [4.0.0-beta3] - 2021-03-11
-
-### 🐛 Bug Fixes
-- incorrect default value for `PROTONVPN_FAIL_THRESHOLD` ([877ce40](https://github.com/tprasadtp/protonvpn-docker/commit/877ce405ba58e5fc643c096912b99c9e97a9d687))
-
-### 🥺 Maintanance
-- **changelog:**  add helper script ([9bc8194](https://github.com/tprasadtp/protonvpn-docker/commit/9bc8194dc373e6e34a791d044f1afc2c2fb32002))
-
-
-<a name="4.0.0-beta2"></a>
-## [4.0.0-beta2] - 2021-03-10
-
-### Reverts
-- ci: use github environments for secrets ([cc62463](https://github.com/tprasadtp/protonvpn-docker/commit/cc62463de3e35c318a94147c55e38a921d7f9287))
-
-
-<a name="4.0.0-beta1"></a>
-## [4.0.0-beta1] - 2021-03-10
+<a name="4.0.0"></a>
+## [4.0.0] - 2021-03-11
 
 ### ⚠️ BREAKING CHANGES
 - Docker Hub image is deprecated and will not be updated.
@@ -43,6 +26,7 @@
 - Deprecate Docker Hub image ([b41ed98](https://github.com/tprasadtp/protonvpn-docker/commit/b41ed98d5471e17e1470822407756d239d575124))
 
 ### 🐛 Bug Fixes
+- incorrect default value for `PROTONVPN_FAIL_THRESHOLD` ([877ce40](https://github.com/tprasadtp/protonvpn-docker/commit/877ce405ba58e5fc643c096912b99c9e97a9d687))
 - `SIGTERM` and `SIGINT` not being handled properly ([aecf1d4](https://github.com/tprasadtp/protonvpn-docker/commit/aecf1d4eb32e11749faebf38068e468266422775))
 
 ### 📖 Documentation
@@ -57,14 +41,16 @@
 
 ### 🥺 Maintanance
 - add generated files to gitignore ([af65559](https://github.com/tprasadtp/protonvpn-docker/commit/af6555906a4ea95f342cfbe947c4f6fc00b7357f))
+- **changelog:**  add helper script ([9bc8194](https://github.com/tprasadtp/protonvpn-docker/commit/9bc8194dc373e6e34a791d044f1afc2c2fb32002))
 - **changelog:** automate changelog generation ([99c72e1](https://github.com/tprasadtp/protonvpn-docker/commit/99c72e1233757c5cf79412709977212156c31434))
 - **deps:** update python deps ([c668530](https://github.com/tprasadtp/protonvpn-docker/commit/c668530e252a6969d0f3f782b282feea0875a4b6))
 
+### Reverts
+- ci: use github environments for secrets ([cc62463](https://github.com/tprasadtp/protonvpn-docker/commit/cc62463de3e35c318a94147c55e38a921d7f9287))
+
 
 <!-- tag references -->
-[4.0.0-beta3]: https://github.com/tprasadtp/protonvpn-docker/compare/4.0.0-beta2...4.0.0-beta3
-[4.0.0-beta2]: https://github.com/tprasadtp/protonvpn-docker/compare/4.0.0-beta1...4.0.0-beta2
-[4.0.0-beta1]: https://github.com/tprasadtp/protonvpn-docker/compare/3.1.0...4.0.0-beta1
+[4.0.0]: https://github.com/tprasadtp/protonvpn-docker/compare/3.1.0...4.0.0
 <!-- old changelog-->
 ## 3.1.0
 

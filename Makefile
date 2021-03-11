@@ -67,7 +67,7 @@ release-prod: ## Build and release to production/QA
 changelog: ## Generate changelog
 	$(REPO_ROOT)/scripts/changelog.sh \
 		--debug \
-		--oldest-tag 4.0.0-beta1 \
+		--oldest-tag 4.0.0 \
 		--footer-file $(REPO_ROOT)/.chglog/FOOTER.md \
 		--output $(REPO_ROOT)/CHANGELOG.md \
 		--changelog
