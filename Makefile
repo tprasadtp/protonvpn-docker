@@ -6,10 +6,10 @@ GITHUB_OWNER := tprasadtp
 GITHUB_REPO  := protonvpn-docker
 
 # Define image names
-# DOCKER_IMAGES    := ghcr.io/$(GITHUB_OWNER)/protonvpn tprasadtp/protonvpn
-DOCKER_IMAGES    := ghcr.io/$(GITHUB_OWNER)/protonvpn
-DOCKER_IMAGE_URL := ghcr.io/$(GITHUB_OWNER)/protonvpn
-DOCKER_BUILDKIT  := 1
+DOCKER_IMAGES     := ghcr.io/$(GITHUB_OWNER)/protonvpn
+DOCKER_IMAGE_URL  := ghcr.io/$(GITHUB_OWNER)/protonvpn
+DOCKER_BUILDKIT   := 1
+DOCKER_VULN_TYPES := os
 
 # OCI Metadata
 PROJECT_TITLE    := ProtonVPN
@@ -78,6 +78,11 @@ release-notes: ## Generate release-notes
 		--debug \
 		--output $(REPO_ROOT)/RELEASE_NOTES.md \
 		--release-notes
+
+.PHONY: clean
+clean: ## clean
+	rm -rf build/
+	rm -rf dist/
 
 # Enforce BUILDKIT
 ifneq ($(DOCKER_BUILDKIT),1)

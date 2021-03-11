@@ -4,7 +4,34 @@ on:
     tags:
       - "*"
 jobs:
+  pre-flight:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Make Variables for Debugging
+        run: |
+          make show-vars-base
+          make show-vars-docker
+
+      - name: Install Trivy
+        run: |
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+          echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee -a /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update
+          sudo apt-get install trivy --yes
+
+      - name: Build Image
+        run: make docker
+      
+      - name: Ensure there are no vulns
+        run: make docker-trivy
+
   goreleaser:
+    needs: [pre-flight]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
