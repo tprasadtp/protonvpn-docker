@@ -12,6 +12,16 @@
 </p>
 
 
+<a name="4.1.0-beta1"></a>
+## [4.1.0-beta1] - 2021-03-11
+
+###  SECURITY UPDATES
+- Updated base image from python to ubuntu:focal
+
+### 🤖 Continuous Integration & Automation
+- Add Trivy scanning for images ([e7918b4](https://github.com/tprasadtp/protonvpn-docker/commit/e7918b4650c0780ff9775842b9975682f913ddb2))
+
+
 <a name="4.0.0"></a>
 ## [4.0.0] - 2021-03-11
 
@@ -50,6 +60,7 @@
 
 
 <!-- tag references -->
+[4.1.0-beta1]: https://github.com/tprasadtp/protonvpn-docker/compare/4.0.0...4.1.0-beta1
 [4.0.0]: https://github.com/tprasadtp/protonvpn-docker/compare/3.1.0...4.0.0
 <!-- old changelog-->
 ## 3.1.0
