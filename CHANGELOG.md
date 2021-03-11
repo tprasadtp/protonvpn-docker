@@ -2,24 +2,15 @@
 
 ## Changelog
 
-<p align="center">
-  <a href="https://protonvpn.com" target="_blank" rel="noreferrer">
-    <img src="https://static.prasadt.com/logos/proton/scalable/protonvpn-wide.svg" height="64" alt="protonvpn">
-  </a>
-  <a href="https://ghcr.io/tprasadtp/protonvpn" target="_blank" rel="noreferrer">
-    <img src="https://static.prasadt.com/logos/software/docker-engine-wide.svg" height="64" alt="protonvpn">
-  </a>
-</p>
 
-
-<a name="4.1.0-beta1"></a>
-## [4.1.0-beta1] - 2021-03-11
+<a name="4.1.0"></a>
+## [4.1.0] - 2021-03-12
 
 ###  SECURITY UPDATES
 - Updated base image from python to ubuntu:focal
 
 ### 🤖 Continuous Integration & Automation
-- Add Trivy scanning for images ([e7918b4](https://github.com/tprasadtp/protonvpn-docker/commit/e7918b4650c0780ff9775842b9975682f913ddb2))
+- add trivy scanning for generated images ([#22](https://github.com/tprasadtp/protonvpn-docker/issues/22)) ([d0704a0](https://github.com/tprasadtp/protonvpn-docker/commit/d0704a0e3eb6f9d2ed280c914ea8dca46a48ad3f))
 
 
 <a name="4.0.0"></a>
@@ -60,7 +51,7 @@
 
 
 <!-- tag references -->
-[4.1.0-beta1]: https://github.com/tprasadtp/protonvpn-docker/compare/4.0.0...4.1.0-beta1
+[4.1.0]: https://github.com/tprasadtp/protonvpn-docker/compare/4.0.0...4.1.0
 [4.0.0]: https://github.com/tprasadtp/protonvpn-docker/compare/3.1.0...4.0.0
 <!-- old changelog-->
 ## 3.1.0
