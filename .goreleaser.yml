@@ -13,7 +13,8 @@ dockers:
   # amd64 image
   - image_templates:
       # GHCR Images
-      - 'ghcr.io/tprasadtp/{{ .ProjectName }}:{{.Version}}-amd64'
+      - 'ghcr.io/tprasadtp/{{ .ProjectName }}:{{ .Version }}-amd64'
+      - 'ghcr.io/tprasadtp/{{ .ProjectName }}:{{ .FullCommit }}-amd64'
 
     build_flag_templates:
       - --label=org.opencontainers.image.created={{.Date}}
@@ -63,7 +64,8 @@ dockers:
 #   # ARM64 image
   - image_templates:
       # GHCR Images
-      - 'ghcr.io/tprasadtp/{{ .ProjectName }}:{{.Version}}-arm64'
+      - 'ghcr.io/tprasadtp/{{ .ProjectName }}:{{ .Version }}-arm64'
+      - 'ghcr.io/tprasadtp/{{ .ProjectName }}:{{ .FullCommit }}-arm64'
 
     build_flag_templates:
       - --label=org.opencontainers.image.created={{.Date}}
@@ -102,7 +104,8 @@ dockers:
   # ARM 32 Bit image
   - image_templates:
       # GHCR Images
-      - 'ghcr.io/tprasadtp/{{ .ProjectName }}:{{.Version}}-arm'
+      - 'ghcr.io/tprasadtp/{{ .ProjectName }}:{{ .Version }}-arm'
+      - 'ghcr.io/tprasadtp/{{ .ProjectName }}:{{ .FullCommit }}-arm'
 
     build_flag_templates:
       - --label=org.opencontainers.image.created={{.Date}}
@@ -153,6 +156,13 @@ docker_manifests:
     - 'ghcr.io/tprasadtp/{{.ProjectName}}:{{ .Version }}-amd64'
     - 'ghcr.io/tprasadtp/{{.ProjectName}}:{{ .Version }}-arm64'
     - 'ghcr.io/tprasadtp/{{.ProjectName}}:{{ .Version }}-arm'
+
+  # Commit SHA
+  - name_template: 'ghcr.io/tprasadtp/{{.ProjectName}}:{{ .FullCommit }}'
+    image_templates:
+     - 'ghcr.io/tprasadtp/{{ .ProjectName }}:{{ .FullCommit }}-amd64'
+     - 'ghcr.io/tprasadtp/{{ .ProjectName }}:{{ .FullCommit }}-arm64'
+     - 'ghcr.io/tprasadtp/{{ .ProjectName }}:{{ .FullCommit }}-arm'
 
   # Latest
   - name_template: 'ghcr.io/tprasadtp/{{.ProjectName}}:{{ if .Prerelease }}unstable{{else}}latest{{ end }}'

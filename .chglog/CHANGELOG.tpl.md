@@ -2,15 +2,6 @@
 
 ## Changelog
 
-<p align="center">
-  <a href="https://protonvpn.com" target="_blank" rel="noreferrer">
-    <img src="https://static.prasadt.com/logos/proton/scalable/protonvpn-wide.svg" height="64" alt="protonvpn">
-  </a>
-  <a href="https://ghcr.io/tprasadtp/protonvpn" target="_blank" rel="noreferrer">
-    <img src="https://static.prasadt.com/logos/software/docker-engine-wide.svg" height="64" alt="protonvpn">
-  </a>
-</p>
-
 {{ if .Versions -}}
 {{ if .Unreleased.CommitGroups -}}
 <a name="unreleased"></a>

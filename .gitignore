@@ -95,6 +95,12 @@ hosts.json
 RELEASE_NOTES.*
 release-notes.*
 
+*.deb
+*.rpm
+*.apk
+
+build/
+
 #### Project specific ###
 downloads/
 config/

@@ -1,4 +1,4 @@
-FROM python:3.9.2-slim-buster
+FROM ubuntu:focal-20210217
 
 # Overlay defaults
 ENV S6_BEHAVIOUR_IF_STAGE2_FAILS=2 \
@@ -28,6 +28,7 @@ RUN apt-get -qq -o=Dpkg::Use-Pty=0 update \
         openvpn \
         bind9-host \
         dialog \
+        python3-pip \
     && ARCH="$(uname -m)" \
     && export ARCH \
     && if [ "$ARCH" = "x86_64" ]; then \

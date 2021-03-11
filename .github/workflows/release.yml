@@ -4,7 +4,36 @@ on:
     tags:
       - "*"
 jobs:
+  pre-flight:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Make Variables for Debugging
+        run: |
+          make show-vars-base
+          make show-vars-docker
+
+      - name: Install Trivy
+        run: |
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+          echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee -a /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update
+          sudo apt-get install trivy --yes
+
+      - name: Build Image
+        run: make docker
+      
+      - name: Ensure there are no vulns
+        run: make docker-trivy
+        env: 
+          TRIVY_NO_PROGRESS: true
+
   goreleaser:
+    needs: [pre-flight]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -30,15 +59,15 @@ jobs:
           version: latest
           install-only: true
 
-      - name: Install git-chglog
-        run: |
-          brew tap git-chglog/git-chglog
-          brew install git-chglog
+      # - name: Install git-chglog
+      #   run: |
+      #     brew tap git-chglog/git-chglog
+      #     brew install git-chglog
 
-      - name: Generate Release notes
-        run: |
-          make release-notes
-          cat RELEASE_NOTES.md
+      # - name: Generate Release notes
+      #   run: |
+      #     make release-notes
+      #     cat RELEASE_NOTES.md
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v1

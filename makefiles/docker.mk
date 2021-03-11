@@ -16,6 +16,9 @@ DOCKER_EXTRA_ARGS ?=
 # Enable Buidkit if not already disabled
 DOCKER_BUILDKIT ?= 1
 
+# Default to os,library
+DOCKER_VULN_TYPES ?= os,library
+
 # We need to quote this to avoid issues with command
 IMAGE_BUILD_DATE := $(shell date --universal --iso-8601=s)
 
@@ -127,19 +130,19 @@ docker-labels: ## Inspect labels of the container
 	@echo -e "\033[92m➜ $@ \033[0m"
 	docker $(DOCKER_INSPECT_ARGS)
 
-.PHONY: docker-setup-binfmt
-docker-setup-binfmt: ## Register ARM binaries via binfmt
-	docker run \
-		--rm \
-		--userns=host \
-		--network=none  \
-		--privileged \
-		docker/binfmt@sha256:7e54e474ac8998c01367f11edcbe2bbfcb38d9d8bd87defbc407edfa0fd6cca8
 
 .PHONY: docker-tags
 docker-tags: ## Show docker image tags
 	$(call print_docker_tags)
 
+
+.PHONY: docker-trivy
+docker-trivy: ## Run trivy on image
+	trivy i --light -s HIGH,CRITICAL \
+		--ignore-unfixed \
+		--exit-code 1 \
+		--vuln-type=$(DOCKER_VULN_TYPES) \
+		$(lastword $(DOCKER_TAGS))
 
 .PHONY: show-vars-docker
 show-vars-docker: ## Show docker variables
@@ -158,6 +161,7 @@ show-vars-docker: ## Show docker variables
 	@echo "DOCKER_BUILDKIT      : $(DOCKER_BUILDKIT)"
 	@echo "DOCKER_BUILD_COMMAND : $(DOCKER_BUILD_COMMAND)"
 	@echo "DOCKER_EXTRA_ARGS    : $(DOCKER_EXTRA_ARGS)"
+	@echo "DOCKER_VULN_TYPES    : $(DOCKER_VULN_TYPES)"
 	@echo ""
 
 
