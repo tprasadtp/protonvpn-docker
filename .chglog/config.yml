@@ -26,7 +26,7 @@ options:
       - ci
       - chore
     title_maps:
-      feat: "🍒 Features"
+      feat: "🍒 Features & Enhancements"
       fix: "🐛 Bug Fixes"
       perf: "🚀 Performance Improvements"
       docs: "📖 Documentation"
@@ -48,7 +48,7 @@ options:
 
   issues:
     prefix:
-      - \#
+      - "#"
       - GH-
       - GITHUB-
 

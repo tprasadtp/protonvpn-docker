@@ -15,6 +15,7 @@ jobs:
         run: |
           make show-vars-base
           make shellcheck
+
   docker-lint:
     runs-on: ubuntu-latest
     steps:
@@ -52,6 +53,21 @@ jobs:
         with:
           version: latest
           install-only: true
+
+      - name: Install git-chglog
+        run: |
+          brew tap git-chglog/git-chglog
+          brew install git-chglog
+
+      - name: Generate Changelog
+        run: |
+          make changelog
+          cat CHANGELOG.md
+
+      - name: Generate Release notes
+        run: |
+          make release-notes
+          cat RELEASE_NOTES.md
 
       - name: Build snapshot Build
         run: make snapshot
