@@ -64,11 +64,6 @@ jobs:
           make changelog
           cat CHANGELOG.md
 
-      - name: Generate Release notes
-        run: |
-          make release-notes
-          cat RELEASE_NOTES.md
-
       - name: Build snapshot 
         run: make snapshot
 
