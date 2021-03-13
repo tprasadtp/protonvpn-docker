@@ -1,5 +1,4 @@
-# This file is managed by petra.
-# This template MUST be the first include statement.
+# This file is managed by diana.
 
 # If SHELL is sh change it to bash
 ifeq ($(SHELL),/bin/sh)

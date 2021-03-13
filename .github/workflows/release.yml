@@ -26,10 +26,10 @@ jobs:
 
       - name: Build Image
         run: make docker
-      
+
       - name: Ensure there are no vulns
         run: make docker-trivy
-        env: 
+        env:
           TRIVY_NO_PROGRESS: true
 
   goreleaser:
@@ -59,15 +59,15 @@ jobs:
           version: latest
           install-only: true
 
-      # - name: Install git-chglog
-      #   run: |
-      #     brew tap git-chglog/git-chglog
-      #     brew install git-chglog
+      - name: Install git-chglog
+        run: |
+          brew tap git-chglog/git-chglog
+          brew install git-chglog
 
-      # - name: Generate Release notes
-      #   run: |
-      #     make release-notes
-      #     cat RELEASE_NOTES.md
+      - name: Generate Release notes
+        run: |
+          make release-notes
+          cat RELEASE_NOTES.md
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v1
