@@ -13,7 +13,7 @@ method = "squash"
 
 # Blacklisted Labels
 # Block WIP,
-blocking_labels = ["Status:Abandoned", "Status:WIP", "Luna:WIP", "Status:Blocked", "Deps:Actions", "Status:WontFix", "Status:Stale"]
+blocking_labels = ["Status:Abandoned", "Status:WIP", "Actor:Luna", "Status:Blocked", "Deps:Actions", "Status:WontFix", "Status:Stale"]
 
 # Priority
 priority_merge_label = "Priority:Critical"
@@ -27,6 +27,14 @@ notify_on_conflict = true
 # Wait to Pass checks
 optimistic_updates = false
 
+[merge.message]
+body = "pull_request_body"
+strip_html_comments = true
+body_type = "markdown"
+cut_body_before = "<!-- COMMIT-NOTES-BEGIN -->"
+cut_body_after = "<!-- COMMIT-NOTES-END-->"
+
+
 [merge.automerge_dependencies]
 # only auto merge "minor" and "patch" version upgrades.
 # do not automerge "major" version upgrades.
@@ -35,11 +43,12 @@ usernames = ["dependabot"]
 
 
 [update]
-# Autoupdate requires automerge labes
-require_automerge_label = true
+require_automerge_label = false
+
 # Auto update label is sharedwith Luna
 autoupdate_label = "Luna:AutoUpdate"
-# Ignore bots or other apps with automerge built in
+
+# Ignore bots or other apps with automerge built in and kodiak should ignore then
 ignored_usernames = ["valarie-ci-bot", "dependabot-preview", "luna-bot"]
 
 # diana:{diana_version}:{remote}:{source}:{version}:{remote_path}:{type}
