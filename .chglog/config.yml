@@ -1,5 +1,5 @@
 style: github
-template: CHANGELOG.tpl.md
+template: CHANGELOG.md.tpl
 info:
   title: CHANGELOG
   repository_url: https://github.com/tprasadtp/protonvpn-docker

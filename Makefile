@@ -27,6 +27,8 @@ UPSTREAM_URL     := https://github.com/ProtonVPN/linux-cli
 include $(REPO_ROOT)/makefiles/help.mk
 include $(REPO_ROOT)/makefiles/metadata.mk
 include $(REPO_ROOT)/makefiles/docker.mk
+include $(REPO_ROOT)/makefiles/chglog.mk
+
 
 .PHONY: shellcheck
 shellcheck: ## Runs shellcheck
@@ -48,11 +50,11 @@ shellcheck: ## Runs shellcheck
 # go releaser
 .PHONY: snapshot
 snapshot: ## Build snapshot
-	goreleaser release --rm-dist --release-notes $(REPO_ROOT)/CHANGELOG.md --snapshot
+	goreleaser release --rm-dist --snapshot
 
 .PHONY: release
 release: ## Build release
-	goreleaser release --rm-dist --release-notes $(REPO_ROOT)/CHANGELOG.md --skip-publish
+	goreleaser release --rm-dist --release-notes $(REPO_ROOT)/RELEASE_NOTES.md --skip-publish
 
 # DELETING MANIFESTS IS IMPORTANT!
 # GORELEASES USES --amend flag on docker manifest create command!
@@ -61,23 +63,7 @@ release: ## Build release
 release-prod: ## Build and release to production/QA
 	@for img in $(DOCKER_IMAGES); do docker manifest rm $${img}:4.0 || true ; done
 	@for img in $(DOCKER_IMAGES); do docker manifest rm $${img}:latest || true ; done
-	goreleaser release --rm-dist --release-notes $(REPO_ROOT)/CHANGELOG.md
-
-.PHONY: changelog
-changelog: ## Generate changelog
-	$(REPO_ROOT)/scripts/changelog.sh \
-		--debug \
-		--oldest-tag 4.0.0 \
-		--footer-file $(REPO_ROOT)/.chglog/FOOTER.md \
-		--output $(REPO_ROOT)/CHANGELOG.md \
-		--changelog
-
-# .PHONY: release-notes
-# release-notes: ## Generate release-notes
-# 	$(REPO_ROOT)/scripts/changelog.sh \
-# 		--debug \
-# 		--output $(REPO_ROOT)/RELEASE_NOTES.md \
-# 		--release-notes
+	goreleaser release --rm-dist --release-notes $(REPO_ROOT)/RELEASE_NOTES.md
 
 .PHONY: clean
 clean: ## clean

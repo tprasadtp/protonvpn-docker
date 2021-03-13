@@ -92,8 +92,8 @@ hosts.json
 ### CI & Generated Files ###
 
 # Ignore release notes generated
-RELEASE_NOTES.*
-release-notes.*
+RELEASE_NOTES.md
+release-notes.md
 
 *.deb
 *.rpm
