@@ -102,7 +102,7 @@ function check_deps()
     local missing_deps=0
 
     if ! has_command git-chglog; then
-        log_error "Missing git-chglog. Please install git-chglog (v0.10 and above)"
+        log_error "Missing git-chglog. Please install git-chglog (v0.11.2 and above)"
         log_info "from https://github.com/git-chglog/git-chglog."
         ((missing_deps++))
     else
@@ -128,8 +128,6 @@ function check_deps()
 
 function build_regex()
 {
-    local tag
-
     if [[ -n ${NEXT_TAG} ]]; then
         log_debug "build-regex: using next tag - ${NEXT_TAG}"
         if git show-ref --tags --quiet --verify -- "refs/tags/${NEXT_TAG}"; then
@@ -171,62 +169,25 @@ function build_regex()
     # Build Regex to filter tags
     # https://regex101.com/r/0EiAvH/1/
     if [[ $pre == "" ]]; then
-        changelog_tag_filter="[vV]?[\d]+\.[\d]+\.[\d]+\$"
-        # shellcheck disable=SC2034
-        release_notes_tag_filter="[vV]?${major}\.${minor}+\.${patch}+\$"
+        tag_filter="[vV]?[\d]+\.[\d]+\.[\d]+\$"
     else
-        changelog_tag_filter="[vV]?${major}\.${minor}\.${patch}-(alpha|beta|rc|qa|migration)([0-9]+)?\$|[0-9]+\.[0-9]+\.[0-9]+\$"
-    release_notes_tag_filter="[vV]?${major}\.${minor}\.${patch}-(alpha|beta|rc|qa|migration)([0-9]+)?\$"
+        tag_filter="[vV]?${major}\.${minor}\.${patch}-(alpha|beta|rc|qa|migration)([0-9]+)?\$|[0-9]+\.[0-9]+\.[0-9]+\$"
     fi
 
-    log_debug "build-regex: chglog tag filter regex is ${changelog_tag_filter}"
-    log_debug "build-regex: release notes tag filter regex is ${release_notes_tag_filter}"
+    log_debug "build-regex: chglog tag filter regex is ${tag_filter}"
 
 }
 
 
 function display_usage()
 {
-# Prints out help menu
-# ${PINK}
-# Release Notes:
-# ${NC}
-# - If tag tag is pre release, include commit
-#   groups belonging belong to same MAJOR.MINOR.PATCH
-#   version.
-# - If tag tag is stable include commit groups from tag
-#   stable to previous stable tag.
-# ${TEAL}
-# Changelog:
-# ${NC}
-# - If tag tag is a pre release, include commit groups
-#   belonging to same MAJOR.MINOR.PATCH version and all previos stable
-#   tags.
-# - If tag tag is a stable release include commit groups
-#   of all stable tags.
-# - If there is no tag tag, include ungrouped commits as
-#   unreleased, and if nearest tag is prerelease, include commit
-#   groups belonging belong to same MAJOR.MINOR.PATCH version and
-#   all previous stable tags.
-# - If there is no tag tag, include ungrouped commits as
-#   unreleased, and if nearest tag is prerelease, include commit
-#   groups belonging belong to same MAJOR.MINOR.PATCH version and
-#   all previos stable tags.
-# - If there are no tags, consider all commit groups as unreleased.
-# ${YELLOW}
-# Generating changelog for a tag before creating it:
-# ${NC}
-# You can override tag by using --next <next-tag> and tag
-# tag will be replaced with tag specified in --next. Under the hood
-# this will use git-chglog's --next-tag feature to create it.
-# ${NC}
-
 cat 1>&2 <<EOF
 Changelog and Release Notes generation helper.
 
 Usage: ${TEAL}${SCRIPT} ${BLUE} [options] ${NC}${VIOLET}
 ------------------------- Options ------------------------------${NC}
-[-c | --changelog]        Generate changelog
+[-c | --changelog]        Generate Changelog
+[-r | --release-notes]    Generate Release notes
 ${ORANGE}
 ---------------- Options with Required Argments-----------------${NC}
 [-o | --output]           Save changelog to a file specified
@@ -256,7 +217,7 @@ function main()
     while [[ ${1} != "" ]]; do
         case ${1} in
             -c | --changelog)       mode="changelog";;
-            # -r | --release-notes)   mode="release-notes";;
+            -r | --release-notes)   mode="release-notes";;
             # Options
             -n | --next)            readonly bool_use_next_mode="true";
                                     shift;readonly NEXT_TAG="${1}";;
@@ -355,11 +316,11 @@ function main()
         if [[ -n ${NEXT_TAG} ]]; then
             CHANGELOG_CONTENT="$(git-chglog \
                 --next-tag="${NEXT_TAG}" \
-                --tag-filter-pattern="${changelog_tag_filter}" \
+                --tag-filter-pattern="${tag_filter}" \
                 "${CHANGELOG_ARGS}")"
         else
             CHANGELOG_CONTENT="$(git-chglog \
-                --tag-filter-pattern="${changelog_tag_filter}" \
+                --tag-filter-pattern="${tag_filter}" \
                 "${CHANGELOG_ARGS}")"
         fi
 
@@ -376,31 +337,33 @@ function main()
         fi
 
     # release notes
-    # elif [[ $mode == "release-notes" ]]; then
-    #     log_debug "main: generating release notes"
+    elif [[ $mode == "release-notes" ]]; then
+        log_debug "main: generating release notes"
 
-    #     CHANGELOG_ARGS="${major}"
+        if [[ -n ${NEXT_TAG} ]]; then
+            RN_CONTENT="$(git-chglog \
+                --template "${REPO_ROOT:-.}/.chglog/RELEASE_NOTES.md.tpl" \
+                --next-tag="${NEXT_TAG}" \
+                --tag-filter-pattern="${tag_filter}" \
+                "${tag}")"
+        else
+            RN_CONTENT="$(git-chglog \
+                --template "${REPO_ROOT:-.}/.chglog/RELEASE_NOTES.md.tpl" \
+                --tag-filter-pattern="${tag_filter}" \
+                "${tag}")"
+        fi
 
-    #     if [[ -n ${NEXT_TAG} ]]; then
-    #         CHANGELOG_CONTENT="$(git-chglog \
-    #             --next-tag="${NEXT_TAG}" \
-    #             --tag-filter-pattern="${release_notes_tag_filter}")"
-    #     else
-    #         CHANGELOG_CONTENT="$(git-chglog \
-    #             --tag-filter-pattern="${release_notes_tag_filter}")"
-    #     fi
-
-    #     if [[ -z $CHANGELOG_CONTENT ]]; then
-    #         log_error "main: failed to generate release notes"
-    #         exit 1
-    #     else
-    #         if [[ -n $output_file ]]; then
-    #             log_debug "main: saving release notes to $output_file"
-    #             echo "${HEADER_FILE_CONTENTS}${CHANGELOG_CONTENT}" > "${output_file}"
-    #         else
-    #             echo "${HEADER_FILE_CONTENTS}${CHANGELOG_CONTENT}"
-    #         fi
-    #     fi
+        if [[ -z $RN_CONTENT ]]; then
+            log_error "main: failed to generate release notes"
+            exit 1
+        else
+            if [[ -n $output_file ]]; then
+                log_debug "main: saving release notes to $output_file"
+                echo "${HEADER_FILE_CONTENTS}${RN_CONTENT}" > "${output_file}"
+            else
+                echo "${HEADER_FILE_CONTENTS}${RN_CONTENT}"
+            fi
+        fi
     else
         log_error "main: no mode specified"
         exit 1
