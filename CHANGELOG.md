@@ -3,6 +3,16 @@
 ## Changelog
 
 
+<a name="4.1.1"></a>
+## [4.1.1] - 2021-03-13
+
+### 🤖 Continuous Integration & Automation
+- (experimental) add image scanning as a cron job ([#24](https://github.com/tprasadtp/protonvpn-docker/issues/24)) ([4ad9d7c](https://github.com/tprasadtp/protonvpn-docker/commit/4ad9d7cd6573f77c3b2fa3b19a9722c727a1c029))
+
+### 🥺 Maintanance
+- **changelog:** fix release notes script ([#23](https://github.com/tprasadtp/protonvpn-docker/issues/23)) ([19c01e3](https://github.com/tprasadtp/protonvpn-docker/commit/19c01e38f1b1622807b4b9fccc08bc86741e7cfd))
+
+
 <a name="4.1.0"></a>
 ## [4.1.0] - 2021-03-12
 
@@ -51,6 +61,7 @@
 
 
 <!-- tag references -->
+[4.1.1]: https://github.com/tprasadtp/protonvpn-docker/compare/4.1.0...4.1.1
 [4.1.0]: https://github.com/tprasadtp/protonvpn-docker/compare/4.0.0...4.1.0
 [4.0.0]: https://github.com/tprasadtp/protonvpn-docker/compare/3.1.0...4.0.0
 <!-- old changelog-->
