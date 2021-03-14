@@ -186,14 +186,14 @@ Changelog and Release Notes generation helper.
 
 Usage: ${TEAL}${SCRIPT} ${BLUE} [options] ${NC}${VIOLET}
 ------------------------- Options ------------------------------${NC}
-[-c | --changelog]        Generate Changelog
-[-r | --release-notes]    Generate Release notes
+[-c | --changelog]        Generate changelog
+[-r | --release-notes]    Generate release notes
 ${ORANGE}
 ---------------- Options with Required Argments-----------------${NC}
 [-o | --output]           Save changelog to a file specified
 
 [-n | --next]             Specify next version.
-[--olderst-tag]           Oldest semver tag till which changelog
+[--oldest-tag]            Oldest semver tag till which changelog
                           will be generated. This must exist and
                           has no effect on release-notes option.
 [--header-file]           This file will be appended to begining of the
