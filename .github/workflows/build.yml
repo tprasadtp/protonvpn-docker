@@ -68,7 +68,7 @@ jobs:
         run: make snapshot
 
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.0.11
+        uses: aquasecurity/trivy-action@0.0.12
         with:
           scan-type: 'image'
           vuln-type: os
