@@ -1,4 +1,4 @@
-FROM ubuntu:focal-20210217
+FROM ubuntu:focal-20210325
 
 # Overlay defaults
 ENV S6_BEHAVIOUR_IF_STAGE2_FAILS=2 \
