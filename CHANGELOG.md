@@ -7,7 +7,7 @@
 ## [4.1.2] - 2021-03-26
 
 ### 🤖 Continuous Integration & Automation
-- Fix Trivy workflow ([d7d9fcb](https://github.com/tprasadtp/protonvpn-docker/commit/d7d9fcb5c8abdee6699b40ff3fda534c3fb5c656))
+- Fix Trivy workflow ([#31](https://github.com/tprasadtp/protonvpn-docker/issues/31)) ([91e23cd](https://github.com/tprasadtp/protonvpn-docker/commit/91e23cd9f5577fe8e66d8fe921f82a8fa83d8b7e))
 - **deps:** bump aquasecurity/trivy-action from 0.0.11 to 0.0.12 ([#28](https://github.com/tprasadtp/protonvpn-docker/issues/28)) ([b340412](https://github.com/tprasadtp/protonvpn-docker/commit/b340412df2f151377603e5d4e5eed1218e81ef23))
 
 ### 🥺 Maintanance
@@ -72,11 +72,25 @@
 - ci: use github environments for secrets ([cc62463](https://github.com/tprasadtp/protonvpn-docker/commit/cc62463de3e35c318a94147c55e38a921d7f9287))
 
 
+<a name="3.1.0"></a>
+## [3.1.0] - 2021-02-27
+
+
+<a name="3.0.0"></a>
+## [3.0.0] - 2021-02-20
+
+
+<a name="2.2.6"></a>
+## 2.2.6 - 2021-01-12
+
+
 <!-- tag references -->
 [4.1.2]: https://github.com/tprasadtp/protonvpn-docker/compare/4.1.1...4.1.2
 [4.1.1]: https://github.com/tprasadtp/protonvpn-docker/compare/4.1.0...4.1.1
 [4.1.0]: https://github.com/tprasadtp/protonvpn-docker/compare/4.0.0...4.1.0
 [4.0.0]: https://github.com/tprasadtp/protonvpn-docker/compare/3.1.0...4.0.0
+[3.1.0]: https://github.com/tprasadtp/protonvpn-docker/compare/3.0.0...3.1.0
+[3.0.0]: https://github.com/tprasadtp/protonvpn-docker/compare/2.2.6...3.0.0
 <!-- old changelog-->
 ## 3.1.0
 
