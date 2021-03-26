@@ -14,8 +14,6 @@ updates:
     open-pull-requests-limit: 10
     pull-request-branch-name:
       separator: "-"
-    assignees:
-      - tprasadtp
 
   - package-ecosystem: pip
     labels:
@@ -30,8 +28,6 @@ updates:
     open-pull-requests-limit: 10
     pull-request-branch-name:
       separator: "-"
-    assignees:
-      - tprasadtp
 
   # Actions
   - package-ecosystem: github-actions
@@ -46,8 +42,6 @@ updates:
     open-pull-requests-limit: 10
     pull-request-branch-name:
       separator: "-"
-    assignees:
-      - tprasadtp
     ignore:
       # We trust official actions by GitHub
       # we trust them for not breaking stuff
