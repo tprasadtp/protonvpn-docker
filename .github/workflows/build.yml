@@ -64,16 +64,16 @@ jobs:
           make changelog
           cat CHANGELOG.md
 
-      - name: Build snapshot 
+      - name: Build snapshot
         run: make snapshot
 
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.0.12
+        id: trivy
+        uses: aquasecurity/trivy-action@0.0.13
         with:
           scan-type: 'image'
           vuln-type: os
           severity: HIGH,CRITICAL
-          exit-code: 1
           ignore-unfixed: true
           image-ref: 'ghcr.io/tprasadtp/protonvpn:${{ github.sha }}-amd64'
           format: 'template'
@@ -81,7 +81,7 @@ jobs:
           output: 'trivy-results.sarif'
 
       - name: Upload Trivy scan results to GitHub Security tab
-        if: always()
+        if: github.ref == 'refs/heads/master'
         uses: github/codeql-action/upload-sarif@v1
         with:
           sarif_file: 'trivy-results.sarif'
