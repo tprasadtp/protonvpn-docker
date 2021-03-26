@@ -67,6 +67,3 @@ options:
     pattern: "^Revert \"([\\s\\S]*)\"$"
     pattern_maps:
       - Header
-
-# diana:{diana_version}:{remote}:{source}:{version}:{remote_path}:{type}
-# diana:0.2.7:github:tprasadtp/templates::chglog/config.yml:static

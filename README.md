@@ -23,6 +23,10 @@
     <img src="https://github.com/tprasadtp/protonvpn-docker/workflows/release/badge.svg"align="center" alt="action-release">
   </a>
 
+  <a href="https://github.com/tprasadtp/protonvpn-docker/actions?workflow=security" target="_blank" rel="noreferrer">
+    <img src="https://github.com/tprasadtp/protonvpn-docker/workflows/security/badge.svg"align="center" alt="action-security">
+  </a>
+
 </p>
 
 <!-- Version and Release Badges -->

@@ -3,8 +3,20 @@
 ## Changelog
 
 
+<a name="4.1.2"></a>
+## [4.1.2] - 2021-03-26
+
+### 🤖 Continuous Integration & Automation
+- Fix Trivy workflow ([d7d9fcb](https://github.com/tprasadtp/protonvpn-docker/commit/d7d9fcb5c8abdee6699b40ff3fda534c3fb5c656))
+- **deps:** bump aquasecurity/trivy-action from 0.0.11 to 0.0.12 ([#28](https://github.com/tprasadtp/protonvpn-docker/issues/28)) ([b340412](https://github.com/tprasadtp/protonvpn-docker/commit/b340412df2f151377603e5d4e5eed1218e81ef23))
+
+### 🥺 Maintanance
+- **deps:** bump ubuntu from focal-20210217 to focal-20210325 ([#30](https://github.com/tprasadtp/protonvpn-docker/issues/30)) ([1c25946](https://github.com/tprasadtp/protonvpn-docker/commit/1c2594684f9d43f702a19983d99b9433356ec693))
+- **deps:** bump urllib3 from 1.26.3 to 1.26.4 in /root ([#26](https://github.com/tprasadtp/protonvpn-docker/issues/26)) ([4148872](https://github.com/tprasadtp/protonvpn-docker/commit/4148872439bb6499855ca1ba3488a4bb3cd8de60))
+
+
 <a name="4.1.1"></a>
-## [4.1.1] - 2021-03-13
+## [4.1.1] - 2021-03-14
 
 ### 🤖 Continuous Integration & Automation
 - (experimental) add image scanning as a cron job ([#24](https://github.com/tprasadtp/protonvpn-docker/issues/24)) ([4ad9d7c](https://github.com/tprasadtp/protonvpn-docker/commit/4ad9d7cd6573f77c3b2fa3b19a9722c727a1c029))
@@ -61,6 +73,7 @@
 
 
 <!-- tag references -->
+[4.1.2]: https://github.com/tprasadtp/protonvpn-docker/compare/4.1.1...4.1.2
 [4.1.1]: https://github.com/tprasadtp/protonvpn-docker/compare/4.1.0...4.1.1
 [4.1.0]: https://github.com/tprasadtp/protonvpn-docker/compare/4.0.0...4.1.0
 [4.0.0]: https://github.com/tprasadtp/protonvpn-docker/compare/3.1.0...4.0.0

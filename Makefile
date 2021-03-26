@@ -56,13 +56,8 @@ snapshot: ## Build snapshot
 release: ## Build release
 	goreleaser release --rm-dist --release-notes $(REPO_ROOT)/RELEASE_NOTES.md --skip-publish
 
-# DELETING MANIFESTS IS IMPORTANT!
-# GORELEASES USES --amend flag on docker manifest create command!
-# This will cause old images to be included in the manifest!
 .PHONY: release-prod
 release-prod: ## Build and release to production/QA
-	@for img in $(DOCKER_IMAGES); do docker manifest rm $${img}:4.0 || true ; done
-	@for img in $(DOCKER_IMAGES); do docker manifest rm $${img}:latest || true ; done
 	goreleaser release --rm-dist --release-notes $(REPO_ROOT)/RELEASE_NOTES.md
 
 .PHONY: clean
