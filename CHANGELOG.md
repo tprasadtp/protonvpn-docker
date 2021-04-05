@@ -3,6 +3,17 @@
 ## Changelog
 
 
+<a name="4.1.3"></a>
+## [4.1.3] - 2021-04-05
+
+### 🤖 Continuous Integration & Automation
+- update dependabot configs ([117fa9c](https://github.com/tprasadtp/protonvpn-docker/commit/117fa9ce13284cf9b7f2a4ba7512c0ab47d11529))
+- **deps:** bump goreleaser/goreleaser-action ([#33](https://github.com/tprasadtp/protonvpn-docker/issues/33)) ([ced9ead](https://github.com/tprasadtp/protonvpn-docker/commit/ced9ead448615a230144fbfee174e337daca4cff))
+
+### 🥺 Maintanance
+- **deps:** bump ubuntu from focal-20210325 to focal-20210401 ([#34](https://github.com/tprasadtp/protonvpn-docker/issues/34)) ([f8d3c38](https://github.com/tprasadtp/protonvpn-docker/commit/f8d3c384460e3cfeabbfaa8b7188b400a8c10b40))
+
+
 <a name="4.1.2"></a>
 ## [4.1.2] - 2021-03-26
 
@@ -72,25 +83,12 @@
 - ci: use github environments for secrets ([cc62463](https://github.com/tprasadtp/protonvpn-docker/commit/cc62463de3e35c318a94147c55e38a921d7f9287))
 
 
-<a name="3.1.0"></a>
-## [3.1.0] - 2021-02-27
-
-
-<a name="3.0.0"></a>
-## [3.0.0] - 2021-02-20
-
-
-<a name="2.2.6"></a>
-## 2.2.6 - 2021-01-12
-
-
 <!-- tag references -->
+[4.1.3]: https://github.com/tprasadtp/protonvpn-docker/compare/4.1.2...4.1.3
 [4.1.2]: https://github.com/tprasadtp/protonvpn-docker/compare/4.1.1...4.1.2
 [4.1.1]: https://github.com/tprasadtp/protonvpn-docker/compare/4.1.0...4.1.1
 [4.1.0]: https://github.com/tprasadtp/protonvpn-docker/compare/4.0.0...4.1.0
 [4.0.0]: https://github.com/tprasadtp/protonvpn-docker/compare/3.1.0...4.0.0
-[3.1.0]: https://github.com/tprasadtp/protonvpn-docker/compare/3.0.0...3.1.0
-[3.0.0]: https://github.com/tprasadtp/protonvpn-docker/compare/2.2.6...3.0.0
 <!-- old changelog-->
 ## 3.1.0
 
