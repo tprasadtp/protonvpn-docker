@@ -46,17 +46,7 @@ updates:
       # We trust official actions by GitHub
       # we trust them for not breaking stuff
       # and security.
-      - dependency-name: "actions/checkout"
-      - dependency-name: "actions/cache"
-      - dependency-name: "actions/upload-artifact"
-      - dependency-name: "actions/download-script"
-      - dependency-name: "actions/github-script"
-
-      # Official Setup Actions
-      - dependency-name: "actions/setup-go"
-      - dependency-name: "actions/setup-node"
-      - dependency-name: "actions/setup-python"
-      - dependency-name: "actions/setup-dotnet"
+      - dependency-name: "actions/*"
 
       # Labels is Frozen
       - dependency-name: "tprasadtp/labels"
