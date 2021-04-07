@@ -61,10 +61,6 @@
 
 Images are published on [GitHub Container Registry][ghcr].
 
-### DockerHub Image Deprecation
-
-Images on [DockerHub][dockerhub] are deprecated and will no longer receive updates. Its recommended that you switch to GitHub container registry image `ghcr.io/tprasadtp/protonvpn`.
-
 ## Environment Variables
 
 | Name | Required | Description
