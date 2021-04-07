@@ -1,6 +1,15 @@
 # Kubernetes
 
-## Create a Namespace or Switch to Namespace
+<p align="center">
+  <a href="https://protonvpn.com" target="_blank" rel="noreferrer">
+    <img src="https://static.prasadt.com/logos/proton/scalable/protonvpn-wide.svg" height="64" alt="protonvpn">
+  </a>
+  <a href="https://k8.io" target="_blank" rel="noreferrer">
+    <img src="https://static.prasadt.com/logos/k8s/svg/kubernetes-horizontal.svg" height="64" alt="k8s">
+  </a>
+</p>
+
+## Create a namespace or switch to namespace
 
 ```bash
 # CREATE
@@ -10,8 +19,7 @@ kubectl config set-context --namespace pyload --current
 ```
 
 
-## Create kubernetes secret a secret to save protonvn credentials and tier
-
+## Create kubernetes `Secret` to save protonvpn credentials and tier
 
 ```bash
 kubectl create secret generic protonvpn-credentials \
@@ -20,9 +28,9 @@ kubectl create secret generic protonvpn-credentials \
     --from-literal=PROTONVPN_TIER=$PROTONVPN_TIER
 ```
 
-## Create a config map to save settings
+## Create a `ConfigMap` to save settings
 
-Please include your Pod CIDR, service CIDR, Loadbalancer IP Pool CIDR in the `PROTONVPN_EXCLUDE_CIDRS`. Here we are including all Private subnets for simplicity.
+Please include your Pod CIDR, service CIDR, Loadbalancer IP Pool CIDR in the `PROTONVPN_EXCLUDE_CIDRS`. Here we are including all private subnets for simplicity.
 
 ```bash
 kubectl create configmap protonvpn-settings \
@@ -32,10 +40,10 @@ kubectl create configmap protonvpn-settings \
     --from-literal=PROTONVPN_CHECK_INTERVAL=10
 ```
 
-## Create Pods & Service
+## Create `Pod` & `Service`
 
 Please note that we are using Pod here. In real world scenario please use Deployments or other higher level constructs.
-This is for ease of use as the application you may want to use with protonvpn will vary. alos we are using service type `NodePort` for simplicity.
+This is for ease of use as the application you may want to use with protonvpn will vary. also we are using service of type `NodePort` for simplicity.
 
 ```bash
 kubectl appy -f pod.yml
@@ -44,7 +52,7 @@ kubectl apply -f service.yml
 
 ## Verify
 
-- Verify Pods are running
+- Verify Pod is running
 
     ```bash
     kubectl get po
