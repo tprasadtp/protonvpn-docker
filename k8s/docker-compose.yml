@@ -7,7 +7,7 @@ services:
       PROTONVPN_USERNAME: ${PROTONVPN_USERNAME}
       PROTONVPN_PASSWORD: ${PROTONVPN_PASSWORD}
       PROTONVPN_TIER: ${PROTONVPN_TIER:-0}
-    image: ghcr.io/tprasadtp/protonvpn:3.0.0-dirty
+    image: ghcr.io/tprasadtp/protonvpn:latest
     restart: unless-stopped
     networks:
       - internet
@@ -35,7 +35,6 @@ services:
       - ./downloads/:/downloads/:rw
 volumes:
   config:
-  protonvpn:
 networks:
   internet:
   proxy:

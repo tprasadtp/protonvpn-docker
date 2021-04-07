@@ -186,8 +186,7 @@ By default instance metadata IPs which are commonly used on cloud environments a
 
 ## Kubernetes
 
-If you are interested in testing the container on k8s
-Open an issue to start the discussion. You may need to tweak your `PROTONVPN_EXCLUDE_CIDRS` and **MUST** disable dns leak protection.
+You may need to tweak your `PROTONVPN_EXCLUDE_CIDRS` to exclude your PodCIDR and ServiceCIDR. You also **MUST** disable dns leak protection. for more info see [k8s/README.md](./k8s/README.md).
 
 [dockerhub]: https://hub.docker.com/r/tprasadtp/protonvpn
 [ghcr]: https://ghcr.io/tprasadtp/protonvpn

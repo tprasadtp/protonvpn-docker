@@ -1,24 +1,49 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: runs-over-vpn
+  name: pyload-protonvpn
+  labels:
+    app: pyload-protonvpn
 spec:
   containers:
     - name: protonvpn
       image: ghcr.io/tprasadtp/protonvpn:latest
       env:
-        - name: PROTONVPN_COUNTRY
-          value: NL
         - name: PROTONVPN_USERNAME
           valueFrom:
             secretKeyRef:
-              name: protonvpn
+              name: protonvpn-credentials
               key: PROTONVPN_USERNAME
         - name: PROTONVPN_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: protonvpn
+              name: protonvpn-credentials
               key: PROTONVPN_PASSWORD
+        - name: PROTONVPN_TIER
+          valueFrom:
+            secretKeyRef:
+              name: protonvpn-credentials
+              key: PROTONVPN_TIER
+        - name: PROTONVPN_EXCLUDE_CIDRS
+          valueFrom:
+            configMapKeyRef:
+              name: protonvpn-settings
+              key: PROTONVPN_EXCLUDE_CIDRS
+        - name: PROTONVPN_COUNTRY
+          valueFrom:
+            configMapKeyRef:
+              name: protonvpn-settings
+              key: PROTONVPN_COUNTRY
+        - name: PROTONVPN_DNS_LEAK_PROTECT
+          valueFrom:
+            configMapKeyRef:
+              name: protonvpn-settings
+              key: PROTONVPN_DNS_LEAK_PROTECT
+        - name: PROTONVPN_CHECK_INTERVAL
+          valueFrom:
+            configMapKeyRef:
+              name: protonvpn-settings
+              key: PROTONVPN_CHECK_INTERVAL
       securityContext:
         capabilities:
           add:
@@ -27,7 +52,7 @@ spec:
         - mountPath: /dev/net/tun
           name: dev-tun
     - name: pyload
-      image: linuxserver/pyload
+      image: linuxserver/pyload:latest
       ports:
         - containerPort: 8000
   volumes:
