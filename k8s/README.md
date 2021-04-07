@@ -4,7 +4,7 @@
   <a href="https://protonvpn.com" target="_blank" rel="noreferrer">
     <img src="https://static.prasadt.com/logos/proton/scalable/protonvpn-wide.svg" height="64" alt="protonvpn">
   </a>
-  <a href="https://k8.io" target="_blank" rel="noreferrer">
+  <a href="https://kubernetes.io/" target="_blank" rel="noreferrer">
     <img src="https://static.prasadt.com/logos/k8s/svg/kubernetes-horizontal.svg" height="64" alt="k8s">
   </a>
 </p>
