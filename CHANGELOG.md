@@ -3,6 +3,13 @@
 ## Changelog
 
 
+<a name="4.1.4"></a>
+## [4.1.4] - 2021-04-07
+
+### 🐛 Bug Fixes
+- ([#36](https://github.com/tprasadtp/protonvpn-docker/issues/36)) connection to random server  ([#37](https://github.com/tprasadtp/protonvpn-docker/issues/37)) ([99ce05b](https://github.com/tprasadtp/protonvpn-docker/commit/99ce05bd6714e3c19b8cba775a5557deeace2072))
+
+
 <a name="4.1.3"></a>
 ## [4.1.3] - 2021-04-05
 
@@ -84,6 +91,7 @@
 
 
 <!-- tag references -->
+[4.1.4]: https://github.com/tprasadtp/protonvpn-docker/compare/4.1.3...4.1.4
 [4.1.3]: https://github.com/tprasadtp/protonvpn-docker/compare/4.1.2...4.1.3
 [4.1.2]: https://github.com/tprasadtp/protonvpn-docker/compare/4.1.1...4.1.2
 [4.1.1]: https://github.com/tprasadtp/protonvpn-docker/compare/4.1.0...4.1.1
