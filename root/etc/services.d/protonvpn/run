@@ -29,7 +29,7 @@ function connect_vpn()
   if [[ -z $PROTONVPN_SERVER ]] && [[ -n ${PROTONVPN_COUNTRY} ]]; then
     echo "${SVC_CONN} Using Fastest Server from ${PROTONVPN_COUNTRY}"
     PVPN_DEBUG="${DEBUG:-0}" protonvpn connect --cc "${PROTONVPN_COUNTRY}"
-  elif [[ ${PROTONVPN_SERVER} == "RANDOM" ]] && [[ -n ${PROTONVPN_COUNTRY} ]]; then
+  elif [[ ${PROTONVPN_SERVER} == "RANDOM" ]] && [[ -z ${PROTONVPN_COUNTRY} ]]; then
     echo "${SVC_CONN} Using Random Server"
     PVPN_DEBUG="${DEBUG:-0}" protonvpn connect --random
   elif [[ -z $PROTONVPN_COUNTRY ]] && [[ -n ${PROTONVPN_SERVER} ]]; then
@@ -129,7 +129,7 @@ function main()
   # Checks
   while :
   do
-    echo "${SVC_INIT} PROTONVPN_SVC_DISCONNECTING: ${PROTONVPN_SVC_DISCONNECTING}"
+    echo "${SVC_CHCK} Is Service Disconnecting: ${PROTONVPN_SVC_DISCONNECTING}"
     check_vpn
     sleep "${PROTONVPN_CHECK_INTERVAL}" &
     wait $!
