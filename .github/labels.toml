@@ -6,7 +6,7 @@ description = "Action by Dependabot"
 ["Actor:Kodiak"]
 color = "025E8C"
 name = "Actor:Kodiak"
-description = "Action by Luna"
+description = "Action by Kodiak"
 
 ["Actor:Luna"]
 color = "025E8C"
@@ -146,9 +146,9 @@ description = "Further review required"
 ["Status:Stale"]
 color = "ffffff"
 name = "Status:Stale"
-description = ""
+description = "Stale Issues and PRs"
 
-["Status:Wont-Fix"]
+["Status:WontFix"]
 color = "AFAFED"
-name = "Status:Wont-Fix"
+name = "Status:WontFix"
 description = "Works as intended/beyond scope"

@@ -2,6 +2,18 @@
 
 ## Changelog
 
+<a name="unreleased"></a>
+## [Unreleased]
+
+### 📖 Documentation
+- fix k8s url ([be00b51](https://github.com/tprasadtp/protonvpn-docker/commit/be00b51330b831da5b7e64bc643917bab98dcfe7))
+- fix typos ([0fbd4dd](https://github.com/tprasadtp/protonvpn-docker/commit/0fbd4dd89007b9a392f440e11f51797a0172a215))
+- Add working k8s examples ([9e14f52](https://github.com/tprasadtp/protonvpn-docker/commit/9e14f5253d92cadb0a4af5ba24ffacff1efce086))
+
+### 🤖 Continuous Integration & Automation
+- update workflows and automation configs ([d7097c0](https://github.com/tprasadtp/protonvpn-docker/commit/d7097c0db3fdc129e67636b006cca588c06ed273))
+- **deps:** bump aquasecurity/trivy-action from 0.0.13 to 0.0.14 ([#38](https://github.com/tprasadtp/protonvpn-docker/issues/38)) ([1b2676a](https://github.com/tprasadtp/protonvpn-docker/commit/1b2676a2ad04586f1ea88bd8245b10e9bb0ddc8e))
+
 
 <a name="4.1.4"></a>
 ## [4.1.4] - 2021-04-07
@@ -91,6 +103,7 @@
 
 
 <!-- tag references -->
+[Unreleased]: https://github.com/tprasadtp/protonvpn-docker/compare/4.1.4...HEAD
 [4.1.4]: https://github.com/tprasadtp/protonvpn-docker/compare/4.1.3...4.1.4
 [4.1.3]: https://github.com/tprasadtp/protonvpn-docker/compare/4.1.2...4.1.3
 [4.1.2]: https://github.com/tprasadtp/protonvpn-docker/compare/4.1.1...4.1.2

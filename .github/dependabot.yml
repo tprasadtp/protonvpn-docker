@@ -47,6 +47,7 @@ updates:
       # we trust them for not breaking stuff
       # and security.
       - dependency-name: "actions/*"
+      - dependency-name: "github/codeql-action/upload-sarif"
 
       # Labels is Frozen
       - dependency-name: "tprasadtp/labels"

@@ -12,8 +12,7 @@ automerge_label = "Luna:AutoMerge"
 method = "squash"
 
 # Blacklisted Labels
-# Block WIP,
-blocking_labels = ["Status:Abandoned", "Status:WIP", "Actor:Luna", "Status:Blocked", "Deps:Actions", "Status:WontFix", "Status:Stale"]
+blocking_labels = ["Status:Abandoned", "Status:WIP", "Status:Locked", "Actor:Luna", "Status:Blocked", "Deps:Actions", "Status:WontFix", "Status:Stale"]
 
 # Priority
 priority_merge_label = "Priority:Critical"
@@ -52,4 +51,4 @@ autoupdate_label = "Luna:AutoUpdate"
 ignored_usernames = ["valarie-ci-bot", "dependabot-preview", "luna-bot"]
 
 # diana:{diana_version}:{remote}:{source}:{version}:{remote_path}:{type}
-# diana:0.2.5:github:tprasadtp/templates::bots/kodiak.toml:static
+# diana:0.2.7:github:tprasadtp/templates::bots/kodiak.toml:static

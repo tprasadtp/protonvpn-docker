@@ -17,20 +17,22 @@ jobs:
           make show-vars-base
           make show-vars-docker
 
-      - name: Install Trivy
-        run: |
-          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
-          echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee -a /etc/apt/sources.list.d/trivy.list
-          sudo apt-get update
-          sudo apt-get install trivy --yes
-
       - name: Build Image
         run: make docker
 
-      - name: Ensure there are no vulns
-        run: make docker-trivy
-        env:
-          TRIVY_NO_PROGRESS: true
+      - name: Run Trivy vulnerability scanner
+        id: trivy
+        uses: aquasecurity/trivy-action@0.0.14
+        with:
+          scan-type: 'image'
+          vuln-type: os
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: 1
+          image-ref: 'ghcr.io/tprasadtp/protonvpn:${{ github.sha }}-DEV'
+          format: 'template'
+          template: '@/contrib/sarif.tpl'
+          output: 'trivy-results.sarif'
 
   goreleaser:
     needs: [pre-flight]
