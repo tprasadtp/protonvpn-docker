@@ -30,8 +30,8 @@ case ${PROTONVPN_TIER} in
 esac
 
 case ${PROTONVPN_PROTOCOL} in
-  tcp | TCP)                    echo "[VPN-Config-Setup] UDP";CFG_PROTO="tcp";;
-  udp | UDP)                    echo "[VPN-Config-Setup] TCP";CFG_PROTO="udp";;
+  tcp | TCP)                    echo "[VPN-Config-Setup] TCP";CFG_PROTO="tcp";;
+  udp | UDP)                    echo "[VPN-Config-Setup] UDP";CFG_PROTO="udp";;
   *)                            echo "[VPN-Config-Setup] Invalid Proto ${PROTONVPN_PROTOCOL}, Falling back to UDP";
                                 CFG_PROTO="udp";;
 esac
