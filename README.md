@@ -163,7 +163,7 @@ networks:
     internal: true
 ```
 
-- It is essential to apply labes and expose port on protonvpn container instead of your application. This is because your application container shares network namepsce of protonvpn container.
+- It is essential to apply labels and expose port on protonvpn container instead of your application. This is because your application container shares network namepsce of protonvpn container.
 - If using Traefik, apply labels to protonvpn container, and expose your application ports.
 
 ## Health-checks
