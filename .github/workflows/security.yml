@@ -17,7 +17,6 @@ jobs:
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           exit-code: 1
-          cache-dir: /tmp/trivy
           image-ref: 'ghcr.io/tprasadtp/protonvpn:latest'
           format: 'template'
           template: '@/contrib/sarif.tpl'
