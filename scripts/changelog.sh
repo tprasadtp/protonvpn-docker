@@ -106,21 +106,21 @@ function check_deps()
         log_info "from https://github.com/git-chglog/git-chglog."
         ((missing_deps++))
     else
-        log_debug "deps: git-chgog is available"
+        log_info "deps: git-chgog is available"
     fi
 
     if ! has_command git; then
         log_error "Missing git. Please install git"
         ((missing_deps++))
     else
-        log_debug "deps: git is available"
+        log_info "deps: git is available"
     fi
 
     if [[ $missing_deps -ne 0 ]]; then
         log_error "Missing one or more dependencies!"
         exit 2
     else
-        log_debug "deps: satisfied"
+        log_info "deps: satisfied"
     fi
 }
 
@@ -129,14 +129,14 @@ function check_deps()
 function build_regex()
 {
     if [[ -n ${NEXT_TAG} ]]; then
-        log_debug "build-regex: using next tag - ${NEXT_TAG}"
+        log_info "build-regex: using next tag - ${NEXT_TAG}"
         if git show-ref --tags --quiet --verify -- "refs/tags/${NEXT_TAG}"; then
             log_error "build-regex: next tag specified already exists in git"
             exit 1
         fi
         tag="$NEXT_TAG"
     else
-        log_debug  "build-regex: get closest tag"
+        log_info  "build-regex: get closest tag"
         tag="$(git describe --tags --abbrev=0 2> /dev/null)"
         if [[ -z $tag ]]; then
             log_error "build-regex: there are no tags in this repository"
@@ -147,7 +147,7 @@ function build_regex()
 
     # validate tag is a valid semver tag
     if [[ ${tag} =~ $SEMVER_REGEX ]]; then
-        log_debug "build-regex: ${tag} is valid semver"
+        log_info "build-regex: ${tag} is valid semver"
         major="${BASH_REMATCH[1]}"
         minor="${BASH_REMATCH[2]}"
         patch="${BASH_REMATCH[3]}"
@@ -155,16 +155,16 @@ function build_regex()
         build="${BASH_REMATCH[8]:1}"
     else
         log_error "build-regex: ${tag} is not semver tag!"
-        log_debug "build-regex: all tags must be semver compatible"
+        log_info "build-regex: all tags must be semver compatible"
         exit 1
     fi
 
 
-    log_debug "build-regex: tag major - $major"
-    log_debug "build-regex: tag minor - $minor"
-    log_debug "build-regex: tag patch - $patch"
-    log_debug "build-regex: tag pre   - $pre"
-    log_debug "build-regex: tag build - $build"
+    log_info "build-regex: tag major - $major"
+    log_info "build-regex: tag minor - $minor"
+    log_info "build-regex: tag patch - $patch"
+    log_info "build-regex: tag pre   - $pre"
+    log_info "build-regex: tag build - $build"
 
     # Build Regex to filter tags
     # https://regex101.com/r/0EiAvH/1/
@@ -174,7 +174,7 @@ function build_regex()
         tag_filter="[vV]?${major}\.${minor}\.${patch}-(alpha|beta|rc|qa|migration)([0-9]+)?\$|[0-9]+\.[0-9]+\.[0-9]+\$"
     fi
 
-    log_debug "build-regex: chglog tag filter regex is ${tag_filter}"
+    log_info "build-regex: chglog tag filter regex is ${tag_filter}"
 
 }
 
@@ -200,6 +200,7 @@ ${ORANGE}
                           changelog.
 [--footer-file]           This file will be appended to end of the
                           changelog.
+${GRAY}
 --------------------- Debugging & Help -------------------------${NC}
 [-v | --verbose]          Enable verbose loggging.
 [-h | --help]             Display this help message.
@@ -212,6 +213,7 @@ function main()
     if [[ $# -lt 1 ]]; then
       log_error "No arguments specified"
       display_usage
+      exit 1
     fi
 
     while [[ ${1} != "" ]]; do
@@ -229,7 +231,7 @@ function main()
             --oldest-tag)           shift;readonly oldest_tag="${1}";;
             # Debugging options
             -d | --debug)           LOG_LVL="1";
-                                    log_debug "main: enable verbose logging";;
+                                    log_info "main: enable verbose logging";;
             -h | --help )           display_usage;exit 0;;
             * )                     log_error "Invalid argument(s). See usage below.";
                                     display_usage;
@@ -238,19 +240,25 @@ function main()
         shift
     done
 
+    if [[ -z $mode ]]; then
+      log_error "No mode specified!"
+      display_usage
+      exit 1
+    fi
+
     # validate --next is a valid semver tag
     if [[ $bool_use_next_mode == "true" ]]; then
         if [[ ! $NEXT_TAG =~ $SEMVER_REGEX ]]; then
             log_error "main: --next tag $NEXT_TAG is invalid"
             exit 1
         else
-            log_debug "main: --next tag is valid semver tag"
+            log_info "main: --next tag is valid semver tag"
         fi
     fi
 
     # Header file
     if [[ $header_file != "" ]]; then
-        log_debug "main: using header file: ${header_file}"
+        log_info "main: using header file: ${header_file}"
         if [[ ! -e $header_file ]]; then
             log_error "man: specified header file ${header_file} not found!"
             exit 1
@@ -265,7 +273,7 @@ function main()
 
     # Footer file
     if [[ $footer_file != "" ]]; then
-        log_debug "main: using footer file: ${footer_file}"
+        log_info "main: using footer file: ${footer_file}"
         if [[ ! -e $footer_file ]]; then
             log_error "main: specified footer file ${footer_file} not found!"
             exit 1
@@ -281,7 +289,7 @@ function main()
     # Output file is specified
     if [[ -n $output_file ]]; then
         output_dir="$(dirname "${output_file}")"
-        log_debug "main: output will be saved to dir=$output_dir, file=$(basename "$output_file")"
+        log_info "main: output will be saved to dir=$output_dir, file=$(basename "$output_file")"
         if [[ ! -d ${output_dir} ]]; then
             log_error "output was specified but dir $output_dir does not exist!"
             exit 1
@@ -296,7 +304,7 @@ function main()
 
     # if oldest tag was specified
     if [[ -n $oldest_tag ]]; then
-        log_debug "main: will generate tags till oldest tag - $oldest_tag"
+        log_info "main: will generate tags till oldest tag - $oldest_tag"
         if ! git show-ref --tags --quiet --verify -- "refs/tags/${oldest_tag}"; then
             log_error "main: oldest tag was specified but the tag does not exist in git!"
             exit 1
@@ -311,7 +319,7 @@ function main()
     build_regex
 
     if [[ $mode == "changelog" ]]; then
-        log_debug "main: generating changelog"
+        log_info "main: generating changelog"
 
         if [[ -n ${NEXT_TAG} ]]; then
             CHANGELOG_CONTENT="$(git-chglog \
@@ -329,7 +337,7 @@ function main()
             exit 1
         else
             if [[ -n $output_file ]]; then
-                log_debug "main: saving changelog to $output_file"
+                log_info "main: saving changelog to $output_file"
                 echo "${HEADER_FILE_CONTENTS}${CHANGELOG_CONTENT}${FOOTER_FILE_CONTENTS}" > "${output_file}"
             else
                 echo "${HEADER_FILE_CONTENTS}${CHANGELOG_CONTENT}${FOOTER_FILE_CONTENTS}"
@@ -338,7 +346,7 @@ function main()
 
     # release notes
     elif [[ $mode == "release-notes" ]]; then
-        log_debug "main: generating release notes"
+        log_info "main: generating release notes"
 
         if [[ -n ${NEXT_TAG} ]]; then
             RN_CONTENT="$(git-chglog \
@@ -358,14 +366,14 @@ function main()
             exit 1
         else
             if [[ -n $output_file ]]; then
-                log_debug "main: saving release notes to $output_file"
+                log_info "main: saving release notes to $output_file"
                 echo "${HEADER_FILE_CONTENTS}${RN_CONTENT}" > "${output_file}"
             else
                 echo "${HEADER_FILE_CONTENTS}${RN_CONTENT}"
             fi
         fi
     else
-        log_error "main: no mode specified"
+        log_error "main: invalid mode specified: $mode"
         exit 1
     fi
 
