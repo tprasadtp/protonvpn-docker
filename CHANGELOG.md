@@ -2,17 +2,26 @@
 
 ## Changelog
 
-<a name="unreleased"></a>
-## [Unreleased]
+
+<a name="4.1.5"></a>
+## [4.1.5] - 2021-04-13
+
+### 🐛 Bug Fixes
+- the wrong print message for config protocol ([#39](https://github.com/tprasadtp/protonvpn-docker/issues/39)) ([919de45](https://github.com/tprasadtp/protonvpn-docker/commit/919de4594d49de9f2886f1559c0756692158134c))
 
 ### 📖 Documentation
+- Fix misspelt 'labels' in README.md ([#40](https://github.com/tprasadtp/protonvpn-docker/issues/40)) ([be9c379](https://github.com/tprasadtp/protonvpn-docker/commit/be9c3791780cd750188f63f81ad5c3fd88729de5))
 - fix k8s url ([be00b51](https://github.com/tprasadtp/protonvpn-docker/commit/be00b51330b831da5b7e64bc643917bab98dcfe7))
 - fix typos ([0fbd4dd](https://github.com/tprasadtp/protonvpn-docker/commit/0fbd4dd89007b9a392f440e11f51797a0172a215))
 - Add working k8s examples ([9e14f52](https://github.com/tprasadtp/protonvpn-docker/commit/9e14f5253d92cadb0a4af5ba24ffacff1efce086))
 
 ### 🤖 Continuous Integration & Automation
-- update workflows and automation configs ([d7097c0](https://github.com/tprasadtp/protonvpn-docker/commit/d7097c0db3fdc129e67636b006cca588c06ed273))
+- do not use ci cache for trivy db as cache is broken on 0.0.14 release ([12251d2](https://github.com/tprasadtp/protonvpn-docker/commit/12251d23e278f013391a645cc2c6572680cbb709))
+- update workflows and automation configs ([32c14eb](https://github.com/tprasadtp/protonvpn-docker/commit/32c14ebf93b0990a3e502ca3e3dfe0e8051a34eb))
 - **deps:** bump aquasecurity/trivy-action from 0.0.13 to 0.0.14 ([#38](https://github.com/tprasadtp/protonvpn-docker/issues/38)) ([1b2676a](https://github.com/tprasadtp/protonvpn-docker/commit/1b2676a2ad04586f1ea88bd8245b10e9bb0ddc8e))
+
+### 🥺 Maintanance
+- **changelog:** set log level to info for changelog script ([7074eed](https://github.com/tprasadtp/protonvpn-docker/commit/7074eed97db34249954025d7151e025c74d34340))
 
 
 <a name="4.1.4"></a>
@@ -103,7 +112,7 @@
 
 
 <!-- tag references -->
-[Unreleased]: https://github.com/tprasadtp/protonvpn-docker/compare/4.1.4...HEAD
+[4.1.5]: https://github.com/tprasadtp/protonvpn-docker/compare/4.1.4...4.1.5
 [4.1.4]: https://github.com/tprasadtp/protonvpn-docker/compare/4.1.3...4.1.4
 [4.1.3]: https://github.com/tprasadtp/protonvpn-docker/compare/4.1.2...4.1.3
 [4.1.2]: https://github.com/tprasadtp/protonvpn-docker/compare/4.1.1...4.1.2
