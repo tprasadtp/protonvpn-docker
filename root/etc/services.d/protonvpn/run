@@ -32,6 +32,9 @@ function connect_vpn()
   elif [[ ${PROTONVPN_SERVER} == "RANDOM" ]] && [[ -z ${PROTONVPN_COUNTRY} ]]; then
     echo "${SVC_CONN} Using Random Server"
     PVPN_DEBUG="${DEBUG:-0}" protonvpn connect --random
+  elif [[ ${PROTONVPN_SERVER} == "P2P" ]] && [[ -z ${PROTONVPN_COUNTRY} ]]; then
+    echo "${SVC_CONN} Using Fastest P2P Server"
+    PVPN_DEBUG="${DEBUG:-0}" protonvpn connect --p2p
   elif [[ -z $PROTONVPN_COUNTRY ]] && [[ -n ${PROTONVPN_SERVER} ]]; then
     echo "${SVC_CONN} Using Server ${PROTONVPN_SERVER}"
     PVPN_DEBUG="${DEBUG:-0}" protonvpn connect "${PROTONVPN_SERVER}"
