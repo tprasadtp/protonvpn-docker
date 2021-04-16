@@ -68,7 +68,7 @@ Images are published on [GitHub Container Registry][ghcr].
 | `PROTONVPN_TIER`          | Yes | Proton VPN Tier (0=Free, 1=Basic, 2=Pro, 3=Visionary)
 | `PROTONVPN_USERNAME`      | Yes | OpenVPN Username. This is **NOT** your Proton Account Username.
 | `PROTONVPN_PASSWORD`      | Yes | OpenVPN Password. This is **NOT** your Proton Account Password.
-| `PROTONVPN_SERVER`        | Yes | ProtonVPN server to connect to. This value is mutually exclusive with `PROTONVPN_COUNTRY`. Only one of them can be used. Set it to `RANDOM` to connect to a random server.
+| `PROTONVPN_SERVER`        | Yes | ProtonVPN server to connect to. This value is mutually exclusive with `PROTONVPN_COUNTRY`. Only one of them can be used. Set it to `RANDOM` to connect to a random server. Set it to `P2P` to connect to fastest P2P server (does not work for free accounts)a.
 | `PROTONVPN_COUNTRY`       | Yes | ProtonVPN two letter country code. This will choose the fastest server from this country. This value is mutually exclusive with `PROTONVPN_SERVER`. Only one of them can be used.
 | `PROTONVPN_PROTOCOL`      | No  | Protocol to use. By default `udp` is used.
 | `PROTONVPN_EXCLUDE_CIDRS` | No  | Comma separated list of CIDRs to exclude from VPN. Uses split tunnel. Default is set to `169.254.169.254/32,169.254.170.2/32`
