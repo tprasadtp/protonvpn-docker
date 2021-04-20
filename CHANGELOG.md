@@ -3,8 +3,8 @@
 ## Changelog
 
 
-<a name="4.2.0-beta1"></a>
-## [4.2.0-beta1] - 2021-04-20
+<a name="4.2.0"></a>
+## [4.2.0] - 2021-04-20
 
 ### 🍒 Features & Enhancements
 - Option to connect to P2P friendly servers  ([#41](https://github.com/tprasadtp/protonvpn-docker/issues/41)) ([aaa7835](https://github.com/tprasadtp/protonvpn-docker/commit/aaa7835b951e83dacff4a3aa0324ca2b0beb8890))
@@ -123,7 +123,7 @@
 
 
 <!-- tag references -->
-[4.2.0-beta1]: https://github.com/tprasadtp/protonvpn-docker/compare/4.1.5...4.2.0-beta1
+[4.2.0]: https://github.com/tprasadtp/protonvpn-docker/compare/4.1.5...4.2.0
 [4.1.5]: https://github.com/tprasadtp/protonvpn-docker/compare/4.1.4...4.1.5
 [4.1.4]: https://github.com/tprasadtp/protonvpn-docker/compare/4.1.3...4.1.4
 [4.1.3]: https://github.com/tprasadtp/protonvpn-docker/compare/4.1.2...4.1.3
