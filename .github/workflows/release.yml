@@ -30,12 +30,15 @@ jobs:
           ignore-unfixed: true
           exit-code: 1
           image-ref: 'ghcr.io/tprasadtp/protonvpn:${{ github.sha }}-DEV'
-          format: 'template'
-          template: '@/contrib/sarif.tpl'
-          output: 'trivy-results.sarif'
 
   goreleaser:
     needs: [pre-flight]
+    permissions:
+      # For creating releases
+      contents: write
+      # For milestone management
+      repository-projects: write
+
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2

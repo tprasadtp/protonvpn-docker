@@ -4,6 +4,10 @@ on:
   schedule:
     # Every Friday at 2100
     - cron:  "0 21 * * FRI"
+permissions:
+  contents: read
+  security-events: write
+
 jobs:
   trivy:
     runs-on: ubuntu-latest
