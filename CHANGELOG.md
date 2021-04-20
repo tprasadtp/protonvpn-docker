@@ -3,6 +3,17 @@
 ## Changelog
 
 
+<a name="4.2.0-beta1"></a>
+## [4.2.0-beta1] - 2021-04-20
+
+### 🍒 Features & Enhancements
+- Option to connect to P2P friendly servers  ([#41](https://github.com/tprasadtp/protonvpn-docker/issues/41)) ([aaa7835](https://github.com/tprasadtp/protonvpn-docker/commit/aaa7835b951e83dacff4a3aa0324ca2b0beb8890))
+
+### 🤖 Continuous Integration & Automation
+- Use granular actions permissions ([78a1b6d](https://github.com/tprasadtp/protonvpn-docker/commit/78a1b6df62caae6477e01b459c1b692d7ce09c47))
+- fix stale wokflow messages to match settings ([6469584](https://github.com/tprasadtp/protonvpn-docker/commit/6469584bcd90e63a905faa33568e837939d4c3a2))
+
+
 <a name="4.1.5"></a>
 ## [4.1.5] - 2021-04-13
 
@@ -112,6 +123,7 @@
 
 
 <!-- tag references -->
+[4.2.0-beta1]: https://github.com/tprasadtp/protonvpn-docker/compare/4.1.5...4.2.0-beta1
 [4.1.5]: https://github.com/tprasadtp/protonvpn-docker/compare/4.1.4...4.1.5
 [4.1.4]: https://github.com/tprasadtp/protonvpn-docker/compare/4.1.3...4.1.4
 [4.1.3]: https://github.com/tprasadtp/protonvpn-docker/compare/4.1.2...4.1.3
