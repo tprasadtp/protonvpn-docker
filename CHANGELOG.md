@@ -3,6 +3,13 @@
 ## Changelog
 
 
+<a name="4.2.1"></a>
+## [4.2.1] - 2021-05-06
+
+### 🥺 Maintanance
+- **deps:** bump ubuntu from focal-20210401 to focal-20210416 ([#43](https://github.com/tprasadtp/protonvpn-docker/issues/43)) ([e4c35e0](https://github.com/tprasadtp/protonvpn-docker/commit/e4c35e0997c8604edf0a06fe5a1d75c6d93b88ae))
+
+
 <a name="4.2.0"></a>
 ## [4.2.0] - 2021-04-20
 
@@ -123,6 +130,7 @@
 
 
 <!-- tag references -->
+[4.2.1]: https://github.com/tprasadtp/protonvpn-docker/compare/4.2.0...4.2.1
 [4.2.0]: https://github.com/tprasadtp/protonvpn-docker/compare/4.1.5...4.2.0
 [4.1.5]: https://github.com/tprasadtp/protonvpn-docker/compare/4.1.4...4.1.5
 [4.1.4]: https://github.com/tprasadtp/protonvpn-docker/compare/4.1.3...4.1.4
