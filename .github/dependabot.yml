@@ -5,6 +5,8 @@ updates:
     labels:
       - "Actor:Dependabot"
       - "Deps:Docker"
+      # Allow Automerge for base image updates.
+      - "Luna:Automerge"
     # Common settings
     commit-message:
       prefix: "chore(deps):"
