@@ -254,6 +254,7 @@ function main()
     declare -r SHELLCHECK_VERSION_REGEX="^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\$"
     if [[ ! $SHELLCHECK_VERSION =~ ^v ]]; then
       log_debug "Shellcheck version specified does not start with prefix v, append it"
+      SHELLCHECK_VERSION="v${SHELLCHECK_VERSION}"
     fi
 
     if [[ $SHELLCHECK_VERSION =~ $SHELLCHECK_VERSION_REGEX ]]; then
