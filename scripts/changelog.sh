@@ -1,90 +1,165 @@
 #!/usr/bin/env bash
 # Copyright (c) 2021. Prasad Tengse
 #
+# shellcheck disable=SC2155,SC2034
 
 set -o pipefail
 
 # Script Constants
 readonly CURDIR="$(cd -P -- "$(dirname -- "")" && pwd -P)"
 readonly SCRIPT="$(basename "$0")"
+# Default log level (debug logs are disabled)
+LOG_LVL=0
 
-# Handle Use interrupt
-# trap ctrl-c and call ctrl_c()
-trap ctrl_c_handler INT
+# Handle Signals
+# trap ctrl-c and SIGTERM
+trap ctrl_c_signal_handler INT
+trap term_signal_handler SIGTERM
 
-function ctrl_c_handler() {
-  log_error "User Interrupt! CTRL-C"
-  exit 4
+function ctrl_c_signal_handler() {
+    log_error "User Interrupt! CTRL-C"
+    exit 4
+}
+function term_signal_handler() {
+    log_error "Signal Interrupt! SIGTERM"
+    exit 4
 }
 
 ## Script Variables
 
-readonly SEMVER_REGEX="^[vV]?(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\-(0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)(\.(0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*))*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$"
+declare -gr SEMVER_REGEX="^[vV]?(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\-(alpha|beta|rc)(\.(0|[1-9][0-9]*))?)?\$"
 
-## BEGIN AUTO-GENERATED CONTENT ##
+# Logging Handlers
 
-# Basic colors
-readonly YELLOW=$'\e[38;5;221m'
-readonly GREEN=$'\e[38;5;42m'
-readonly RED=$'\e[38;5;197m'
-readonly NC=$'\e[0m'
+# Define colors for logging
+function define_colors()
+{
+    declare -gr YELLOW=$'\e[38;5;214m'
+    declare -gr GREEN=$'\e[38;5;83m'
+    declare -gr RED=$'\e[38;5;197m'
+    declare -gr NC=$'\e[0m'
 
-# Enhanced colors
+    # Enhanced colors
+    declare -gr PINK=$'\e[38;5;212m'
+    declare -gr BLUE=$'\e[38;5;81m'
+    declare -gr ORANGE=$'\e[38;5;208m'
+    declare -gr TEAL=$'\e[38;5;192m'
+    declare -gr VIOLET=$'\e[38;5;219m'
+    declare -gr GRAY=$'\e[38;5;250m'
+    declare -gr DARK_GRAY=$'\e[38;5;246m'
 
-readonly PINK=$'\e[38;5;212m'
-readonly BLUE=$'\e[38;5;159m'
-readonly ORANGE=$'\e[38;5;208m'
-readonly TEAL=$'\e[38;5;192m'
-readonly VIOLET=$'\e[38;5;219m'
-readonly GRAY=$'\e[38;5;246m'
-readonly DARK_GRAY=$'\e[38;5;242m'
+    # Flag
+    declare -gr COLORIZED=1
+}
 
-# Script Defaults
-LOG_LVL=0
+function undefine_colors()
+{
+    # Disable all colors
+    declare -gr YELLOW=""
+    declare -gr GREEN=""
+    declare -gr RED=""
+    declare -gr NC=""
 
-# Default Log Handlers
+    # Enhanced colors
+    declare -gr PINK=""
+    declare -gr BLUE=""
+    declare -gr ORANGE=""
+    declare -gr TEAL=""
+    declare -gr VIOLET=""
+    declare -gr GRAY=""
+    declare -gr DARK_GRAY=""
 
+    # Flag
+    declare -gr COLORIZED=1
+}
+
+# Check for Colored output
+if [[ -n ${CLICOLOR_FORCE} ]] && [[ ${CLICOLOR_FORCE} != "0" ]]; then
+    # In CI/CD Forces colors
+    define_colors
+elif [[ -t 1 ]] && [[ -z ${NO_COLOR} ]] && [[ ${TERM} != "dumb" ]] ; then
+    # Enables colors if Terminal is interactive and NOCOLOR is not empty
+    define_colors
+else
+    # Disables colors
+    undefine_colors
+fi
+
+## Check if logs should be written to stderr
+## This is useful if script generates an output which can be piped or redirected
+if [[ -z ${LOG_TO_STDERR} ]]; then
+    LOG_TO_STDERR="false"
+fi
+
+# Log functions
 function log_info()
 {
-    printf "• %s \n" "$@" 1>&2
+    if [[ $LOG_TO_STDERR == "true" ]]; then
+        printf "• %s \n" "$@" 1>&2
+    else
+        printf "• %s \n" "$@"
+    fi
 }
 
 function log_success()
 {
-    printf "%s• %s %s\n" "${GREEN}" "$@" "${NC}" 1>&2
+    if [[ $LOG_TO_STDERR == "true" ]]; then
+        printf "%s• %s %s\n" "${GREEN}" "$@" "${NC}" 1>&2
+    else
+        printf "%s• %s %s\n" "${GREEN}" "$@" "${NC}"
+    fi
 }
 
 function log_warning()
 {
-    printf "%s• %s %s\n" "${YELLOW}" "$@" "${NC}" 1>&2
+    if [[ $LOG_TO_STDERR == "true" ]]; then
+        printf "%s• %s %s\n" "${YELLOW}" "$@" "${NC}" 1>&2
+    else
+        printf "%s• %s %s\n" "${YELLOW}" "$@" "${NC}"
+    fi
 }
 
 function log_error()
 {
-    printf "%s• %s %s\n" "${RED}" "$@" "${NC}" 1>&2
+    if [[ $LOG_TO_STDERR == "true" ]]; then
+        printf "%s• %s %s\n" "${RED}" "$@" "${NC}" 1>&2
+    else
+        printf "%s• %s %s\n" "${RED}" "$@" "${NC}"
+    fi
 }
 
 function log_debug()
 {
-    if [[ $LOG_LVL -gt 0  ]]; then
-        printf "%s• %s %s\n" "${GRAY}" "$@" "${NC}" 1>&2
+    if [[ LOG_LVL -gt 0  ]]; then
+        if [[ $LOG_TO_STDERR == "true" ]]; then
+            printf "%s• %s %s\n" "${GRAY}" "$@" "${NC}" 1>&2
+        else
+            printf "%s• %s %s\n" "${GRAY}" "$@" "${NC}"
+        fi
     fi
 }
 
 function log_notice()
 {
-    printf "%s• %s %s\n" "${TEAL}" "$@" "${NC}" 1>&2
+    if [[ $LOG_TO_STDERR == "true" ]]; then
+        printf "%s• %s %s\n" "${TEAL}" "$@" "${NC}" 1>&2
+    else
+        printf "%s• %s %s\n" "${TEAL}" "$@" "${NC}"
+    fi
 }
 
 function log_variable()
 {
     local var
     var="$1"
-    if [[ $LOG_LVL -gt 0  ]]; then
-        printf "%s» %-20s - %-10s %s\n" "${GRAY}" "${var}" "${!var}" "${NC}" 1>&2
+    if [[ ${LOG_LVL} -gt 0  ]]; then
+        if [[ $LOG_TO_STDERR == "true" ]]; then
+            printf "%s» %-20s - %-10s %s\n" "${GRAY}" "${var}" "${!var}" "${NC}" 1>&2
+        else
+            printf "%s» %-20s - %-10s %s\n" "${GRAY}" "${var}" "${!var}" "${NC}"
+        fi
     fi
 }
-## END AUTO-GENERATED CONTENT ##
 
 # Checks if command is available
 function has_command() {
@@ -171,7 +246,7 @@ function build_regex()
     if [[ $pre == "" ]]; then
         tag_filter="[vV]?[\d]+\.[\d]+\.[\d]+\$"
     else
-        tag_filter="[vV]?${major}\.${minor}\.${patch}-(alpha|beta|rc|qa|migration)([0-9]+)?\$|[0-9]+\.[0-9]+\.[0-9]+\$"
+        tag_filter="^[vV]?(${major}\.${minor}\.${patch})(\-(alpha|beta|rc)(\.(0|[1-9][0-9]*))?)\$|(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\$"
     fi
 
     log_info "build-regex: chglog tag filter regex is ${tag_filter}"
@@ -202,10 +277,18 @@ ${ORANGE}
                           changelog.
 ${GRAY}
 --------------------- Debugging & Help -------------------------${NC}
-[-v | --verbose]          Enable verbose loggging.
-[-h | --help]             Display this help message.
+[-d | --debug]          Enable debug loggging
+[-h | --help]           Display this help message${NC}
+${TEAL}
+------------------- Environment Variables ----------------------${NC}
+${BLUE}LOG_TO_STDERR${NC}     - Set this to 'true' to log to stderr.
+${BLUE}NO_COLOR${NC}          - Set this to NON-EMPTY to disable all colors.
+${BLUE}CLICOLOR_FORCE${NC}    - Set this to NON-ZERO to force colored output.
+                    Other color related conditions are ignored.
+                  - Colors are disabled if output is not a TTY
 EOF
 }
+
 
 
 function main()
@@ -230,8 +313,9 @@ function main()
             # useful to merge old changelogs with autogenerated ones
             --oldest-tag)           shift;readonly oldest_tag="${1}";;
             # Debugging options
+            --stderr)               LOG_TO_STDERR="true";;
             -d | --debug)           LOG_LVL="1";
-                                    log_info "main: enable verbose logging";;
+                                    log_info "Enable verbose logging";;
             -h | --help )           display_usage;exit 0;;
             * )                     log_error "Invalid argument(s). See usage below.";
                                     display_usage;
@@ -239,6 +323,7 @@ function main()
         esac
         shift
     done
+
 
     if [[ -z $mode ]]; then
       log_error "No mode specified!"
@@ -380,3 +465,6 @@ function main()
 }
 
 main "$@"
+
+# diana:{diana_urn_flavor}:{remote}:{source}:{version}:{remote_path}:{type}
+# diana:2:github:tprasadtp/templates::scripts/changelog.sh:static

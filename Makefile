@@ -27,25 +27,11 @@ UPSTREAM_URL     := https://github.com/ProtonVPN/linux-cli
 include $(REPO_ROOT)/makefiles/help.mk
 include $(REPO_ROOT)/makefiles/metadata.mk
 include $(REPO_ROOT)/makefiles/docker.mk
-include $(REPO_ROOT)/makefiles/chglog.mk
 
 
 .PHONY: shellcheck
 shellcheck: ## Runs shellcheck
-	@echo -e "\033[92m➜ Check cont-init.d scripts \033[0m"
-	@for file in $$(find $${REPO_ROOT}/root/etc/ -type f -executable); do \
-		file_basename="$$(basename $${file})"; \
-		echo "- CHECKING: $${file_basename}"; \
-		docker run --userns=host \
-			--rm \
-			--workdir=/app/ \
-			--network=none \
-			-v $${file}:/app/$${file_basename}:ro \
-			koalaman/shellcheck:v0.7.1 \
-			--exclude SC10008 \
-			--color=always \
-			/app/$${file_basename}; \
-		done
+	@bash $(REPO_ROOT)/scripts/shellcheck.sh $(shell find $(REPO_ROOT)/root/etc/ -type f -executable)
 
 # go releaser
 .PHONY: snapshot
@@ -64,6 +50,22 @@ release-prod: ## Build and release to production/QA
 clean: ## clean
 	rm -rf build/
 	rm -rf dist/
+
+.PHONY: changelog
+changelog: ## Generate changelog
+	$(REPO_ROOT)/scripts/changelog.sh \
+		--debug \
+		--oldest-tag 4.0.0 \
+		--footer-file $(REPO_ROOT)/.chglog/FOOTER.md \
+		--output $(REPO_ROOT)/CHANGELOG.md \
+		--changelog
+
+.PHONY: release-notes
+release-notes: ## Generate release-notes
+	$(REPO_ROOT)/scripts/changelog.sh \
+		--debug \
+		--output $(REPO_ROOT)/RELEASE_NOTES.md \
+		--release-notes
 
 # Enforce BUILDKIT
 ifneq ($(DOCKER_BUILDKIT),1)

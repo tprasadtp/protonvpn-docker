@@ -135,6 +135,7 @@ export GITHUB_OWNER
 
 .PHONY: show-vars-base
 show-vars-base: ## Show Base variables
+	@echo "REPO_ROOT            : $(REPO_ROOT)"
 	@echo "VERSION              : $(VERSION)"
 	@echo "VERSION_FROM_GIT     : $(VERSION_FROM_GIT)"
 	@echo ""
