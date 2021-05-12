@@ -12,6 +12,25 @@ jobs:
   trivy:
     runs-on: ubuntu-latest
     steps:
+      - name: Get tag for latest release
+        id: get_latest_release
+        run: |
+          latest_release_tag="$(gh api repos/${GH_REPO}/releases/latest --jq '.tag_name')"
+          if [[ -n $latest_release_tag ]]; then
+              echo "::debug::Tag for latest release is - $latest_release_tag"
+              echo "::set-output name=TAG_NAME::$latest_release_tag"
+          else
+              echo "::error::Failed to get tag for latest release($latest_release_tag)"
+              exit 1
+          fi
+        env:
+          GH_REPO: ${{ github.repository }}
+
+      - name: Checkout latest tag
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ steps.get_latest_release.outputs.TAG_NAME }}
+
       - name: Run Trivy vulnerability scanner
         id: trivy
         uses: aquasecurity/trivy-action@0.0.14
