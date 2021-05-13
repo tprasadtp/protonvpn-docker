@@ -44,5 +44,5 @@ __check_defined = $(if $(value $1),, $(error ✖ Undefined Variable: $1$(if $2, 
 
 $(call check_defined, REPO_ROOT, REPO_ROOT MUST be defined for relative paths to work properly)
 
-# diana:{diana_version}:{remote}:{source}:{version}:{remote_path}:{type}
-# diana:0.2.5:github:tprasadtp/templates::makefiles/help.mk:static
+# diana:{diana_urn_flavor}:{remote}:{source}:{version}:{remote_path}:{type}
+# diana:2:github:tprasadtp/templates::makefiles/help.mk:static

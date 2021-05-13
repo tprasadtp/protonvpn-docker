@@ -165,5 +165,5 @@ show-vars-docker: ## Show docker variables
 	@echo ""
 
 
-# diana:{diana_version}:{remote}:{source}:{version}:{remote_path}:{type}
-# diana:0.2.7:github:tprasadtp/templates::makefiles/docker.mk:static
+# diana:{diana_urn_flavor}:{remote}:{source}:{version}:{remote_path}:{type}
+# diana:2:github:tprasadtp/templates::makefiles/docker.mk:static

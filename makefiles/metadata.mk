@@ -37,7 +37,7 @@ ifeq ($(shell git -c log.showSignature=false rev-parse --is-inside-work-tree),tr
 	GIT_COMMIT_TIMESTAMP  := $(shell date --date='${COMMIT_UNIX_TIMESTAMP}' --universal --iso-8601=s)
 else
 # DONT INDENT THIS!
-$(call fail,not a git repository)
+$(error ✖ not a git repository)
 endif
 
 ifeq ($(GITHUB_ACTIONS),true)
@@ -166,5 +166,5 @@ show-vars-base: ## Show Base variables
 	@echo "GITHUB_REF           : $(GITHUB_REF)"
 
 
-# diana:{diana_version}:{remote}:{source}:{version}:{remote_path}:{type}
-# diana:0.2.7:github:tprasadtp/templates::golang/client-server/makefiles/docker.mk:static
+# diana:{diana_urn_flavor}:{remote}:{source}:{version}:{remote_path}:{type}
+# diana:2:github:tprasadtp/templates::golang/client-server/makefiles/docker.mk:static

@@ -2,17 +2,27 @@
 version = 1
 
 [merge]
-# Require label
+# Required label
+# Forces label requirements
 require_automerge_label = true
 
 # Labels for Automerge
+# This Label is shared with Luna.
+#-----------------------------------
+# Conflicts are avoided by explicitly blacklisting Actor:Luna label
+# Luna handles this gracefully by first, adding the label before doing
+# any other tasks. If adding Actor:Luna label fails, Luna will not act
+# on that PR/Issue.
 automerge_label = "Luna:AutoMerge"
 
 # Methods
 method = "squash"
 
 # Blacklisted Labels
-blocking_labels = ["Status:Abandoned", "Status:WIP", "Status:Locked", "Actor:Luna", "Status:Blocked", "Deps:Actions", "Status:WontFix", "Status:Stale"]
+# Actor:Luna                  - Prevent conflicts with Luna
+# Status:WIP, Status:Blocked  - Prevent merging WIP or blocked PRs
+# Status:Stale, Status:Locked - Prevent merging stale PRs
+blocking_labels = ["Status:WIP", "Status:Locked", "Actor:Luna", "Status:Blocked", "Status:Stale"]
 
 # Priority
 priority_merge_label = "Priority:Critical"
@@ -50,5 +60,5 @@ autoupdate_label = "Luna:AutoUpdate"
 # Ignore bots or other apps with automerge built in and kodiak should ignore then
 ignored_usernames = ["valarie-ci-bot", "dependabot-preview", "luna-bot"]
 
-# diana:{diana_version}:{remote}:{source}:{version}:{remote_path}:{type}
-# diana:0.2.7:github:tprasadtp/templates::bots/kodiak.toml:static
+# diana:{diana_urn_flavor}:{remote}:{source}:{version}:{remote_path}:{type}
+# diana:2:github:tprasadtp/templates::bots/kodiak.toml:static

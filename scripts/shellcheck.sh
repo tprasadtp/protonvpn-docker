@@ -203,7 +203,7 @@ ${ORANGE}
 None
 ${GRAY}
 --------------------- Debugging & Help -------------------------${NC}
-[-d | --debug]          Enable debug loggging
+[-v | --verbose]        Increase log verbosity
 [--stderr]              Log to stderr instead of stdout
 [-h | --help]           Display this help message${NC}
 ${TEAL}
@@ -225,8 +225,8 @@ function parse_options()
   while [[ ${1} != "" ]]; do
   case ${1} in
     --stderr)               LOG_TO_STDERR="true";;
-    -d | --debug)           LOG_LVL="1";
-                            log_debug "Enabled verbose logging";;
+    -v | --verbose)         $((LOG_LVL++));
+                            log_debug "Log Level is set to: $LOG_LVL";;
     -h | --help )           display_usage;exit 0;;
     *)                      NON_OPTION_ARGS+=("${1}");;
   esac
