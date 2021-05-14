@@ -22,7 +22,7 @@ jobs:
 
       - name: Run Trivy vulnerability scanner
         id: trivy
-        uses: aquasecurity/trivy-action@0.0.16
+        uses: aquasecurity/trivy-action@0.0.17
         with:
           scan-type: 'image'
           vuln-type: os
