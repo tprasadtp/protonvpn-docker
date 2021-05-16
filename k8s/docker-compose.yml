@@ -11,7 +11,6 @@ services:
     restart: unless-stopped
     networks:
       - internet
-      - proxy
     cap_add:
       - NET_ADMIN
     devices:
@@ -37,5 +36,3 @@ volumes:
   config:
 networks:
   internet:
-  proxy:
-    internal: true
