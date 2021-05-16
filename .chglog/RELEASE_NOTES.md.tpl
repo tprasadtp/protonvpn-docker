@@ -1,6 +1,4 @@
-<!-- markdownlint-disable MD033 -->
-
-## Release Notes
+# Release Notes
 
 {{ if .Versions -}}
 {{ range .Versions -}}

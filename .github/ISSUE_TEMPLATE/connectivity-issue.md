@@ -5,7 +5,7 @@ about: Use this template for connectivty issues.
 
 ## Debugging with debugging compose file
 
-- [ ] I have tried debugging with compose file provided as mentioned in [TROUBLESHOOTING](./TROUBLESHOOTING.md).
+- [ ] I have tried debugging with compose file provided as mentioned in [TROUBLESHOOTING](https://tprasadtp.github.io/protonvpn-docker/docs/troubleshooting/).
 - [ ] I have attached output/outcome of debugging steps below
 
 <!-- Please Provide details on your errors when you tried debugging with provided compose file -->
@@ -34,6 +34,6 @@ about: Use this template for connectivty issues.
 ## Redacted PII & Credential validation
 
 - [ ] I have redacted any personally identifying information like public IP address, hostnames, usernames and passwords if they are present in the output.
-- [ ] I have verfied that my VPN credentials are valid.
+- [ ] I have verified that my VPN credentials are valid.
 
-[compose file]: https://raw.githubusercontent.com/tprasadtp/protonvpn-docker/master/k8s/docker-compose.yml
+[compose file]: https://raw.githubusercontent.com/tprasadtp/protonvpn-docker/master/docs/troubleshooting/docker-compose.yml

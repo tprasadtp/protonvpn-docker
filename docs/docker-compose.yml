@@ -1,3 +1,5 @@
+# This docker compose file is intended for
+# troubleshooting purposes ONLY.
 version: '3.4'
 services:
   protonvpn:

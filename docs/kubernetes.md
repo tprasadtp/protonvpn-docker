@@ -9,7 +9,7 @@
   </a>
 </p>
 
-## Create a namespace or switch to namespace
+## Create a namespace or switch to existing namespace
 
 ```bash
 # CREATE
@@ -46,8 +46,10 @@ Please note that we are using Pod here. In real world scenario please use Deploy
 This is for ease of use as the application you may want to use with protonvpn will vary. also we are using service of type `NodePort` for simplicity.
 
 ```bash
-kubectl appy -f pod.yml
-kubectl apply -f service.yml
+# Create Pod
+kubectl create -f https://raw.githubusercontent.com/tprasadtp/protonvpn-docker/master/docs/pod.yml
+# Create service
+kubectl create -f https://raw.githubusercontent.com/tprasadtp/protonvpn-docker/master/docs/service.yml
 ```
 
 ## Verify
@@ -100,7 +102,7 @@ kubectl apply -f service.yml
     [Service - CHCK] OK!
     ```
 
-- check pylaod is accessible via nodeport
+- Check pylaod is accessible via nodeport
 
     ```bash
     kubectl get service

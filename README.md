@@ -13,53 +13,16 @@
 
 <!-- CI Badges -->
 
-<p align="center">
-
-  <a href="https://github.com/tprasadtp/protonvpn-docker/actions?workflow=build" target="_blank" rel="noreferrer">
-    <img src="https://github.com/tprasadtp/protonvpn-docker/workflows/build/badge.svg" align="center" alt="action-build">
-  </a>
-
-  <a href="https://github.com/tprasadtp/protonvpn-docker/actions?workflow=release" target="_blank" rel="noreferrer">
-    <img src="https://github.com/tprasadtp/protonvpn-docker/workflows/release/badge.svg"align="center" alt="action-release">
-  </a>
-
-  <a href="https://github.com/tprasadtp/protonvpn-docker/actions?workflow=security" target="_blank" rel="noreferrer">
-    <img src="https://github.com/tprasadtp/protonvpn-docker/workflows/security/badge.svg"align="center" alt="action-security">
-  </a>
-
-</p>
-
-<!-- Version and Release Badges -->
-
-<p align="center">
-
-  <a href="https://github.com/tprasadtp/protonvpn-docker/releases/latest" target="_blank" rel="noreferrer">
-    <img src="https://img.shields.io/github/v/tag/tprasadtp/protonvpn-docker?label=version&sort=semver&logo=semver&color=7f50a6&labelColor=3a3a3a" align="center" alt="releases">
-  </a>
-
-  <a href="https://goreleaser.com" target="_blank" rel="noreferrer">
-    <img src="https://img.shields.io/badge/powered--by-goreleaser-7f50a6?logo=semver&labelColor=3a3a3a" align="center" alt="powerd-by">
-  </a>
-
-</p>
-
-
-<!-- Other Badges -->
-
-<p align="center">
-
-  <a href="https://github.com/tprasadtp/protonvpn-docker/blob/master/LICENSE" target="_blank" rel="noreferrer">
-    <img src="https://img.shields.io/github/license/tprasadtp/protonvpn-docker?logo=github&labelColor=3A3A3A" align="center" alt="license">
-  </a>
-
-  <img src="https://ga-beacon.prasadt.com/UA-101760811-3/github/gfilt" align="center" alt="action-release">
-
-</p>
-
+[![build](https://github.com/tprasadtp/protonvpn-docker/actions/workflows/build.yml/badge.svg)](https://github.com/tprasadtp/protonvpn-docker/actions/workflows/build.yml)
+[![release](https://github.com/tprasadtp/protonvpn-docker/actions/workflows/release.yml/badge.svg)](https://github.com/tprasadtp/protonvpn-docker/actions/workflows/release.yml)
+[![security](https://github.com/tprasadtp/protonvpn-docker/actions/workflows/security.yml/badge.svg)](https://github.com/tprasadtp/protonvpn-docker/actions/workflows/security.yml)
+[![releases](https://img.shields.io/github/v/tag/tprasadtp/protonvpn-docker?label=version&sort=semver&logo=semver&color=7f50a6&labelColor=3a3a3a)](https://github.com/tprasadtp/protonvpn-docker/releases/latest)
+[![license](https://img.shields.io/github/license/tprasadtp/protonvpn-docker?logo=github&labelColor=3A3A3A)](https://github.com/tprasadtp/protonvpn-docker/blob/master/LICENSE)
+![analytics](https://ga-beacon.prasadt.com/UA-101760811-3/github/protonvpn-docker)
 
 ## Docker Registries
 
-Images are published on [GitHub Container Registry][ghcr].
+- Images are published on [GitHub Container Registry][ghcr].
 
 ## Environment Variables
 
@@ -170,9 +133,14 @@ networks:
 
 There is a `healthcheck` script available under /usr/local/bin (Added in 2.2.2-hotfix2). It will use `https://ipinfo.io` to verify the country to which VPN is connected. By default service will keep checking every `PROTONVPN_CHECK_INTERVAL` _(default = 60)_ seconds using the same api endpoint, script is only added for convenience.
 
+## Changelog
+
+- This project follows [Semantic Versioning 2.0.0](https://semver.org/)
+- Changelogs can be found at [changelog](./docs/changelog.md)
+
 ## Troubleshooting
 
-See [Troubleshooting](./TROUBLESHOOTING.md)
+See [Troubleshooting](./docs/troubleshooting.md).
 
 ## Known issues
 
@@ -190,7 +158,7 @@ By default instance metadata IPs which are commonly used on cloud environments a
 
 ## Kubernetes
 
-You may need to tweak your `PROTONVPN_EXCLUDE_CIDRS` to exclude your PodCIDR and ServiceCIDR. You also **MUST** disable dns leak protection. for more info see [k8s/README.md](./k8s/README.md).
+You may need to tweak your `PROTONVPN_EXCLUDE_CIDRS` to exclude your PodCIDR and ServiceCIDR. You also **MUST** disable dns leak protection. for more info see [docs/kubernetes.md](./docs/kubernetes.md).
 
 [dockerhub]: https://hub.docker.com/r/tprasadtp/protonvpn
 [ghcr]: https://ghcr.io/tprasadtp/protonvpn

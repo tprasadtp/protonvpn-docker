@@ -14,6 +14,8 @@ search_enabled: true
 
 # Misc
 permalink: pretty
+color_scheme: dark
+
 
 # Aux links for the upper right navigation
 aux_links:

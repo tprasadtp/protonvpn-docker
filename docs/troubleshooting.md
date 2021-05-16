@@ -1,11 +1,3 @@
-
----
-layout: default
-title: Troubleshooting
-permalink: /troubleshooting/
-nav_order: 5
----
-
 # Troubleshooting
 
 If you are unable to run the container as desired, please try the following before opening an issue
@@ -18,7 +10,7 @@ on GitHub.
 This depends on your shell. Please consult your shell's manpage/docs for how to export environment variables.
 1. Get your debugging [compose file][] and create a temporary folder required to save pyload downloads.
     ```bash
-    curl -sSfLO https://raw.githubusercontent.com/tprasadtp/protonvpn-docker/master/k8s/docker-compose.yml
+    curl -sSfLO https://raw.githubusercontent.com/tprasadtp/protonvpn-docker/master/docs/troubleshooting/docker-compose.yml
     mkdir -p ./downloads
     ```
 1. Try to run downloaded [compose file][]
@@ -38,3 +30,5 @@ This depends on your shell. Please consult your shell's manpage/docs for how to 
 
 - Healthchecks use `ipinfo.io` service. If your DNS or gateway is blocking it, please add it to your exceptions.
 - If your are unable to do so, please open an issue so that we can find some alternatives.
+
+[compose file]: https://raw.githubusercontent.com/tprasadtp/protonvpn-docker/master/docs/docker-compose.yml
