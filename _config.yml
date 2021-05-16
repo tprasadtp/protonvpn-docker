@@ -1,0 +1,24 @@
+# domain
+baseurl: "/protonvpn-docker"
+url: "https://tprasadtp.github.io"
+
+# meta
+title: ProtonVPN docker image
+description: ProtonVPN docker image. Supports ARMv7(32-bit), ARMv8 (64-bit ) and x86 (64-Bit).
+show_downloads: false
+remote_theme: pmarsceill/just-the-docs
+# Logo
+logo: "https://static.prasadt.com/logos/projects/artemis/scalable/sysadmin.svg"
+# Enable Search
+search_enabled: true
+
+# Misc
+permalink: pretty
+
+# Aux links for the upper right navigation
+aux_links:
+  "View on GitHub":
+    - "https://github.com/tprasadtp/protonvpn-docker/"
+
+# Makes Aux links open in a new tab
+aux_links_new_tab: true

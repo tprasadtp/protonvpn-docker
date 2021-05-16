@@ -170,6 +170,10 @@ networks:
 
 There is a `healthcheck` script available under /usr/local/bin (Added in 2.2.2-hotfix2). It will use `https://ipinfo.io` to verify the country to which VPN is connected. By default service will keep checking every `PROTONVPN_CHECK_INTERVAL` _(default = 60)_ seconds using the same api endpoint, script is only added for convenience.
 
+## Troubleshooting
+
+See [Troubleshooting](./TROUBLESHOOTING.md)
+
 ## Known issues
 
 - Kill switch is **NOT** reliable. This is due to the way protonvpn cli works because on issuing reconnect they remove
