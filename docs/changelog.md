@@ -1,17 +1,26 @@
-<!-- markdownlint-disable MD033 -->
-
-## Changelog
+# Changelog
 
 <a name="unreleased"></a>
 ## [Unreleased]
 
+### 📖 Documentation
+- Reorganize to better handle GitHub Pages ([ad47fde](https://github.com/tprasadtp/protonvpn-docker/commit/ad47fdee4a07956515b3380fd64c60ac99bcd695))
+- Enable Github pages and add troubleshooting docs ([a0ba4ee](https://github.com/tprasadtp/protonvpn-docker/commit/a0ba4eec74f5b8ab89db7ed77aae30f786404e59))
+- Update debugging compose file ([c127608](https://github.com/tprasadtp/protonvpn-docker/commit/c1276081a57e737a0b549abc3b839ae4cdca0610))
+- Fix docker logo URL in README ([4cf3b0d](https://github.com/tprasadtp/protonvpn-docker/commit/4cf3b0d189c6a493d8d75c440a884eb58c6c64f2))
+
 ### 🚧 Maintanance
+- Update templates ([51d120c](https://github.com/tprasadtp/protonvpn-docker/commit/51d120c312860930d35efa9005ac3870c530a6d0))
+- Update templates ([c122bed](https://github.com/tprasadtp/protonvpn-docker/commit/c122bed299f910c197fb90f1d21523d22849ed17))
 - **automation:** Allow automerge of docker image updates done via dependabot ([74ee95e](https://github.com/tprasadtp/protonvpn-docker/commit/74ee95e83ebdd56e4215fcd83f79c4ddc6df8783))
 - **changelog:** Update changelog emojis to follow common snippets ([91cd108](https://github.com/tprasadtp/protonvpn-docker/commit/91cd108bc2979984ce24d279080cf39ca7083cd1))
 
 ### 🤖 CI/CD & Automation
 - Checkout tag corresponding to latest release, before doing scheduled security scan to help populate required fields for codeql action ([842e834](https://github.com/tprasadtp/protonvpn-docker/commit/842e8348be330743ab708d081a61440c7c0e7c56))
+- **deps:** bump aquasecurity/trivy-action from 0.0.16 to 0.0.17 ([#47](https://github.com/tprasadtp/protonvpn-docker/issues/47)) ([a995116](https://github.com/tprasadtp/protonvpn-docker/commit/a995116c8077e8fa2970c5450109b412dff14e06))
+- **deps:** bump aquasecurity/trivy-action from 0.0.15 to 0.0.16 ([#46](https://github.com/tprasadtp/protonvpn-docker/issues/46)) ([7e90b7d](https://github.com/tprasadtp/protonvpn-docker/commit/7e90b7d06dcbd2d85e06393cd109c7575d36fd2d))
 - **deps:** bump aquasecurity/trivy-action from 0.0.14 to 0.0.15 ([#44](https://github.com/tprasadtp/protonvpn-docker/issues/44)) ([a19d7aa](https://github.com/tprasadtp/protonvpn-docker/commit/a19d7aa4aae72f7d883f6e4b6ea3f2f036bd3a9c))
+- **kodiak:** Remove default block on GH-Actions dependency updates ([b5172d4](https://github.com/tprasadtp/protonvpn-docker/commit/b5172d45934d5438a9f9a8007b25ec3c0291d9cf))
 
 
 <a name="4.2.1"></a>

@@ -57,7 +57,7 @@ changelog: ## Generate changelog
 		--debug \
 		--oldest-tag 4.0.0 \
 		--footer-file $(REPO_ROOT)/.chglog/FOOTER.md \
-		--output $(REPO_ROOT)/CHANGELOG.md \
+		--output $(REPO_ROOT)/docs/changelog.md \
 		--changelog
 
 .PHONY: release-notes

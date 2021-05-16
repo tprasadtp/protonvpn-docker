@@ -1,6 +1,4 @@
-<!-- markdownlint-disable MD033 -->
-
-## Changelog
+# Changelog
 
 {{ if .Versions -}}
 {{ if .Unreleased.CommitGroups -}}
