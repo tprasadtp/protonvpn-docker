@@ -22,7 +22,7 @@ This depends on your shell. Please consult your shell's manpage/docs for how to 
     docker inspect --format='{{range .NetworkSettings.Networks}}{{printf "http://%s:8000\\n" .IPAddress}}{{end}}' protonvpn
     ```
 1. Visit the link in your browser.
-1. If for some reason you get timeout errors, please specify output of following when running inside protonvpn container via `docker exec -it protonvpn bash`.
+1. If for some reason you still get timeout errors, please specify output of following when running inside protonvpn container via `docker exec -it protonvpn bash`, when opening your issue.
     - `ip r`
     - `curl -sSfL ipinfo.io`
 

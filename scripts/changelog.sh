@@ -262,9 +262,11 @@ Changelog and Release Notes generation helper.
 Usage: ${TEAL}${SCRIPT} ${BLUE} [options] ${NC}${VIOLET}
 ------------------------- Options ------------------------------${NC}
 [-c | --changelog]        Generate changelog
-[-r | --release-notes]    Generate release notes
+[-R | --release-notes]    Generate release notes
 ${ORANGE}
 ---------------- Options with Required Argments-----------------${NC}
+[-r | --repository]       Repository URL
+                          (defaults to $PROJECT_SOURCE)
 [-o | --output]           Save changelog to a file specified
 
 [-n | --next]             Specify next version.
@@ -302,8 +304,9 @@ function main()
     while [[ ${1} != "" ]]; do
         case ${1} in
             -c | --changelog)       mode="changelog";;
-            -r | --release-notes)   mode="release-notes";;
+            -R | --release-notes)   mode="release-notes";;
             # Options
+            -r | --repository)      shift;PROJECT_SOURCE="${1}";;
             -n | --next)            readonly bool_use_next_mode="true";
                                     shift;readonly NEXT_TAG="${1}";;
             # Header and Footer Files
@@ -329,6 +332,13 @@ function main()
       log_error "No mode specified!"
       display_usage
       exit 1
+    fi
+
+    if [[ -z $PROJECT_SOURCE ]]; then
+        log_error "Repository URL is not defined!"
+        log_error "Either define PROJECT_SOURCE or use --repository flag"
+        display_usage
+        exit 1
     fi
 
     # validate --next is a valid semver tag
@@ -408,11 +418,13 @@ function main()
 
         if [[ -n ${NEXT_TAG} ]]; then
             CHANGELOG_CONTENT="$(git-chglog \
+                --repository-url="${PROJECT_SOURCE}" \
                 --next-tag="${NEXT_TAG}" \
                 --tag-filter-pattern="${tag_filter}" \
                 "${CHANGELOG_ARGS}")"
         else
             CHANGELOG_CONTENT="$(git-chglog \
+                --repository-url="${PROJECT_SOURCE}" \
                 --tag-filter-pattern="${tag_filter}" \
                 "${CHANGELOG_ARGS}")"
         fi
@@ -436,12 +448,14 @@ function main()
         if [[ -n ${NEXT_TAG} ]]; then
             RN_CONTENT="$(git-chglog \
                 --template "${REPO_ROOT:-.}/.chglog/RELEASE_NOTES.md.tpl" \
+                --repository-url="${PROJECT_SOURCE}" \
                 --next-tag="${NEXT_TAG}" \
                 --tag-filter-pattern="${tag_filter}" \
                 "${tag}")"
         else
             RN_CONTENT="$(git-chglog \
                 --template "${REPO_ROOT:-.}/.chglog/RELEASE_NOTES.md.tpl" \
+                --repository-url="${PROJECT_SOURCE}" \
                 --tag-filter-pattern="${tag_filter}" \
                 "${tag}")"
         fi
@@ -467,4 +481,4 @@ function main()
 main "$@"
 
 # diana:{diana_urn_flavor}:{remote}:{source}:{version}:{remote_path}:{type}
-# diana:2:github:tprasadtp/templates::scripts/changelog.sh:static
+# diana:2:github:tprasadtp/templates::common/scripts/changelog.sh:static

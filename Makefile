@@ -25,7 +25,6 @@ UPSTREAM_URL     := https://github.com/ProtonVPN/linux-cli
 
 # Include makefiles
 include $(REPO_ROOT)/makefiles/help.mk
-include $(REPO_ROOT)/makefiles/metadata.mk
 include $(REPO_ROOT)/makefiles/docker.mk
 
 
@@ -54,7 +53,6 @@ clean: ## clean
 .PHONY: changelog
 changelog: ## Generate changelog
 	$(REPO_ROOT)/scripts/changelog.sh \
-		--debug \
 		--oldest-tag 4.0.0 \
 		--footer-file $(REPO_ROOT)/.chglog/FOOTER.md \
 		--output $(REPO_ROOT)/docs/changelog.md \
@@ -63,7 +61,6 @@ changelog: ## Generate changelog
 .PHONY: release-notes
 release-notes: ## Generate release-notes
 	$(REPO_ROOT)/scripts/changelog.sh \
-		--debug \
 		--output $(REPO_ROOT)/RELEASE_NOTES.md \
 		--release-notes
 

@@ -70,3 +70,6 @@
 {{ end -}}
 {{ end -}}
 {{ end -}}
+
+<!-- diana:{diana_urn_flavor}:{remote}:{source}:{version}:{remote_path}:{type} -->
+<!-- diana:2:github:tprasadtp/templates::common/chglog/CHANGELOG.md.tpl:static -->

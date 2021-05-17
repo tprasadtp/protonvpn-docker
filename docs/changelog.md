@@ -4,7 +4,7 @@
 ## [Unreleased]
 
 ### 📖 Documentation
-- Reorganize to better handle GitHub Pages ([ad47fde](https://github.com/tprasadtp/protonvpn-docker/commit/ad47fdee4a07956515b3380fd64c60ac99bcd695))
+- Reorganize to better handle GitHub Pages ([#48](https://github.com/tprasadtp/protonvpn-docker/issues/48)) ([96bdfc8](https://github.com/tprasadtp/protonvpn-docker/commit/96bdfc8f683091c060b762529fbec0ded89de075))
 - Enable Github pages and add troubleshooting docs ([a0ba4ee](https://github.com/tprasadtp/protonvpn-docker/commit/a0ba4eec74f5b8ab89db7ed77aae30f786404e59))
 - Update debugging compose file ([c127608](https://github.com/tprasadtp/protonvpn-docker/commit/c1276081a57e737a0b549abc3b839ae4cdca0610))
 - Fix docker logo URL in README ([4cf3b0d](https://github.com/tprasadtp/protonvpn-docker/commit/4cf3b0d189c6a493d8d75c440a884eb58c6c64f2))

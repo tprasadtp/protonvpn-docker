@@ -2,7 +2,6 @@ style: github
 template: CHANGELOG.md.tpl
 info:
   title: CHANGELOG
-  repository_url: https://github.com/tprasadtp/protonvpn-docker
 options:
   commits:
     filters:
@@ -67,3 +66,6 @@ options:
     pattern: "^Revert \"([\\s\\S]*)\"$"
     pattern_maps:
       - Header
+
+# diana:{diana_urn_flavor}:{remote}:{source}:{version}:{remote_path}:{type}
+# diana:2:github:tprasadtp/templates::common/chglog/config.yml:static

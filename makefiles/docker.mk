@@ -29,14 +29,6 @@ export DOCKER_BUILD_CONTEXT
 # Image URL
 export DOCKER_IMAGE_URL
 
-
-# Check for common Project vars
-$(call check_defined, PROJECT_TITLE, Project title for OCI annotations)
-$(call check_defined, PROJECT_DESC, Project description for OCI annotations)
-$(call check_defined, PROJECT_URL, Project URL for OCI annotations)
-$(call check_defined, PROJECT_LICENSE, Project License in SPDX License Expression format)
-$(call check_defined, PROJECT_SOURCE, Project Source URL for OCI annotations)
-
 # Check if required vars are defined
 $(call check_defined, DOCKER_IMAGES, Docker Images)
 $(call check_defined, DOCKER_IMAGE_URL, Docker Image URL)
@@ -111,7 +103,7 @@ docker: ## Build docker image
 		--label org.opencontainers.image.title="$(PROJECT_TITLE)" \
 		--label org.opencontainers.image.url="$(DOCKER_IMAGE_URL)" \
 		--label org.opencontainers.image.vendor="$(VENDOR)" \
-		--label org.opencontainers.image.version="$(VERSION)" \
+		--label org.opencontainers.image.version="$(GIT_COMMIT)" \
 		--label io.github.tprasadtp.metadata.version="6" \
 		--label io.github.tprasadtp.metadata.build.system="$(BUILD_SYSTEM)" \
 		--label io.github.tprasadtp.metadata.build.number="$(BUILD_NUMBER)" \
