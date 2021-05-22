@@ -146,6 +146,7 @@ See [Troubleshooting](./docs/troubleshooting.md).
 
 - Kill switch is **NOT** reliable. This is due to the way protonvpn cli works because on issuing reconnect they remove
 re-initialize iptable rules which removes block on outgoing connections for a short duration until iptable rules are applied again.
+- The endpoint used by [healthcheck](https://github.com/tprasadtp/protonvpn-docker/blob/master/root/usr/local/bin/healthcheck) has a [rate limit of 50,000 unauthenticated requests per month](https://ipinfo.io/faq/article/61-usage-limit-free-plan). A `PROTONVPN_CHECK_INTERVAL` value of less than 60 seconds will likely hit this rate limit earlier in the month resulting in repeated disconnects as the healthcheck will fail.
 
 ## DNS & Split Tunneling
 
