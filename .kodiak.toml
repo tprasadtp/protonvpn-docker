@@ -43,14 +43,6 @@ body_type = "markdown"
 cut_body_before = "<!-- COMMIT-NOTES-BEGIN -->"
 cut_body_after = "<!-- COMMIT-NOTES-END-->"
 
-
-[merge.automerge_dependencies]
-# only auto merge "minor" and "patch" version upgrades.
-# do not automerge "major" version upgrades.
-versions = ["patch"]
-usernames = ["dependabot"]
-
-
 [update]
 require_automerge_label = false
 

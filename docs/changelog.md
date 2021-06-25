@@ -1,16 +1,17 @@
 # Changelog
 
-<a name="unreleased"></a>
-## [Unreleased]
+
+<a name="5.0.0-beta.1"></a>
+## [5.0.0-beta.1] - 2021-06-25
 
 ### ⚠️ BREAKING CHANGES
 - Specifying `PROTONVPN_SERVER` is now required environment variable.
 - `PROTONVPN_COUNTRY` is merged into `PROTONVPN_SERVER`.
 - Users who are migrating from version 4.x or below rename `PROTONVPN_COUNTRY` to `PROTONVPN_SERVER`.
 - You can migrate value of `PROTONVPN_COUNTRY` to `PROTONVPN_SERVER`. Container will detect that you wish to connct to country specified and connect as usual.
+
 ### 🍒 Features & Enhancements
-- Merge `PROTONVPN_SERVER` and `PROTONVPN_COUNTRY` into `PROTONVPN_SERVER`. ([8909508](https://github.com/tprasadtp/protonvpn-docker/commit/89095089463a24958f3333ade447257b0da7a045))
-- Use custom healthcheck endpoint and provide user an option to override defaults ([4b0e33c](https://github.com/tprasadtp/protonvpn-docker/commit/4b0e33c98d678d17cf07c90dc3714e48195b0386))
+- Merge `PROTONVPN_SERVER` and `PROTONVPN_COUNTRY` into `PROTONVPN_SERVER`. ([e3e55ca](https://github.com/tprasadtp/protonvpn-docker/commit/e3e55caa5b5a305fb2a8b827919db2724813cbd1))
 
 ### 📖 Documentation
 - Reorganize to better handle GitHub Pages ([#48](https://github.com/tprasadtp/protonvpn-docker/issues/48)) ([96bdfc8](https://github.com/tprasadtp/protonvpn-docker/commit/96bdfc8f683091c060b762529fbec0ded89de075))
@@ -32,7 +33,6 @@
 
 ### 🤖 CI/CD & Automation
 - Checkout tag corresponding to latest release, before doing scheduled security scan to help populate required fields for codeql action ([842e834](https://github.com/tprasadtp/protonvpn-docker/commit/842e8348be330743ab708d081a61440c7c0e7c56))
-- **bots:**  Reduce dependabot frequency ([2469d53](https://github.com/tprasadtp/protonvpn-docker/commit/2469d53fb934f60926fd00eb7f1dd5f762e26dcb))
 - **deps:** bump goreleaser/goreleaser-action from 2.6.0 to 2.6.1 ([#56](https://github.com/tprasadtp/protonvpn-docker/issues/56)) ([af63fa7](https://github.com/tprasadtp/protonvpn-docker/commit/af63fa7bf8ce6e26f78b05442139a905ca4ab6b6))
 - **deps:** bump goreleaser/goreleaser-action from 2.5.0 to 2.6.0 ([#52](https://github.com/tprasadtp/protonvpn-docker/issues/52)) ([2e05f51](https://github.com/tprasadtp/protonvpn-docker/commit/2e05f518835ac256e65ed814187a934f36da8699))
 - **deps:** bump aquasecurity/trivy-action from 0.0.16 to 0.0.17 ([#47](https://github.com/tprasadtp/protonvpn-docker/issues/47)) ([a995116](https://github.com/tprasadtp/protonvpn-docker/commit/a995116c8077e8fa2970c5450109b412dff14e06))
@@ -40,6 +40,9 @@
 - **deps:** bump aquasecurity/trivy-action from 0.0.14 to 0.0.15 ([#44](https://github.com/tprasadtp/protonvpn-docker/issues/44)) ([a19d7aa](https://github.com/tprasadtp/protonvpn-docker/commit/a19d7aa4aae72f7d883f6e4b6ea3f2f036bd3a9c))
 - **deps:** bump aquasecurity/trivy-action from 0.0.17 to 0.0.18 ([#55](https://github.com/tprasadtp/protonvpn-docker/issues/55)) ([08564f2](https://github.com/tprasadtp/protonvpn-docker/commit/08564f2a3416af3433d7312dad65892d12f5f3e2))
 - **kodiak:** Remove default block on GH-Actions dependency updates ([b5172d4](https://github.com/tprasadtp/protonvpn-docker/commit/b5172d45934d5438a9f9a8007b25ec3c0291d9cf))
+
+### Reverts
+- chore(deps): bump protonvpn-cli from 2.2.6 to 2.2.7 in /root ([#58](https://github.com/tprasadtp/protonvpn-docker/issues/58)) ([efff4ce](https://github.com/tprasadtp/protonvpn-docker/commit/efff4ce920ad010fdb72637c1701d9aa841fd6b3))
 
 
 <a name="4.2.1"></a>
@@ -169,7 +172,7 @@
 
 
 <!-- tag references -->
-[Unreleased]: https://github.com/tprasadtp/protonvpn-docker/compare/4.2.1...HEAD
+[5.0.0-beta.1]: https://github.com/tprasadtp/protonvpn-docker/compare/4.2.1...5.0.0-beta.1
 [4.2.1]: https://github.com/tprasadtp/protonvpn-docker/compare/4.2.0...4.2.1
 [4.2.0]: https://github.com/tprasadtp/protonvpn-docker/compare/4.1.5...4.2.0
 [4.1.5]: https://github.com/tprasadtp/protonvpn-docker/compare/4.1.4...4.1.5

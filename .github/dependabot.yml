@@ -29,7 +29,7 @@ updates:
     ignore:
       # Upstream is horrible at following semver specs
       # They change interface names and even replace entire repos
-      # to a new ones between patch releases.
+      # to a new ones between patch releases!
       - dependency-name: "protonvpn-cli"
 
   # Actions
