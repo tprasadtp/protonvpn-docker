@@ -24,6 +24,7 @@ about: Use this template for connectivty issues.
 
 ## Docker configuration
 
+- [ ] Overiding `PROTONVPN_CHECK_URL`.
 - [ ] Using custom runtime like gvisor (specify your runtime):
 - [ ] Using user namespaces
 - [ ] Using rootless containers

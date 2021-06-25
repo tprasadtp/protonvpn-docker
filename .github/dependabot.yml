@@ -1,19 +1,16 @@
 version: 2
 updates:
-  # Docker Updates
   - package-ecosystem: docker
     labels:
       - "Actor:Dependabot"
       - "Deps:Docker"
-      # Allow Automerge for base image updates.
       - "Luna:Automerge"
-    # Common settings
     commit-message:
       prefix: "chore(deps):"
     directory: "/"
     schedule:
-      interval: "daily"
-    open-pull-requests-limit: 10
+      interval: "weekly"
+      day: "saturday"
     pull-request-branch-name:
       separator: "-"
 
@@ -21,15 +18,19 @@ updates:
     labels:
       - "Actor:Dependabot"
       - "Deps:Python"
-    # Common settings
     commit-message:
       prefix: "chore(deps):"
     directory: "/root"
     schedule:
-      interval: "daily"
-    open-pull-requests-limit: 10
+      interval: "weekly"
+      day: "saturday"
     pull-request-branch-name:
       separator: "-"
+    ignore:
+      # Upstream is horrible at following semver specs
+      # They change interface names and even replace entire repos
+      # to a new ones between patch releases.
+      - dependency-name: "protonvpn-cli"
 
   # Actions
   - package-ecosystem: github-actions
@@ -40,22 +41,7 @@ updates:
       prefix: "ci(deps):"
     directory: "/"
     schedule:
-      interval: "daily"
-    open-pull-requests-limit: 10
+      interval: "weekly"
+      day: "saturday"
     pull-request-branch-name:
       separator: "-"
-    ignore:
-      # We trust official actions by GitHub
-      # we trust them for not breaking stuff
-      # and security.
-      - dependency-name: "actions/*"
-      - dependency-name: "github/codeql-action/upload-sarif"
-
-      # Labels is Frozen
-      - dependency-name: "tprasadtp/labels"
-
-      # Trust docker provided actions to
-      # not break stuff.
-      - dependency-name: docker/login-action
-      - dependency-name: docker/setup-buildx-action
-      - dependency-name: docker/setup-qemu-action

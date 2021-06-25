@@ -29,11 +29,11 @@ spec:
             configMapKeyRef:
               name: protonvpn-settings
               key: PROTONVPN_EXCLUDE_CIDRS
-        - name: PROTONVPN_COUNTRY
+        - name: PROTONVPN_SERVER
           valueFrom:
             configMapKeyRef:
               name: protonvpn-settings
-              key: PROTONVPN_COUNTRY
+              key: PROTONVPN_SERVER
         - name: PROTONVPN_DNS_LEAK_PROTECT
           valueFrom:
             configMapKeyRef:

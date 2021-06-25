@@ -48,3 +48,8 @@ The footer should contain a [closing reference to an issue](https://help.github.
 The **footer** should contain any information about **Breaking Changes** and is also the place to reference GitHub issues that this commit **Closes**.
 
 **Breaking Changes** should start with the word `BREAKING-CHANGES:` with a space or two newlines. The rest of the commit message is then used for this.
+
+
+### Docs
+
+Documentation is generated using [docsify](https://docsify.js.org/)

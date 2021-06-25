@@ -9,8 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
+
       - name: Shellcheck
         run: |
           make show-vars-base
@@ -20,8 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
+
       - name: Lint
         run: |
           make show-vars-base
@@ -32,9 +30,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-          persist-credentials: false
 
       - name: Make Variables for Debugging
         run: |
@@ -53,21 +48,6 @@ jobs:
         with:
           version: latest
           install-only: true
-
-      - name: Install git-chglog
-        run: |
-          brew tap git-chglog/git-chglog
-          brew install git-chglog
-
-      - name: Generate Changelog
-        run: |
-          make changelog
-          cat docs/changelog.md
-
-      - name: Generate Release notes
-        run: |
-          make release-notes
-          cat RELEASE_NOTES.md
 
       - name: Build snapshot
         run: make snapshot

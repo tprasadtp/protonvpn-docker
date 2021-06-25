@@ -1,4 +1,6 @@
-# Kubernetes
+<!-- markdownlint-disable MD033 -->
+
+<h1 align="center">Kubernetes</h1>
 
 <p align="center">
   <a href="https://protonvpn.com" target="_blank" rel="noreferrer">
@@ -19,7 +21,7 @@ kubectl config set-context --namespace pyload --current
 ```
 
 
-## Create kubernetes `Secret` to save protonvpn credentials and tier
+## Create kubernetes secrets to save protonvpn credentials and tier
 
 ```bash
 kubectl create secret generic protonvpn-credentials \
@@ -35,7 +37,7 @@ Please include your Pod CIDR, service CIDR, Loadbalancer IP Pool CIDR in the `PR
 ```bash
 kubectl create configmap protonvpn-settings \
     --from-literal=PROTONVPN_EXCLUDE_CIDRS="10.0.0.0/8,191.168.0.0/16,172.16.0.0/12" \
-    --from-literal=PROTONVPN_COUNTRY=NL \
+    --from-literal=PROTONVPN_SERVER=NL \
     --from-literal=PROTONVPN_DNS_LEAK_PROTECT=0 \
     --from-literal=PROTONVPN_CHECK_INTERVAL=10
 ```
@@ -47,9 +49,9 @@ This is for ease of use as the application you may want to use with protonvpn wi
 
 ```bash
 # Create Pod
-kubectl create -f https://raw.githubusercontent.com/tprasadtp/protonvpn-docker/master/docs/pod.yml
+kubectl create -f https://tprasadtp.github.io/protonvpn-docker/manifests/pod.yml
 # Create service
-kubectl create -f https://raw.githubusercontent.com/tprasadtp/protonvpn-docker/master/docs/service.yml
+kubectl create -f https://tprasadtp.github.io/protonvpn-docker/manifests/service.yml
 ```
 
 ## Verify

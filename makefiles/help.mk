@@ -114,13 +114,14 @@ endif
 
 
 # Validate Auto Populated variables are not empty
+# GIT_BRANCH is an exception as on CI systems it can be empty
+# Due to shalow cloning and detached head
 # -------------------------------------
 $(call check_defined, \
 	BUILD_NUMBER \
 	BUILD_SYSTEM \
 	BUILD_HOST \
 	GIT_COMMIT \
-	GIT_BRANCH \
 	GIT_COMMIT_SHORT \
 	GIT_COMMIT_TIMESTAMP, \
 	Auto-populated Variable)

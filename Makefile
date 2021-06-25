@@ -30,7 +30,9 @@ include $(REPO_ROOT)/makefiles/docker.mk
 
 .PHONY: shellcheck
 shellcheck: ## Runs shellcheck
-	@bash $(REPO_ROOT)/scripts/shellcheck.sh $(shell find $(REPO_ROOT)/root/etc/ -type f -executable)
+	@bash $(REPO_ROOT)/scripts/shellcheck.sh \
+	$(shell find $(REPO_ROOT)/root/etc/ -type f -executable) \
+	$(REPO_ROOT)/root/usr/local/lib/loggers/logger.sh
 
 # go releaser
 .PHONY: snapshot
@@ -63,6 +65,10 @@ release-notes: ## Generate release-notes
 	$(REPO_ROOT)/scripts/changelog.sh \
 		--output $(REPO_ROOT)/RELEASE_NOTES.md \
 		--release-notes
+
+.PHONY: docs-server
+docs-server: ## Server documentation
+	cd docs && python3 -m http.server
 
 # Enforce BUILDKIT
 ifneq ($(DOCKER_BUILDKIT),1)

@@ -10,7 +10,7 @@ require_automerge_label = true
 # This Label is shared with Luna.
 #-----------------------------------
 # Conflicts are avoided by explicitly blacklisting Actor:Luna label
-# Luna handles this gracefully by first, adding the label before doing
+# Luna handles this gracefullym by first adding this label before doing
 # any other tasks. If adding Actor:Luna label fails, Luna will not act
 # on that PR/Issue.
 automerge_label = "Luna:AutoMerge"
@@ -47,7 +47,7 @@ cut_body_after = "<!-- COMMIT-NOTES-END-->"
 [merge.automerge_dependencies]
 # only auto merge "minor" and "patch" version upgrades.
 # do not automerge "major" version upgrades.
-versions = ["minor", "patch"]
+versions = ["patch"]
 usernames = ["dependabot"]
 
 

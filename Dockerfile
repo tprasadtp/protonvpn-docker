@@ -1,4 +1,7 @@
-FROM ubuntu:focal-20210609
+#syntax=docker/dockerfile:1.2
+
+FROM ubuntu:focal-20210416 as upstream
+FROM upstream as base
 
 # Overlay defaults
 ENV S6_BEHAVIOUR_IF_STAGE2_FAILS=2 \
@@ -10,25 +13,30 @@ ENV PROTONVPN_DNS_LEAK_PROTECT=1 \
     PROTONVPN_PROTOCOL=udp \
     PROTONVPN_EXCLUDE_CIDRS="169.254.169.254/32,169.254.170.2/32" \
     PROTONVPN_CHECK_INTERVAL=60 \
-    PROTONVPN_FAIL_THRESHOLD=3
-
+    PROTONVPN_FAIL_THRESHOLD=3 \
+    PROTONVPN_CHECK_URL="https://ipinfo.prasadt.workers.dev/" \
+    PROTONVPN_CHECK_QUERY=".client.country"
 
 ARG S6_OVERLAY_VERSION="2.2.0.3"
 
+RUN rm -f /etc/apt/apt.conf.d/docker-clean \
+    && echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache
+
 # Install Packages
 # hadolint ignore=DL3008
-RUN apt-get -qq -o=Dpkg::Use-Pty=0 update \
-    && apt-get -qq -o=Dpkg::Use-Pty=0 install --no-install-recommends --yes \
-        curl \
-        jq \
-        procps \
-        iptables \
-        iputils-ping \
-        net-tools \
-        openvpn \
-        bind9-host \
-        dialog \
-        python3-pip \
+RUN --mount=type=tmpfs,target=/root/.gnupg/ \
+    apt-get update \
+    && apt-get install --no-install-recommends --yes \
+    curl \
+    jq \
+    procps \
+    iptables \
+    iputils-ping \
+    net-tools \
+    openvpn \
+    bind9-host \
+    dialog \
+    python3-pip \
     && ARCH="$(uname -m)" \
     && export ARCH \
     && if [ "$ARCH" = "x86_64" ]; then \
@@ -55,14 +63,15 @@ RUN apt-get -qq -o=Dpkg::Use-Pty=0 update \
     && rm -rf /downloads/ \
     && rm -rf /var/lib/apt/lists/*
 
-COPY root/ /
+COPY --chown=root:root --chmod=0755 root/ /
 
 # Install Proton CLI
-RUN pip3 install \
+# hadolint ignore=DL3042
+RUN --mount=type=cache,target=/root/.cache/pip \
+    --mount=type=cache,target=/root/.cache/wheel \
+    pip3 install \
     --progress-bar=off \
     --upgrade \
-    --no-cache-dir \
-    --no-cache-dir \
     --disable-pip-version-check \
     -r requirements.txt
 

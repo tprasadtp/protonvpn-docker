@@ -2,26 +2,31 @@
 set -eo pipefail
 
 if [[ ${1} == "silent" ]] || [[ ${1} == "--silent" ]]; then
-  PROTONVPN_HEALTHCHECK_SILENT=1
+  PROTONVPN_CHECK_SILENT=1
 fi
 
-if [[ -z ${PROTONVPN_COUNTRY} ]]; then
-  PROTONVPN_COUNTRY="$(python3 /usr/local/bin/proton-srv-country)"
+if [[ -z ${PROTONVPN_CHECK_URL} ]]; then
+  if [[ ${PROTONVPN_CHECK_SILENT} -ne 1 ]]; then
+    echo "Healthcheck endpoint not defined!"
+  fi
+  exit 1
 fi
+
+PROTONVPN_COUNTRY="$(python3 /usr/local/bin/proton-srv-country)"
 
 CONNECTED_COUNTRY="$(curl \
     --max-time 20 \
     --silent \
     --location \
-    https://ipinfo.io | jq -r '.country')"
+    "${PROTONVPN_CHECK_URL}" | jq -r "${PROTONVPN_CHECK_QUERY}")"
 
 if [[ ${CONNECTED_COUNTRY} == "${PROTONVPN_COUNTRY}" ]]; then
-  if [[ ${PROTONVPN_HEALTHCHECK_SILENT} -ne 1 ]]; then
+  if [[ ${PROTONVPN_CHECK_SILENT} -ne 1 ]]; then
     echo "OK"
   fi
   exit 0
 else
-  if [[ ${PROTONVPN_HEALTHCHECK_SILENT} -ne 1 ]]; then
+  if [[ ${PROTONVPN_CHECK_SILENT} -ne 1 ]]; then
     echo "FAIL"
   fi
   exit 1

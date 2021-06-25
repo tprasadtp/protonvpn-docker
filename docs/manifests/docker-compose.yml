@@ -5,7 +5,7 @@ services:
   protonvpn:
     container_name: protonvpn
     environment:
-      PROTONVPN_COUNTRY: NL
+      PROTONVPN_SERVER: NL
       PROTONVPN_USERNAME: ${PROTONVPN_USERNAME}
       PROTONVPN_PASSWORD: ${PROTONVPN_PASSWORD}
       PROTONVPN_TIER: ${PROTONVPN_TIER:-0}
