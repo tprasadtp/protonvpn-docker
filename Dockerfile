@@ -1,6 +1,6 @@
 #syntax=docker/dockerfile:1.2
 
-FROM ubuntu:focal-20210416 as upstream
+FROM ubuntu:focal-20210609 as upstream
 FROM upstream as base
 
 # Overlay defaults
