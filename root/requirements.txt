@@ -2,7 +2,7 @@
 # security updates are enabled here.
 # This file is not complete lock file
 Jinja2==3.0.1
-protonvpn-cli==2.2.7
+protonvpn-cli==2.2.11
 requests==2.25.1
 urllib3==1.26.6
 pytoml==0.1.21
