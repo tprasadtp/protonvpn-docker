@@ -13,7 +13,7 @@ CONNECTED_COUNTRY="$(curl \
     --max-time 20 \
     --silent \
     --location \
-    https://ipinfo.io | jq -r '.country')"
+    https://ip.zxq.co | jq -r '.country')"
 
 if [[ ${CONNECTED_COUNTRY} == "${PROTONVPN_COUNTRY}" ]]; then
   if [[ ${PROTONVPN_HEALTHCHECK_SILENT} -ne 1 ]]; then

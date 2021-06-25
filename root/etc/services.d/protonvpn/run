@@ -64,7 +64,7 @@ function api_check()
     --max-time 20 \
     --silent \
     --location \
-    https://ipinfo.io | jq -r '.country')"
+    https://ip.zxq.co | jq -r '.country')"
 
   if [[ -z ${PROTONVPN_COUNTRY} ]]; then
     PROTONVPN_COUNTRY="$(python3 /usr/local/bin/proton-srv-country)"
