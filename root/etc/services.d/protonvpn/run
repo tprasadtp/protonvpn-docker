@@ -6,14 +6,17 @@ if [[ $DEBUG == "1" ]]; then
   export LOG_LVL=0
 fi
 
-if [[ -f /usr/local/lib/loggers/logger.bash ]]; then
+if [[ -f /usr/local/lib/loggers/logger.sh ]]; then
   # shellcheck disable=SC1091
-  source /usr/local/lib/loggers/logger.bash
+  source /usr/local/lib/loggers/logger.sh
 else
-  echo "[ERROR ] Failed to loag logging library at/usr/local/lib/loggers/logger.bash"
+  echo "[ERROR ] Failed to load logging library expected at /usr/local/lib/loggers/logger.sh"
   exit 1
 fi
 
+if [[ $DEBUG == "1" ]]; then
+  LOG_LVL="0"
+fi
 
 # Reset disconnect mode flag
 PROTONVPN_SVC_DISCONNECTING=0
@@ -24,7 +27,7 @@ _term() {
   PROTONVPN_SVC_DISCONNECTING=1
   log_info "Disconnecting!"
   if PVPN_DEBUG="${DEBUG:-0}" protonvpn disconnect; then
-    log_success "Diconnected"
+    log_success "Disconnected"
   else
     log_error "Failed to disconnect!"
   fi
@@ -32,8 +35,7 @@ _term() {
 
 trap _term SIGTERM SIGINT
 
-function connect_vpn()
-{
+function connect_vpn() {
 
   if [[ -z ${PROTONVPN_SERVER} ]]; then
     log_error "Specify PROTONVPN_SERVER(${PROTONVPN_SERVER})"
@@ -63,9 +65,7 @@ function connect_vpn()
   fi
 }
 
-
-function reconnect_vpn()
-{
+function reconnect_vpn() {
   log_warning "Reconnecting..."
   if PVPN_DEBUG="${DEBUG:-0}" protonvpn r; then
     log_success "Reconnection successful"
@@ -76,9 +76,7 @@ function reconnect_vpn()
   fi
 }
 
-
-function api_check()
-{
+function api_check() {
   COUNTRY="$(curl \
     --max-time 20 \
     --silent \
@@ -88,20 +86,19 @@ function api_check()
   PROTONVPN_COUNTRY="$(python3 /usr/local/bin/proton-srv-country)"
 
   if [[ $COUNTRY == "${PROTONVPN_COUNTRY}" ]]; then
-    log_success "Healthchecks passed"
+    log_success "VPN is running and healthy"
     thrshold_f=0
   else
-    log_error "Healthcheck #$(( ++thrshold_f )) Failed!"
+    log_error "Healthcheck #$((++thrshold_f)) Failed!"
     log_error "Connected to #${COUNTRY} instead of #${PROTONVPN_COUNTRY}"
-    if [[ $thrshold_f -gt "${PROTONVPN_FAIL_THRESHOLD}" ]];then
+    if [[ $thrshold_f -gt "${PROTONVPN_FAIL_THRESHOLD}" ]]; then
       log_error "Reconnecting! (${PROTONVPN_FAIL_THRESHOLD})"
       reconnect_vpn
     fi
   fi
 }
 
-function check_vpn()
-{
+function check_vpn() {
   # Check if openvpnv process is running.
   if [[ ${PROTONVPN_SVC_DISCONNECTING} -ne 1 ]]; then
     if [[ -z "$(pgrep -x openvpn)" ]]; then
@@ -115,19 +112,16 @@ function check_vpn()
   fi
 }
 
-
-function main()
-{
-
+function main() {
   re='^[0-9]+$'
-  if ! [[ $PROTONVPN_CHECK_INTERVAL =~ $re ]] ; then
+  if ! [[ $PROTONVPN_CHECK_INTERVAL =~ $re ]]; then
     log_warning "PROTONVPN_CHECK_INTERVAL can only be an integer!, will default to 90 seconds"
     PROTONVPN_CHECK_INTERVAL=90
   else
     log_info "PROTONVPN_CHECK_INTERVAL is set to #$PROTONVPN_CHECK_INTERVAL"
   fi
 
-  if ! [[ $PROTONVPN_FAIL_THRESHOLD =~ $re ]] ; then
+  if ! [[ $PROTONVPN_FAIL_THRESHOLD =~ $re ]]; then
     log_warning "PROTONVPN_FAIL_THRESHOLD can only be an integer!, will default to 3"
     PROTONVPN_FAIL_THRESHOLD=3
   else
@@ -147,8 +141,7 @@ function main()
   fi
 
   # Checks
-  while :
-  do
+  while :; do
     log_debug "Is service disconnecting: ${PROTONVPN_SVC_DISCONNECTING}"
     check_vpn
     sleep "${PROTONVPN_CHECK_INTERVAL}" &

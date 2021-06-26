@@ -11,8 +11,12 @@ if [[ -f /usr/local/lib/loggers/logger.sh ]]; then
   # shellcheck disable=SC1091
   source /usr/local/lib/loggers/logger.sh
 else
-  echo "[ERROR ] Failed to loag logging library at/usr/local/lib/loggers/logger.sh"
+  echo "[ERROR ] Failed to load logging library expected at /usr/local/lib/loggers/logger.sh"
   exit 1
+fi
+
+if [[ $DEBUG == "1" ]]; then
+  LOG_LVL="0"
 fi
 
 if [[ -z "$PROTONVPN_USERNAME" ]]; then
@@ -31,10 +35,10 @@ if [[ -z ${PROTONVPN_CHECK_URL} ]]; then
 fi
 
 if [[ ${PROTONVPN_CHECK_URL} =~ ^https://* ]]; then
-    log_success "OK! Check URL is secure"
+  log_success "OK! Check URL is secure"
 else
-    log_error "PROTONVPN_CHECK_URL must be secure(https)"
-    exit 3
+  log_error "PROTONVPN_CHECK_URL must be secure(https)"
+  exit 3
 fi
 # Validate healthcheck endpoint returns 200
 if [[ $(curl -s -o /dev/null -w "%{http_code}" "${PROTONVPN_CHECK_URL}") == "200" ]]; then
@@ -54,22 +58,45 @@ else
 fi
 
 case ${PROTONVPN_TIER} in
-  0 | free | Free | FREE)                log_notice "Free Plan";CFG_TIER=0;;
-  1 | basic | Basic | BASIC)             log_notice "Basic Plan";CFG_TIER=1;;
-  2 | plus | Plus | PLUS)                log_notice "Plus Plan";CFG_TIER=2;;
-  3 | visionary | Visionary | VISIONARY) log_notice "Visionary Plan";CFG_TIER=3;;
-  *)                                     log_error "Invalid ProtonVPN Tier, Can only accept 0-3";exit 3;;
+0 | free | Free | FREE)
+  log_notice "Free Plan"
+  CFG_TIER=0
+  ;;
+1 | basic | Basic | BASIC)
+  log_notice "Basic Plan"
+  CFG_TIER=1
+  ;;
+2 | plus | Plus | PLUS)
+  log_notice "Plus Plan"
+  CFG_TIER=2
+  ;;
+3 | visionary | Visionary | VISIONARY)
+  log_notice "Visionary Plan"
+  CFG_TIER=3
+  ;;
+*)
+  log_error "Invalid ProtonVPN Tier, Can only accept 0-3"
+  exit 3
+  ;;
 esac
 
 case ${PROTONVPN_PROTOCOL} in
-  tcp | TCP)                    log_notice "Protocol: TCP";CFG_PROTO="tcp";;
-  udp | UDP)                    log_notice "Protocol: UDP";CFG_PROTO="udp";;
-  *)                            log_warning "Protocol: Invalid protocol specified - ${PROTONVPN_PROTOCOL}";
-                                log_warning "Falling back to UDP";
-                                CFG_PROTO="udp";;
+tcp | TCP)
+  log_notice "Protocol: TCP"
+  CFG_PROTO="tcp"
+  ;;
+udp | UDP)
+  log_notice "Protocol: UDP"
+  CFG_PROTO="udp"
+  ;;
+*)
+  log_warning "Protocol: Invalid protocol specified - ${PROTONVPN_PROTOCOL}"
+  log_warning "Setting protocol to UDP"
+  CFG_PROTO="udp"
+  ;;
 esac
 
-log_variable "PROTONVPN_SERVER"
+log_debug "Connecting to" "$PROTONVPN_SERVER"
 
 if [[ -z ${PROTONVPN_SERVER} ]]; then
   log_error "Specify PROTONVPN_SERVER(${PROTONVPN_SERVER})"
@@ -115,7 +142,7 @@ else
   log_debug "Split tunnel is disabled!(${cidrs_from_env[*]})"
 fi
 
-if [[ ${#INVALID_CIDRS[@]} -gt 0 ]];then
+if [[ ${#INVALID_CIDRS[@]} -gt 0 ]]; then
   log_error "Following CIDRs were invalid: ${INVALID_CIDRS[*]}"
   exit 5
 fi
@@ -130,7 +157,7 @@ else
 fi
 
 # Handle Split Tunnels
-if [[ ${#SPLIT_TUNNEL_CIDRS[@]} -gt 0 ]];then
+if [[ ${#SPLIT_TUNNEL_CIDRS[@]} -gt 0 ]]; then
   log_notice "Following CIDRs will be excluded from VPN ${SPLIT_TUNNEL_CIDRS[*]}"
   ENABLE_SPLIT_TUNNEL=1
 else
@@ -149,23 +176,23 @@ chown root:root /root/.pvpn-cli/
 # Pull Server Info
 log_info "Prefetch server list"
 curl --fail \
-    --location \
-    --silent \
-    --show-error \
-    --max-time 20 \
-    --silent \
-    --location \
-    --user-agent 'protonvpn-cli-docker' \
-    --header 'x-pm-appversion: LinuxVPN_2.2.6' \
-    --header 'x-pm-apiversion: 3' \
-    --header 'Accept: application/vnd.protonmail.v1+json' \
-    --output /root/.pvpn-cli/serverinfo.json \
-    https://api.protonvpn.ch/vpn/logicals
+  --location \
+  --silent \
+  --show-error \
+  --max-time 20 \
+  --silent \
+  --location \
+  --user-agent 'protonvpn-cli-docker' \
+  --header 'x-pm-appversion: LinuxVPN_2.2.6' \
+  --header 'x-pm-apiversion: 3' \
+  --header 'Accept: application/vnd.protonmail.v1+json' \
+  --output /root/.pvpn-cli/serverinfo.json \
+  https://api.protonvpn.ch/vpn/logicals
 
 __METADATA_PULL_DATE="$(date +%s)"
 
 log_info "Generating config file"
-cat > /root/.pvpn-cli/pvpn-cli.cfg <<EOF
+cat >/root/.pvpn-cli/pvpn-cli.cfg <<EOF
 [USER]
 # API endpoint
 api_domain = https://api.protonvpn.ch
@@ -183,17 +210,17 @@ split_tunnel = ${ENABLE_SPLIT_TUNNEL}
 
 [metadata]
 last_api_pull = ${__METADATA_PULL_DATE}
-last_update_check = 0
+last_update_check = ${__METADATA_PULL_DATE}
 EOF
 
-if [[ ${ENABLE_SPLIT_TUNNEL} -eq 1 ]];then
+if [[ ${ENABLE_SPLIT_TUNNEL} -eq 1 ]]; then
   log_info "Generate split-tunnel config file"
-  printf "%s\n" "${SPLIT_TUNNEL_CIDRS[@]}" > /root/.pvpn-cli/split_tunnel.txt
+  printf "%s\n" "${SPLIT_TUNNEL_CIDRS[@]}" >/root/.pvpn-cli/split_tunnel.txt
 fi
 
 log_info "Writing credentials file"
 # https://github.com/ProtonVPN/linux-cli/blob/089af8d309cf774adc31c158a62a27733ae39ee0/protonvpn_cli/utils.py#L530
-cat > /root/.pvpn-cli/pvpnpass <<EOF
+cat >/root/.pvpn-cli/pvpnpass <<EOF
 ${PROTONVPN_USERNAME}+plc
 ${PROTONVPN_PASSWORD}
 EOF

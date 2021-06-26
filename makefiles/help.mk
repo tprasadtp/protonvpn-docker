@@ -114,8 +114,8 @@ endif
 
 
 # Validate Auto Populated variables are not empty
-# GIT_BRANCH is an exception as on CI systems it can be empty
-# Due to shalow cloning and detached head
+# GIT_BRANCH is an exception as on CI systems it can be empty,
+# due to shalow cloning and detached head.
 # -------------------------------------
 $(call check_defined, \
 	BUILD_NUMBER \

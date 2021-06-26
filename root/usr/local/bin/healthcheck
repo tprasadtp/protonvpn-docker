@@ -15,10 +15,10 @@ fi
 PROTONVPN_COUNTRY="$(python3 /usr/local/bin/proton-srv-country)"
 
 CONNECTED_COUNTRY="$(curl \
-    --max-time 20 \
-    --silent \
-    --location \
-    "${PROTONVPN_CHECK_URL}" | jq -r "${PROTONVPN_CHECK_QUERY}")"
+  --max-time 20 \
+  --silent \
+  --location \
+  "${PROTONVPN_CHECK_URL}" | jq -r "${PROTONVPN_CHECK_QUERY}")"
 
 if [[ ${CONNECTED_COUNTRY} == "${PROTONVPN_COUNTRY}" ]]; then
   if [[ ${PROTONVPN_CHECK_SILENT} -ne 1 ]]; then
