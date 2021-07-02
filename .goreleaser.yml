@@ -49,7 +49,7 @@ dockers:
 
     <<: &docker_defaults
       dockerfile: Dockerfile
-      use_buildx: true
+      use: buildx
       extra_files:
         # Scripts
         - root/usr/local/bin/healthcheck
