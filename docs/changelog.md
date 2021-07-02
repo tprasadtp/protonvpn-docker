@@ -2,7 +2,7 @@
 
 
 <a name="5.0.0-beta.1"></a>
-## [5.0.0-beta.1] - 2021-06-25
+## [5.0.0-beta.1] - 2021-07-02
 
 ### ⚠️ BREAKING CHANGES
 - Specifying `PROTONVPN_SERVER` is now required environment variable.
@@ -13,18 +13,23 @@
 ### 🍒 Features & Enhancements
 - Merge `PROTONVPN_SERVER` and `PROTONVPN_COUNTRY` into `PROTONVPN_SERVER`. ([e3e55ca](https://github.com/tprasadtp/protonvpn-docker/commit/e3e55caa5b5a305fb2a8b827919db2724813cbd1))
 
+### 🐛 Bug Fixes
+- invalid logging functions, `DEBUG=1` now enables debug logs for protonvpn-cli and out container logs ([fe04e5e](https://github.com/tprasadtp/protonvpn-docker/commit/fe04e5e3ab507eb9e2f226329056591a6781f271))
+
 ### 📖 Documentation
 - Reorganize to better handle GitHub Pages ([#48](https://github.com/tprasadtp/protonvpn-docker/issues/48)) ([96bdfc8](https://github.com/tprasadtp/protonvpn-docker/commit/96bdfc8f683091c060b762529fbec0ded89de075))
 - Enable Github pages and add troubleshooting docs ([a0ba4ee](https://github.com/tprasadtp/protonvpn-docker/commit/a0ba4eec74f5b8ab89db7ed77aae30f786404e59))
 - Update debugging compose file ([c127608](https://github.com/tprasadtp/protonvpn-docker/commit/c1276081a57e737a0b549abc3b839ae4cdca0610))
 - Fix docker logo URL in README ([4cf3b0d](https://github.com/tprasadtp/protonvpn-docker/commit/4cf3b0d189c6a493d8d75c440a884eb58c6c64f2))
 
-### 🚧 Maintanance
+### 🚧 Maintenance
+- Beta 5.0 ([585b277](https://github.com/tprasadtp/protonvpn-docker/commit/585b277fcd3ca9199bc12db575671878dd48e0f4))
 - Update templates ([51d120c](https://github.com/tprasadtp/protonvpn-docker/commit/51d120c312860930d35efa9005ac3870c530a6d0))
 - Update templates ([c122bed](https://github.com/tprasadtp/protonvpn-docker/commit/c122bed299f910c197fb90f1d21523d22849ed17))
 - Import updated makefiles and changelog templates ([e1e41fb](https://github.com/tprasadtp/protonvpn-docker/commit/e1e41fb26559622946adbdaa0305519698b8b3b9))
 - **automation:** Allow automerge of docker image updates done via dependabot ([74ee95e](https://github.com/tprasadtp/protonvpn-docker/commit/74ee95e83ebdd56e4215fcd83f79c4ddc6df8783))
 - **changelog:** Update changelog emojis to follow common snippets ([91cd108](https://github.com/tprasadtp/protonvpn-docker/commit/91cd108bc2979984ce24d279080cf39ca7083cd1))
+- **deps:** bump ubuntu from focal-20210416 to focal-20210609 ([bf8f27e](https://github.com/tprasadtp/protonvpn-docker/commit/bf8f27e3bcf45ff0c6b9af745af9b382ab5cc2d2))
 - **deps:** bump jinja2 from 2.11.3 to 3.0.1 in /root ([#49](https://github.com/tprasadtp/protonvpn-docker/issues/49)) ([ebff6d6](https://github.com/tprasadtp/protonvpn-docker/commit/ebff6d695b1a1beb297c6826b0707717f851a4ac))
 - **deps:** bump urllib3 from 1.26.5 to 1.26.6 in /root ([#59](https://github.com/tprasadtp/protonvpn-docker/issues/59)) ([ea649cc](https://github.com/tprasadtp/protonvpn-docker/commit/ea649cca549769377516fd27fa546df71bb6b8d1))
 - **deps:** bump protonvpn-cli from 2.2.6 to 2.2.7 in /root ([#58](https://github.com/tprasadtp/protonvpn-docker/issues/58)) ([616e670](https://github.com/tprasadtp/protonvpn-docker/commit/616e670262c5c70b7f5847b6bde37ec15291c942))
@@ -33,13 +38,16 @@
 
 ### 🤖 CI/CD & Automation
 - Checkout tag corresponding to latest release, before doing scheduled security scan to help populate required fields for codeql action ([842e834](https://github.com/tprasadtp/protonvpn-docker/commit/842e8348be330743ab708d081a61440c7c0e7c56))
+- **dependabot:** Fix wrong label on docker updates ([3adf882](https://github.com/tprasadtp/protonvpn-docker/commit/3adf882c8c50d7df5cf652502b64b8f0adc64fce))
+- **deps:** bump aquasecurity/trivy-action from 0.0.16 to 0.0.17 ([#47](https://github.com/tprasadtp/protonvpn-docker/issues/47)) ([a995116](https://github.com/tprasadtp/protonvpn-docker/commit/a995116c8077e8fa2970c5450109b412dff14e06))
 - **deps:** bump goreleaser/goreleaser-action from 2.6.0 to 2.6.1 ([#56](https://github.com/tprasadtp/protonvpn-docker/issues/56)) ([af63fa7](https://github.com/tprasadtp/protonvpn-docker/commit/af63fa7bf8ce6e26f78b05442139a905ca4ab6b6))
 - **deps:** bump goreleaser/goreleaser-action from 2.5.0 to 2.6.0 ([#52](https://github.com/tprasadtp/protonvpn-docker/issues/52)) ([2e05f51](https://github.com/tprasadtp/protonvpn-docker/commit/2e05f518835ac256e65ed814187a934f36da8699))
-- **deps:** bump aquasecurity/trivy-action from 0.0.16 to 0.0.17 ([#47](https://github.com/tprasadtp/protonvpn-docker/issues/47)) ([a995116](https://github.com/tprasadtp/protonvpn-docker/commit/a995116c8077e8fa2970c5450109b412dff14e06))
 - **deps:** bump aquasecurity/trivy-action from 0.0.15 to 0.0.16 ([#46](https://github.com/tprasadtp/protonvpn-docker/issues/46)) ([7e90b7d](https://github.com/tprasadtp/protonvpn-docker/commit/7e90b7d06dcbd2d85e06393cd109c7575d36fd2d))
 - **deps:** bump aquasecurity/trivy-action from 0.0.14 to 0.0.15 ([#44](https://github.com/tprasadtp/protonvpn-docker/issues/44)) ([a19d7aa](https://github.com/tprasadtp/protonvpn-docker/commit/a19d7aa4aae72f7d883f6e4b6ea3f2f036bd3a9c))
 - **deps:** bump aquasecurity/trivy-action from 0.0.17 to 0.0.18 ([#55](https://github.com/tprasadtp/protonvpn-docker/issues/55)) ([08564f2](https://github.com/tprasadtp/protonvpn-docker/commit/08564f2a3416af3433d7312dad65892d12f5f3e2))
+- **goreleaser:** Migrate from docker.use_buildx to docker.use ([ca7f874](https://github.com/tprasadtp/protonvpn-docker/commit/ca7f874aaee8eba7c166229a2edbea090b92b4b3))
 - **kodiak:** Remove default block on GH-Actions dependency updates ([b5172d4](https://github.com/tprasadtp/protonvpn-docker/commit/b5172d45934d5438a9f9a8007b25ec3c0291d9cf))
+- **stale:** Change stale workflow to run weekly ([c1a4580](https://github.com/tprasadtp/protonvpn-docker/commit/c1a45803573200ba724a4c8efc62ccbfb0a7e97b))
 
 ### Reverts
 - chore(deps): bump protonvpn-cli from 2.2.6 to 2.2.7 in /root ([#58](https://github.com/tprasadtp/protonvpn-docker/issues/58)) ([efff4ce](https://github.com/tprasadtp/protonvpn-docker/commit/efff4ce920ad010fdb72637c1701d9aa841fd6b3))
@@ -48,7 +56,7 @@
 <a name="4.2.1"></a>
 ## [4.2.1] - 2021-05-05
 
-### 🚧 Maintanance
+### 🚧 Maintenance
 - **deps:** bump ubuntu from focal-20210401 to focal-20210416 ([#43](https://github.com/tprasadtp/protonvpn-docker/issues/43)) ([e4c35e0](https://github.com/tprasadtp/protonvpn-docker/commit/e4c35e0997c8604edf0a06fe5a1d75c6d93b88ae))
 
 
@@ -75,7 +83,7 @@
 - fix typos ([0fbd4dd](https://github.com/tprasadtp/protonvpn-docker/commit/0fbd4dd89007b9a392f440e11f51797a0172a215))
 - Add working k8s examples ([9e14f52](https://github.com/tprasadtp/protonvpn-docker/commit/9e14f5253d92cadb0a4af5ba24ffacff1efce086))
 
-### 🚧 Maintanance
+### 🚧 Maintenance
 - **changelog:** set log level to info for changelog script ([7074eed](https://github.com/tprasadtp/protonvpn-docker/commit/7074eed97db34249954025d7151e025c74d34340))
 
 ### 🤖 CI/CD & Automation
@@ -94,7 +102,7 @@
 <a name="4.1.3"></a>
 ## [4.1.3] - 2021-04-05
 
-### 🚧 Maintanance
+### 🚧 Maintenance
 - **deps:** bump ubuntu from focal-20210325 to focal-20210401 ([#34](https://github.com/tprasadtp/protonvpn-docker/issues/34)) ([f8d3c38](https://github.com/tprasadtp/protonvpn-docker/commit/f8d3c384460e3cfeabbfaa8b7188b400a8c10b40))
 
 ### 🤖 CI/CD & Automation
@@ -105,7 +113,7 @@
 <a name="4.1.2"></a>
 ## [4.1.2] - 2021-03-26
 
-### 🚧 Maintanance
+### 🚧 Maintenance
 - **deps:** bump ubuntu from focal-20210217 to focal-20210325 ([#30](https://github.com/tprasadtp/protonvpn-docker/issues/30)) ([1c25946](https://github.com/tprasadtp/protonvpn-docker/commit/1c2594684f9d43f702a19983d99b9433356ec693))
 - **deps:** bump urllib3 from 1.26.3 to 1.26.4 in /root ([#26](https://github.com/tprasadtp/protonvpn-docker/issues/26)) ([4148872](https://github.com/tprasadtp/protonvpn-docker/commit/4148872439bb6499855ca1ba3488a4bb3cd8de60))
 
@@ -117,7 +125,7 @@
 <a name="4.1.1"></a>
 ## [4.1.1] - 2021-03-14
 
-### 🚧 Maintanance
+### 🚧 Maintenance
 - **changelog:** fix release notes script ([#23](https://github.com/tprasadtp/protonvpn-docker/issues/23)) ([19c01e3](https://github.com/tprasadtp/protonvpn-docker/commit/19c01e38f1b1622807b4b9fccc08bc86741e7cfd))
 
 ### 🤖 CI/CD & Automation
@@ -154,7 +162,7 @@
 ### 📖 Documentation
 - document internal healthcheck intervals and update badges ([5583614](https://github.com/tprasadtp/protonvpn-docker/commit/5583614d9954826a3077f1567f2818d0e4771635))
 
-### 🚧 Maintanance
+### 🚧 Maintenance
 - add generated files to gitignore ([af65559](https://github.com/tprasadtp/protonvpn-docker/commit/af6555906a4ea95f342cfbe947c4f6fc00b7357f))
 - **changelog:**  add helper script ([9bc8194](https://github.com/tprasadtp/protonvpn-docker/commit/9bc8194dc373e6e34a791d044f1afc2c2fb32002))
 - **changelog:** automate changelog generation ([99c72e1](https://github.com/tprasadtp/protonvpn-docker/commit/99c72e1233757c5cf79412709977212156c31434))
