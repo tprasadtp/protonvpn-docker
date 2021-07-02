@@ -1,7 +1,7 @@
 name: "stale"
 on:
   schedule:
-    - cron: "30 1 * * *"
+    - cron: "15 08 * * SAT"
   workflow_dispatch:
     inputs:
       dry_run:
@@ -20,7 +20,7 @@ jobs:
       - name: Check if dry run is set
         id: check_debug
         run: |
-          if [[ ${GH_EVENT_NAME} == "workfow_dispatch" ]]; then
+          if [[ ${GH_EVENT_NAME} == "workflow_dispatch" ]]; then
             if [[ ${GH_INPUT_DRY_RUN} != "false" ]]; then
               echo "::set-output name=result::true"
             else
