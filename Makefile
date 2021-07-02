@@ -58,13 +58,13 @@ changelog: ## Generate changelog
 		--oldest-tag 4.0.0 \
 		--footer-file $(REPO_ROOT)/.chglog/FOOTER.md \
 		--output $(REPO_ROOT)/docs/changelog.md \
-		--changelog
+		changelog
 
 .PHONY: release-notes
 release-notes: ## Generate release-notes
 	$(REPO_ROOT)/scripts/changelog.sh \
 		--output $(REPO_ROOT)/RELEASE_NOTES.md \
-		--release-notes
+		release-notes
 
 .PHONY: docs-server
 docs-server: ## Server documentation

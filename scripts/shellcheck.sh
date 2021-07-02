@@ -8,6 +8,8 @@ set -o pipefail
 # Script Constants
 readonly CURDIR="$(cd -P -- "$(dirname -- "")" && pwd -P)"
 readonly SCRIPT="$(basename "$0")"
+readonly SCRIPT_VERSION="0.1"
+[[ ! -v ${SHELLCHECK_VERSION}  ]] && readonly SHELLCHECK_VERSION="v0.7.2"
 
 # Handle Signals
 # trap ctrl-c and SIGTERM
@@ -24,7 +26,6 @@ function term_signal_handler()
   log_error "Signal Interrupt! SIGTERM"
   exit 4
 }
-
 
 #>> diana::snippet:bash-logger:begin <<#
 # shellcheck shell=sh
@@ -234,8 +235,6 @@ log_error()
 }
 #>> diana::snippet:bash-logger:end <<#
 
-
-
 function get_abspath()
 {
   # Generate absolute path from relative path
@@ -265,7 +264,7 @@ function get_abspath()
 # Checks if command is available
 function has_command()
 {
-  if command -v "$1" > /dev/null; then
+  if command -v "$1" >/dev/null; then
     return 0
   else
     return 1
@@ -276,28 +275,29 @@ function has_command()
 function display_usage()
 {
   #Prints out help menu
-  cat << EOF
-Bash script to run shellcheck usng docker on files specified.
+  cat <<EOF
+Run shellcheck using docker on files specified.
 
-Usage: ${TEAL}${SCRIPT} ${BLUE} [options] ${NC}
-${VIOLET}
-------------------------- Arguments ----------------------------${NC}
-List of Files to run shellcheck on
-${ORANGE}
----------------- Options with Required Argments-----------------${NC}
-None
-${GRAY}
---------------------- Debugging & Help -------------------------${NC}
-[-d | --debug]          Enable debug loggging
-[--stderr]              Log to stderr instead of stdout
-[-h | --help]           Display this help message${NC}
-${TEAL}
-------------------- Environment Variables ----------------------${NC}
-${BLUE}LOG_TO_STDERR${NC}     - Set this to 'true' to log to stderr.
-${BLUE}NO_COLOR${NC}          - Set this to NON-EMPTY to disable all colors.
-${BLUE}CLICOLOR_FORCE${NC}    - Set this to NON-ZERO to force colored output.
-                    Other color related conditions are ignored.
-                  - Colors are disabled if output is not a TTY
+Usage: ${SCRIPT} [OPTION]... FILES
+
+Arguments:
+  List of Files to run shellcheck on
+
+Options:
+  -h, --help          Display help
+  -v, --verbose       Increase log verbosity
+  --stderr            Log to stderr instead of stdout
+  --version           Display script version
+
+Examples:
+  ${SCRIPT} build.sh  Run shellcheck on build.sh
+  ${SCRIPT} --help    Display help
+
+Environment:
+  SHELLCHECK_VERSION  Version of shellcheck to use.(default=$SHELLCHECK_VERSION)
+  LOG_TO_STDERR       Set this to 'true' to log to stderr.
+  NO_COLOR            Set this to NON-EMPTY to disable all colors.
+  CLICOLOR_FORCE      Set this to NON-ZERO to force colored output.
 EOF
 }
 
@@ -310,6 +310,10 @@ function parse_options()
       -v | --verbose)
         LOG_LVL="0"
         log_debug "Enabled verbose logging"
+        ;;
+      --version)
+        printf "%s version %s\n" "${SCRIPT}" "${SCRIPT_VERSION:-master}"
+        exit 0
         ;;
       -h | --help)
         display_usage
@@ -325,12 +329,17 @@ function main()
 {
   parse_options "$@"
 
-  if has_command docker; then
-    log_debug "Docker cli exists!"
-  else
-    log_error "Docker not found!"
+  if ! has_command docker; then
+    log_error "Docker command not found!"
     log_error "This script uses docker to ensure consistancy in CI/CD systems"
     log_error "Please install docker and try again"
+    exit 1
+  fi
+
+  if [[ -n $DOCKER_HOST ]]; then
+    log_error "DOCKER_HOST" "$DOCKER_HOST"
+    log_error "Remote docker daemon is unsupported!"
+    log_error "To use local daemon, without changing env variable, run with DOCKER_HOST='' ${SCRIPT}"
     exit 1
   fi
 
@@ -349,14 +358,12 @@ function main()
       log_error "Version specified must match regex: ${SHELLCHECK_VERSION_REGEX}"
       exit 1
     fi
-  else
-    SHELLCHECK_VERSION="v0.7.2"
   fi
 
   log_notice "Using shellcheck version tag: ${SHELLCHECK_VERSION}"
 
   # check if docker image is available
-  if docker inspect "koalaman/shellcheck:${SHELLCHECK_VERSION}" > /dev/null 2>&1; then
+  if docker inspect "koalaman/shellcheck:${SHELLCHECK_VERSION}" >/dev/null 2>&1; then
     log_debug "Using existing image - koalaman/shellcheck:${SHELLCHECK_VERSION}"
   else
     log_info "Pull docker image: koalaman/shellcheck:${SHELLCHECK_VERSION} "

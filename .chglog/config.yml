@@ -30,7 +30,7 @@ options:
       perf: "🚀 Performance Improvements"
       docs: "📖 Documentation"
       refactor: "🌱 Code Refactoring"
-      chore: "🚧 Maintanance"
+      chore: "🚧 Maintenance"
       ci: "🤖 CI/CD & Automation"
   header:
     pattern: "^(\\w*)(?:\\(([\\w\\$\\.\\-\\*\\s]*)\\))?\\:\\s(.*)$"
