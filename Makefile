@@ -45,7 +45,7 @@ release: ## Build release
 
 .PHONY: release-prod
 release-prod: ## Build and release to production/QA
-	goreleaser release --rm-dist --release-notes $(REPO_ROOT)/RELEASE_NOTES.md
+	goreleaser release --rm-dist --release-notes $(REPO_ROOT)/RELEASE_NOTES.md --debug
 
 .PHONY: clean
 clean: ## clean
