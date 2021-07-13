@@ -20,7 +20,7 @@ Images are published on [GitHub Container Registry][ghcr].
 | `PROTONVPN_TIER`          | Yes | Proton VPN Tier (0=Free, 1=Basic, 2=Pro, 3=Visionary)
 | `PROTONVPN_USERNAME`      | Yes | OpenVPN Username. This is **NOT** your Proton Account Username.
 | `PROTONVPN_PASSWORD`      | Yes | OpenVPN Password. This is **NOT** your Proton Account Password.
-| `PROTONVPN_SERVER`        | Yes | ProtonVPN server to connect to. See `PROTONVPN_SERVER` for more info.
+| `PROTONVPN_SERVER`        | No | ProtonVPN server to connect to. See `PROTONVPN_SERVER` for more info.
 | `PROTONVPN_PROTOCOL`      | No  | Protocol to use. By default `udp` is used.
 | `PROTONVPN_EXCLUDE_CIDRS` | No  | Comma separated list of CIDRs to exclude from VPN. Uses split tunnel. Default is set to `169.254.169.254/32,169.254.170.2/32`
 | `PROTONVPN_DNS_LEAK_PROTECT` | No  | (Interger) Setting this to `0` will disable DNS leak protection. If you wish to specify custom DNS server via `--dns` option or running on k8s, you **MUST** set this to `0`.
