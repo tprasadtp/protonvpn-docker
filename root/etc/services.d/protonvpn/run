@@ -127,12 +127,17 @@ function main() {
   else
     log_info "Reconnect treshold is #$PROTONVPN_FAIL_THRESHOLD"
   fi
-
+  #Add Cron if it exists
+  
+ 
   log_info "Checking orphaned openvpn process"
   OVPN_PROCESS="$(pgrep -x openvpn)"
   if [[ -z ${OVPN_PROCESS} ]]; then
     log_info "This appears to be a fresh start!"
     thrshold_f=0
+    if [[ ${PROTONVPN_CRON} ]]; then
+     (crontab -l ; echo "$PROTONVPN_CRON /etc/services.d/protonvpn connect_vpn") | crontab -
+    fi
     connect_vpn
   else
     log_info "This appears to be a restart!, reconnecting with old settings"
