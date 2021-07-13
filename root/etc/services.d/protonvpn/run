@@ -38,8 +38,9 @@ trap _term SIGTERM SIGINT
 function connect_vpn() {
 
   if [[ -z ${PROTONVPN_SERVER} ]]; then
-    log_error "Specify PROTONVPN_SERVER(${PROTONVPN_SERVER})"
-    exit 4
+    log_notice "Connecting to fastest server"
+    PVPN_DEBUG="${DEBUG:-0}" protonvpn connect -f 
+    
   fi
 
   if [[ ${PROTONVPN_SERVER^^} =~ ^[A-Z]{2}$ ]]; then
