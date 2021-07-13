@@ -28,6 +28,7 @@ Images are published on [GitHub Container Registry][ghcr].
 | `PROTONVPN_CHECK_URL` | No | Healthcheck endpoint to determine if you are connected via VPN. Defaults to `https://ipinfo.prasadt.workers.dev/`. Must return a json response which can be queried via jq, for country code of client IP. In other words, `curl -sSfL "${PROTONVPN_CHECK_URL}" \| jq -r "${PROTONVPN_CHECK_QUERY}"`, **MUST** return two letter country code. (Available in `v5.0.0` or later only)
 | `PROTONVPN_CHECK_QUERY` | No | `jq` query to run. **MUST** yield two letter country code. Defaults to `.client.country`. (Available in `v5.0.0` or later only).
 | `PROTONVPN_FAIL_THRESHOLD`   | No  | (Integer) Number of allowed consecutive internal healthchecks failures before an attempt to reconnect is made. Defaults to 3 if invalid or not specified.
+| `PROTONVPN_CRON`   | No  | A CRON expression with no defaults
 
 
 ## PROTONVPN_SERVER
