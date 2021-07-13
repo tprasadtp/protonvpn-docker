@@ -37,7 +37,7 @@ Images are published on [GitHub Container Registry][ghcr].
   - If set to `RANDOM`, a random server will be chosen which is compatible with your plan.
   - If set to `P2P` will choose fastest `P2P` server. Please note that this requires setting correct plan in `PROTONVPN_TIER`.
   - If none of the above are true, container will attempt to connect to this server and fail if it is not possible. Please note that `Secure Core` servers are only available with pro plan and above.
-  - If `PROTONVPN_SERVER` is unset, then the fastest server is connected to.
+  
 
 ## Run Container
 
