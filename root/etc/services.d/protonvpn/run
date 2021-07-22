@@ -125,7 +125,7 @@ function main() {
     log_warning "PROTONVPN_FAIL_THRESHOLD can only be an integer!, will default to 3"
     PROTONVPN_FAIL_THRESHOLD=3
   else
-    log_info "Reconnect treshold is #$PROTONVPN_FAIL_THRESHOLD"
+    log_info "Reconnect threshold is #$PROTONVPN_FAIL_THRESHOLD"
   fi
 
   log_info "Checking orphaned openvpn process"

@@ -1,0 +1,132 @@
+name: Bug Report
+description: Report a bug in protonvpn-docker
+title: "[BUG] -  "
+labels: ["Bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        - Thanks for taking the time to fill out this bug report!
+
+  # version
+  - type: input
+    id: version
+    attributes:
+      label: Version of `protonvpn-docker`
+      description: |
+        - Version of the container you are running
+        - If unable to detect or not applicable, leave the field as is.
+      value: NA
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: credential-validation
+    attributes:
+      label: Credential & Plan
+      options:
+        - label: I have verified that my VPN credentials are valid, and I am using OPENVPN credentials and not my proton account credentials.
+          required: true
+        - label: I have verified that the servers I am trying to connect to are available under my plan.
+          required: true
+
+  # arch
+  - type: arch
+    id: arch
+    attributes:
+      label: System Architecture
+      description: |
+        - Output of `uname -m` command.
+        - If unable to detect or not applicable, leave the field as is.
+      value: NA
+    validations:
+      required: true
+
+  # nas
+  - type: dropdown
+    id: nas
+    attributes:
+      label: Running on a NAS?
+      options:
+        - Yes
+        - No
+    validations:
+      required: true
+
+  - type: dropdown
+    id: runtime
+    attributes:
+      label: Container Runtime
+      options:
+        - Docker with defaults
+        - Docker with usernamespaces
+        - Docker rootless
+        - Docker with gvisor
+        - Docker with nabla containers
+        - Podman with defaults
+        - Kubernetes/k3s with docker
+        - Kubernetes/k3s with containerd
+        - Kubernetes/k3s with cri-o
+        - Kubernetes/k3s with gvisor
+        - I dont know!
+        - None of the above, I have mentioned the details in additional info section.
+    validations:
+      required: true
+
+  - type: textarea
+    id: k8s-version
+    attributes:
+      label: Version of Kubernetes
+      description: |
+          - Paste the output of command `kubectl version -o json`
+          - If you are not using kubernetes, you can leave this field empty or as is.
+      value: NA
+
+  - type: textarea
+    id: docker-version
+    attributes:
+      label: Version of docker/podman runtime
+      description: |
+          - If usng docker, paste the output of command `docker info`
+          - If usng podman, paste the output of command `podman info`
+          - If you are not using docker/podman.
+      value: NA
+
+
+  - type: checkboxes
+    id: docker-compose
+    attributes:
+      label:
+      description: |
+        - If you have issues with running a specific container, try by running debugging docker-compose files first.
+      options:
+        - label: I have tried debugging with compose file provided as mentioned in [TROUBLESHOOTING](https://tprasadtp.github.io/protonvpn-docker/docs/troubleshooting/)
+
+  # Logs
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: What do you see when you run the script with debug logs enabled?
+      render: shell
+
+  - type: textarea
+    id: additional-info
+    attributes:
+      label: Any additional info
+      description: Any additional details like steps to reproduce intermittant bugs, race conditions etc.
+
+  - type: checkboxes
+    id: code-of-conduct
+    attributes:
+      label: Code of Conduct & PII Redaction
+      description: |
+        By submitting this issue, you agree to follow code of conduct for this repository.
+        In case the repository is missing code of conduct, Contributor Covenant code of conduct applies.
+        Please also ensure that you remove or redact any sensitive personally identifying information
+        like IP addresses and secrets like your API keys from logs and report included here.
+      options:
+        - label: I agree to follow this project's Code of Conduct
+          required: true
+        - label: I have removed any sensitive personally identifying information(PII) and secrets from in this issue report.
+          required: true

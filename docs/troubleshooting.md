@@ -9,6 +9,12 @@ on GitHub.
 1. Please export credentials as environment variables `PROTONVPN_USERNAME` and `PROTONVPN_PASSWORD` and optionally `PROTONVPN_TIER`.
 This depends on your shell. Please consult your shell's manpage/docs for how to export environment variables.
 1. Get your debugging [compose file][] and create a temporary folder required to save pyload downloads.
+  - If using 4.x
+    ```bash
+    curl -sSfLO https://tprasadtp.github.io/protonvpn-docker/manifests/deprecated/docker-compose.yml
+    mkdir -p ./downloads
+    ```
+  - If using 5.x or above
     ```bash
     curl -sSfLO https://tprasadtp.github.io/protonvpn-docker/manifests/docker-compose.yml
     mkdir -p ./downloads
@@ -23,9 +29,9 @@ This depends on your shell. Please consult your shell's manpage/docs for how to 
     ```
 1. Visit the link in your browser.
 
-## DNS and Healthchecks
+## DNS and Healthcheck
 
-- Healthchecks use `https://ipinfo.prasadt.workers.dev` service. If your DNS or gateway is blocking it, please add it to your exceptions.
+- Healthcheck use `https://ipinfo.prasadt.workers.dev` service. If your DNS or gateway is blocking it, please add it to your exceptions.
 - This healthcheck endpoint is running on Cloudflare workers.
 - You can host your own if you wish.
 

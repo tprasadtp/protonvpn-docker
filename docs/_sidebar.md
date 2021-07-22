@@ -3,7 +3,7 @@
 - [Getting Started](README.md)
 
 - Advanced
-    - [Healthchecks](healthchecks.md)
+    - [Healthcheck](healthcheck.md)
     - [DNS](dns.md)
     - [Bypass VPN for LAN](split-tunnel.md)
 

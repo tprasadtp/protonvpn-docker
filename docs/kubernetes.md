@@ -37,7 +37,7 @@ Please include your Pod CIDR, service CIDR, Loadbalancer IP Pool CIDR in the `PR
 ```bash
 kubectl create configmap protonvpn-settings \
     --from-literal=PROTONVPN_EXCLUDE_CIDRS="10.0.0.0/8,191.168.0.0/16,172.16.0.0/12" \
-    --from-literal=PROTONVPN_SERVER=NL \
+    --from-literal=PROTONVPN_SERVER="NL-FREE#7" \
     --from-literal=PROTONVPN_DNS_LEAK_PROTECT=0 \
     --from-literal=PROTONVPN_CHECK_INTERVAL=10
 ```
@@ -104,7 +104,7 @@ kubectl create -f https://tprasadtp.github.io/protonvpn-docker/manifests/service
     [Service - CHCK] OK!
     ```
 
-- Check pylaod is accessible via nodeport
+- Check pyload is accessible via nodeport
 
     ```bash
     kubectl get service
