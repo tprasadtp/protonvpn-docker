@@ -31,7 +31,7 @@ body:
           required: true
 
   # arch
-  - type: arch
+  - type: input
     id: arch
     attributes:
       label: System Architecture
@@ -48,8 +48,8 @@ body:
     attributes:
       label: Running on a NAS?
       options:
-        - Yes
-        - No
+        - "Yes"
+        - "No"
     validations:
       required: true
 
