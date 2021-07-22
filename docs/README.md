@@ -28,6 +28,7 @@ Images are published on [GitHub Container Registry][ghcr].
 | `PROTONVPN_CHECK_URL` | No | Healthcheck endpoint to determine if you are connected via VPN. Defaults to `https://ipinfo.prasadt.workers.dev/`. Must return a json response which can be queried via jq, for country code of client IP. In other words, `curl -sSfL "${PROTONVPN_CHECK_URL}" \| jq -r "${PROTONVPN_CHECK_QUERY}"`, **MUST** return two letter country code. (Available in `v5.0.0` or later only)
 | `PROTONVPN_CHECK_QUERY` | No | `jq` query to run. **MUST** yield two letter country code. Defaults to `.client.country`. (Available in `v5.0.0` or later only).
 | `PROTONVPN_FAIL_THRESHOLD`   | No  | (Integer) Number of allowed consecutive internal healthchecks failures before an attempt to reconnect is made. Defaults to 3 if invalid or not specified.
+| `PROTONVPN_CRON`   | No  | A CRON expression with no defaults
 
 
 ## PROTONVPN_SERVER
@@ -36,6 +37,7 @@ Images are published on [GitHub Container Registry][ghcr].
   - If set to `RANDOM`, a random server will be chosen which is compatible with your plan.
   - If set to `P2P` will choose fastest `P2P` server. Please note that this requires setting correct plan in `PROTONVPN_TIER`.
   - If none of the above are true, container will attempt to connect to this server and fail if it is not possible. Please note that `Secure Core` servers are only available with pro plan and above.
+  
 
 ## Run Container
 
