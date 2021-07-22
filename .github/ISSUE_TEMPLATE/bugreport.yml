@@ -25,7 +25,9 @@ body:
     attributes:
       label: Credential & Plan
       options:
-        - label: I have verified that my VPN credentials are valid, and I am using OPENVPN credentials and not my proton account credentials.
+        - label: I have verified that my VPN credentials are valid
+          required: true
+        - label: I am using OpenVPN credentials and **not** my proton account credentials.
           required: true
         - label: I have verified that the servers I am trying to connect to are available under my plan.
           required: true
