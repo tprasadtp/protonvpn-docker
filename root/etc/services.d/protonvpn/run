@@ -136,7 +136,7 @@ function main() {
     log_info "This appears to be a fresh start!"
     thrshold_f=0
     #Add Cron if it exists
-    if [[ ${PROTONVPN_CRON} ]]; then
+    if [[ -n ${PROTONVPN_CRON} ]]; then
      (crontab -l ; echo "$PROTONVPN_CRON /etc/services.d/protonvpn connect_vpn") | crontab -
     fi
     connect_vpn
