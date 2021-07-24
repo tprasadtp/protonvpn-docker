@@ -137,7 +137,7 @@ function main() {
     thrshold_f=0
     #Add Cron if it exists
     if [[ -n ${PROTONVPN_CRON} ]]; then
-     (crontab -l ; echo -e "$PROTONVPN_CRON /etc/services.d/protonvpn connect_vpn\n") | crontab -
+     (crontab -l ; echo "$PROTONVPN_CRON /etc/services.d/protonvpn connect_vpn") | crontab -
     fi
     connect_vpn
   else
