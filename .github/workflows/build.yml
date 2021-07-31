@@ -44,7 +44,7 @@ jobs:
         uses: docker/setup-buildx-action@v1
 
       - name: Install GoReleaser
-        uses: goreleaser/goreleaser-action@ac067437f516133269923265894e77920c3dce18
+        uses: goreleaser/goreleaser-action@5a54d7e660bda43b405e8463261b3d25631ffe86
         with:
           version: latest
           install-only: true
