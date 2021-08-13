@@ -52,8 +52,7 @@ dockers:
       use: buildx
       extra_files:
         # Scripts
-        - root/usr/local/bin/healthcheck
-        - root/usr/local/bin/proton-srv-country
+        - root/usr/local/bin/healthcheck.py
         # Service Init Files
         - root/etc/cont-init.d/70-vpn-setup
         # Service Files

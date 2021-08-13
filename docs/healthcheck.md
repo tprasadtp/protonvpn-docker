@@ -1,8 +1,8 @@
 # Health-check
 
-- There is a `healthcheck` script available under /usr/local/bin. It will use `https://ip.prasadt.workers.dev/` by default to verify the IP address matches with one of the logical servers. By default service will keep checking every `PROTONVPN_CHECK_INTERVAL` _(default = 90)_ seconds using the same api endpoint.
+- There is a `healthcheck.py` script available under /usr/local/bin. It will use `PROTONVPN_IPCHECK_ENDPOINT` (`https://ip.prasadt.workers.dev/` by default) to verify the IP address matches with one of the logical servers. By default service will keep checking every `PROTONVPN_CHECK_INTERVAL` _(default = 90)_ seconds using the same api endpoint.
 
-- `https://ip.prasadt.workers.dev/` Service runs as a cloudflare worker and is fast, as it sits at their edge network. It is very simple, It returns your public IP and nothing else. You can use any of the following services (or host your own) as they too return your public IP address.
+- `https://ip.prasadt.workers.dev/` Service runs as a cloudflare worker and is fast, as it sits at their edge network. It is very simple, It returns your public IP and nothing else. You can use any of the following services by setting the variable (or host your own) as they too return your public IP address.
   * https://ip.prasadt.workers.dev/
   * https://checkip.amazonaws.com/
   * https://icanhazip.com/
