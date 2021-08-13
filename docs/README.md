@@ -26,8 +26,7 @@ Images are published on [GitHub Container Registry][ghcr].
 | `PROTONVPN_EXCLUDE_CIDRS` | No  | Comma separated list of CIDRs to exclude from VPN. Uses split tunnel. Default is set to `169.254.169.254/32,169.254.170.2/32`
 | `PROTONVPN_DNS_LEAK_PROTECT` | No  | (Integer) Setting this to `0` will disable DNS leak protection. If you wish to specify custom DNS server via `--dns` option or running on k8s, you **MUST** set this to `0`.
 | `PROTONVPN_CHECK_INTERVAL`   | No  | (Integer) Interval between internal healthcheck in seconds. Defaults to 90 if not specified or invalid.
-| `PROTONVPN_CHECK_URL` | No | Healthcheck endpoint to determine if you are connected via VPN. Defaults to `https://ipinfo.prasadt.workers.dev/`. Must return a json response which can be queried via jq, for country code of client IP. In other words, `curl -sSfL "${PROTONVPN_CHECK_URL}" \| jq -r "${PROTONVPN_CHECK_QUERY}"`, **MUST** return two letter country code. (Available in `v5.0.0` or later only)
-| `PROTONVPN_CHECK_QUERY` | No | `jq` query to run. **MUST** yield two letter country code. Defaults to `.client.country`. (Available in `v5.0.0` or later only).
+| `PROTONVPN_IPCHECK_ENDPOINT` | No | Healthcheck endpoint to determine if you are connected via VPN. Defaults to `https://ip.prasadt.workers.dev/`. Must return Your public IP
 | `PROTONVPN_FAIL_THRESHOLD`   | No  | (Integer) Number of allowed consecutive internal healthcheck failures before an attempt to reconnect is made. Defaults to 3 if invalid or not specified.
 
 ## PROTONVPN_COUNTRY

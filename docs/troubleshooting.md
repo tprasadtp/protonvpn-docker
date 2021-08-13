@@ -31,7 +31,7 @@ This depends on your shell. Please consult your shell's manpage/docs for how to 
 
 ## DNS and Healthcheck
 
-- Healthcheck use `https://ipinfo.prasadt.workers.dev` service. If your DNS or gateway is blocking it, please add it to your exceptions.
+- Healthchecks use `https://ip.prasadt.workers.dev` service. If your DNS or gateway is blocking it, please add it to your exceptions.
 - This healthcheck endpoint is running on Cloudflare workers.
 - You can host your own if you wish.
 

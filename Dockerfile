@@ -14,8 +14,7 @@ ENV PROTONVPN_DNS_LEAK_PROTECT=1 \
     PROTONVPN_EXCLUDE_CIDRS="169.254.169.254/32,169.254.170.2/32" \
     PROTONVPN_CHECK_INTERVAL=60 \
     PROTONVPN_FAIL_THRESHOLD=3 \
-    PROTONVPN_CHECK_URL="https://ipinfo.prasadt.workers.dev/" \
-    PROTONVPN_CHECK_QUERY=".client.country"
+    PROTONVPN_IPCHECK_ENDPOINT="https://ip.prasadt.workers.dev/"
 
 ARG S6_OVERLAY_VERSION="2.2.0.3"
 
@@ -28,7 +27,6 @@ RUN --mount=type=tmpfs,target=/root/.gnupg/ \
     apt-get update \
     && apt-get install --no-install-recommends --yes \
     curl \
-    jq \
     procps \
     iptables \
     iputils-ping \

@@ -19,6 +19,11 @@ indent_size = 4
 [{*.yml,*.yaml}]
 indent_size = 2
 
+# Python
+[*.py]
+indent_size = 4
+indent_style = space
+
 # Go
 # https://golang.org/cmd/gofmt/
 [{go.mod,go.sum,*.go}]

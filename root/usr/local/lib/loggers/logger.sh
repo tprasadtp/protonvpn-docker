@@ -1,4 +1,3 @@
-### BEGIN LOGGING SNIPPET ###
 # shellcheck shell=sh
 # shellcheck disable=SC3043
 
@@ -61,45 +60,56 @@ __logger_core_event_handler()
   # - https://bixense.com/clicolors/ &
   # - https://no-color.org/ standards.
 
+  local lvl_color
+  local lvl_colorized
+  local lvl_color_reset
+
   # Forces colored logs
   # - if CLICOLOR_FORCE is set and non empty and not zero
   #
   if [ -n "${CLICOLOR_FORCE}" ] && [ "${CLICOLOR_FORCE}" != "0" ]; then
-    local lvl_colorized="true"
+    lvl_colorized="true"
     # shellcheck disable=SC2155
-    local lvl_color_reset="$(printf '\e[0m')"
+    lvl_color_reset="$(printf '\e[0m')"
 
   # Disable colors if one of the conditions are true
   # - CLICOLOR = 0
   # - NO_COLOR is set to non empty value
   # - TERM is set to dumb
   elif [ -n "$NO_COLOR" ] || [ "$CLICOLOR" = "0" ] || [ "$TERM" = "dumb" ]; then
-    local lvl_colorized="false"
-    local lvl_color=""
-    local lvl_color_reset=""
+    lvl_colorized="false"
+    lvl_color=""
+    lvl_color_reset=""
 
   # Enable colors if not already disabled or forced and terminal is interactive
   elif [ -t 1 ]; then
-    local lvl_colorized="true"
+    lvl_colorized="true"
     # shellcheck disable=SC2155
-    local lvl_color_reset="$(printf '\e[0m')"
+    lvl_color_reset="$(printf '\e[0m')"
 
   # Default=disable colors
   else
-    local lvl_colorized="false"
-    local lvl_color=""
-    local lvl_color_reset=""
+    lvl_colorized="false"
+    lvl_color=""
+    lvl_color_reset=""
   fi
+
+  # Level name in string format
+  local lvl_prefix
+  # Level timestamp
+  local lvl_ts
+  # Level name in string format or level symbol
+  local lvl_string
 
   # Log and Date formatter
   if [ "${LOG_FMT:-pretty}" = "pretty" ] && [ "$lvl_colorized" = "true" ]; then
-    local lvl_string="•"
+    lvl_string="•"
   elif [ "${LOG_FMT}" = "full" ] || [ "${LOG_FMT}" = "long" ]; then
-    local lvl_prefix="name+ts"
+    lvl_prefix="name+ts"
     # shellcheck disable=SC2155
-    local lvl_ts="$(date --rfc-3339=s)"
+    lvl_ts="$(date --rfc-3339=s)"
   else
-    local lvl_prefix="name"
+    lvl_prefix="name"
   fi
 
   # Define level, color and timestamp
@@ -108,59 +118,60 @@ __logger_core_event_handler()
   # we will enable long format with timestamps
   case "$lvl_caller" in
     trace)
-      [ "$lvl_prefix" = "name" ] && local lvl_string="[TRACE ]"
-      [ "$lvl_prefix" = "name+ts" ] && local lvl_string="$lvl_ts [TRACE ]"
+      [ "$lvl_prefix" = "name" ] && lvl_string="[TRACE ]"
+      [ "$lvl_prefix" = "name+ts" ] && lvl_string="$lvl_ts [TRACE ]"
       # shellcheck disable=SC2155
-      [ "$lvl_colorized" = "true" ] && local lvl_color="$(printf '\e[38;5;246m')"
+      [ "$lvl_colorized" = "true" ] && lvl_color="$(printf '\e[38;5;246m')"
       ;;
     debug)
-      [ "$lvl_prefix" = "name" ] && local lvl_string="[DEBUG ]"
-      [ "$lvl_prefix" = "name+ts" ] && local lvl_string="$lvl_ts [DEBUG ]"
+      [ "$lvl_prefix" = "name" ] && lvl_string="[DEBUG ]"
+      [ "$lvl_prefix" = "name+ts" ] && lvl_string="$lvl_ts [DEBUG ]"
       # shellcheck disable=SC2155
-      [ "$lvl_colorized" = "true" ] && local lvl_color="$(printf '\e[38;5;250m')"
+      [ "$lvl_colorized" = "true" ] && lvl_color="$(printf '\e[38;5;250m')"
       ;;
     info)
-      [ "$lvl_prefix" = "name" ] && local lvl_string="[INFO  ]"
-      [ "$lvl_prefix" = "name+ts" ] && local lvl_string="$lvl_ts [INFO  ]"
+      [ "$lvl_prefix" = "name" ] && lvl_string="[INFO  ]"
+      [ "$lvl_prefix" = "name+ts" ] && lvl_string="$lvl_ts [INFO  ]"
       # Avoid printing color reset sequence as this level is not colored
       [ "$lvl_colorized" = "true" ] && lvl_color_reset=""
       ;;
     success)
-      [ "$lvl_prefix" = "name" ] && local lvl_string="[OK    ]"
-      [ "$lvl_prefix" = "name+ts" ] && local lvl_string="$lvl_ts [OK    ]"
+      [ "$lvl_prefix" = "name" ] && lvl_string="[OK    ]"
+      [ "$lvl_prefix" = "name+ts" ] && lvl_string="$lvl_ts [OK    ]"
       # shellcheck disable=SC2155
-      [ "$lvl_colorized" = "true" ] && local lvl_color="$(printf '\e[38;5;83m')"
+      [ "$lvl_colorized" = "true" ] && lvl_color="$(printf '\e[38;5;83m')"
       ;;
     warning)
-      [ "$lvl_prefix" = "name" ] && local lvl_string="[WARN  ]"
-      [ "$lvl_prefix" = "name+ts" ] && local lvl_string="$lvl_ts [WARN  ]"
+      [ "$lvl_prefix" = "name" ] && lvl_string="[WARN  ]"
+      [ "$lvl_prefix" = "name+ts" ] && lvl_string="$lvl_ts [WARN  ]"
       # shellcheck disable=SC2155
-      [ "$lvl_colorized" = "true" ] && local lvl_color="$(printf '\e[38;5;214m')"
+      [ "$lvl_colorized" = "true" ] && lvl_color="$(printf '\e[38;5;214m')"
       ;;
     notice)
-      [ "$lvl_prefix" = "name" ] && local lvl_string="[NOTICE]"
-      [ "$lvl_prefix" = "name+ts" ] && local lvl_string="$lvl_ts [NOTICE]"
+      [ "$lvl_prefix" = "name" ] && lvl_string="[NOTICE]"
+      [ "$lvl_prefix" = "name+ts" ] && lvl_string="$lvl_ts [NOTICE]"
       # shellcheck disable=SC2155
-      [ "$lvl_colorized" = "true" ] && local lvl_color="$(printf '\e[38;5;81m')"
+      [ "$lvl_colorized" = "true" ] && lvl_color="$(printf '\e[38;5;81m')"
       ;;
     error)
-      [ "$lvl_prefix" = "name" ] && local lvl_string="[ERROR ]"
-      [ "$lvl_prefix" = "name+ts" ] && local lvl_string="$lvl_ts [ERROR ]"
+      [ "$lvl_prefix" = "name" ] && lvl_string="[ERROR ]"
+      [ "$lvl_prefix" = "name+ts" ] && lvl_string="$lvl_ts [ERROR ]"
       # shellcheck disable=SC2155
-      [ "$lvl_colorized" = "true" ] && local lvl_color="$(printf '\e[38;5;197m')"
+      [ "$lvl_colorized" = "true" ] && lvl_color="$(printf '\e[38;5;197m')"
       ;;
     *)
-      [ "$lvl_prefix" = "name" ] && local lvl_string="[UNKOWN]"
-      [ "$lvl_prefix" = "name+ts" ] && local lvl_string="$lvl_ts [UNKNOWN]"
+      [ "$lvl_prefix" = "name" ] && lvl_string="[UNKOWN]"
+      [ "$lvl_prefix" = "name+ts" ] && lvl_string="$lvl_ts [UNKNOWN]"
       # Avoid printing color reset sequence as this level is not colored
       [ "$lvl_colorized" = "true" ] && lvl_color_reset=""
       ;;
   esac
 
-  if [ "${LOG_TO_STDERR:-false}" = "true" ]; then
-    printf "%s%s %s %s\n" "$lvl_color" "${lvl_string}" "$lvl_msg" "${lvl_color_reset}" 1>&2
-  else
+  # By default logs are written to stderr
+  if [ "${LOG_TO_STDOUT:-false}" = "true" ]; then
     printf "%s%s %s %s\n" "$lvl_color" "${lvl_string}" "$lvl_msg" "${lvl_color_reset}"
+  else
+    printf "%s%s %s %s\n" "$lvl_color" "${lvl_string}" "$lvl_msg" "${lvl_color_reset}" 1>&2
   fi
 }
 
@@ -204,5 +215,3 @@ log_error()
 {
   __logger_core_event_handler "error" "$@"
 }
-
-### END LOGGING SNIPPET ###

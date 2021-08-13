@@ -29,31 +29,23 @@ if [[ -z "$PROTONVPN_PASSWORD" ]]; then
   exit 3
 fi
 
-if [[ -z ${PROTONVPN_CHECK_URL} ]]; then
+if [[ -z ${PROTONVPN_IPCHECK_ENDPOINT} ]]; then
   log_error "Healthcheck endpoint not defined!"
   exit 3
 fi
 
-if [[ ${PROTONVPN_CHECK_URL} =~ ^https://* ]]; then
+if [[ ${PROTONVPN_IPCHECK_ENDPOINT} =~ ^https://* ]]; then
   log_success "OK! Check URL is secure"
 else
-  log_error "PROTONVPN_CHECK_URL must be secure(https)"
-  exit 3
-fi
-# Validate healthcheck endpoint returns 200
-if [[ $(curl -s -o /dev/null -w "%{http_code}" "${PROTONVPN_CHECK_URL}") == "200" ]]; then
-  log_success "Healthcheck endpoint returned 200"
-else
-  log_error "Your PROTONVPN_CHECK_URL: ${PROTONVPN_CHECK_URL} is invalid or is not responding with 200"
+  log_error "PROTONVPN_IPCHECK_ENDPOINT must be secure(https)"
   exit 3
 fi
 
-# Validate healthcheck query returns non empty
-init_check_resp="$(curl -s "${PROTONVPN_CHECK_URL}" | jq -r "${PROTONVPN_CHECK_QUERY}")"
-if [[ $init_check_resp =~ ^[a-zA-Z]{2}$ ]]; then
-  log_success "Healthcheck endpoint query returned: ${init_check_resp}"
+# Validate healthcheck endpoint returns 200
+if [[ $(curl -s -o /dev/null -w "%{http_code}" "${PROTONVPN_IPCHECK_ENDPOINT}") == "200" ]]; then
+  log_success "Healthcheck endpoint returned 200"
 else
-  log_error "Your PROTONVPN_CHECK_URL or PROTONVPN_CHECK_QUERY is invalid (${init_check_resp})"
+  log_error "Your PROTONVPN_IPCHECK_ENDPOINT: ${PROTONVPN_IPCHECK_ENDPOINT} is invalid or is not responding with 200"
   exit 3
 fi
 

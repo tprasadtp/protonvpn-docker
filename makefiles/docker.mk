@@ -112,7 +112,7 @@ docker: ## Build docker image
 		--label io.github.tprasadtp.metadata.git.branch="$(GIT_BRANCH)" \
 		--label io.github.tprasadtp.metadata.git.treeState="$(GIT_TREE_STATE)" \
 		--label io.github.tprasadtp.metadata.upstream.present="$(UPSTREAM_PRESENT)" \
-	       $(UPSTREAM_ARGS) \
+	        $(UPSTREAM_ARGS) \
 		--file $(DOCKER_FILE_PATH) \
 		$(DOCKER_BUILD_CONTEXT)
 

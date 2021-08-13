@@ -77,15 +77,7 @@ function reconnect_vpn() {
 }
 
 function api_check() {
-  COUNTRY="$(curl \
-    --max-time 20 \
-    --silent \
-    --location \
-    "${PROTONVPN_CHECK_URL}" | jq -r "${PROTONVPN_CHECK_QUERY}")"
-
-  PROTONVPN_COUNTRY="$(python3 /usr/local/bin/proton-srv-country)"
-
-  if [[ $COUNTRY == "${PROTONVPN_COUNTRY}" ]]; then
+  if python3 /usr/local/bin/healthcheck.py; then
     log_success "VPN is running and healthy"
     thrshold_f=0
   else
