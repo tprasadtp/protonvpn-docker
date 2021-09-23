@@ -1,50 +1,65 @@
 # Changelog
 
 
-<a name="5.0.0-beta.1"></a>
-## [5.0.0-beta.1] - 2021-07-02
+<a name="5.0.0"></a>
+## [5.0.0] - 2021-09-23
 
 ### ⚠️ BREAKING CHANGES
+- Healthchecks now check if client's Public IP is in the list of exit IPs of the connected logical server
 - Specifying `PROTONVPN_SERVER` is now required environment variable.
 - `PROTONVPN_COUNTRY` is merged into `PROTONVPN_SERVER`.
 - Users who are migrating from version 4.x or below rename `PROTONVPN_COUNTRY` to `PROTONVPN_SERVER`.
 - You can migrate value of `PROTONVPN_COUNTRY` to `PROTONVPN_SERVER`. Container will detect that you wish to connct to country specified and connect as usual.
 
 ### 🍒 Features & Enhancements
+- Use Server IPS instead of server country in healthchecks ([f0ffcc2](https://github.com/tprasadtp/protonvpn-docker/commit/f0ffcc22091c9e502791ccef13bef2d448c22cac))
 - Merge `PROTONVPN_SERVER` and `PROTONVPN_COUNTRY` into `PROTONVPN_SERVER`. ([e3e55ca](https://github.com/tprasadtp/protonvpn-docker/commit/e3e55caa5b5a305fb2a8b827919db2724813cbd1))
 
 ### 🐛 Bug Fixes
 - invalid logging functions, `DEBUG=1` now enables debug logs for protonvpn-cli and out container logs ([fe04e5e](https://github.com/tprasadtp/protonvpn-docker/commit/fe04e5e3ab507eb9e2f226329056591a6781f271))
 
 ### 📖 Documentation
+- In issue form, Extend credential validation checkboxes to include checks for openvpn credentials ([652e0fb](https://github.com/tprasadtp/protonvpn-docker/commit/652e0fb0a9e649c92529f9173b2f3a2cd72fa3d9))
+- Fix docker logo URL in README ([4cf3b0d](https://github.com/tprasadtp/protonvpn-docker/commit/4cf3b0d189c6a493d8d75c440a884eb58c6c64f2))
+- Improve docs, add gh issue forms ([ed3e672](https://github.com/tprasadtp/protonvpn-docker/commit/ed3e6720feec6371c2e78dac4d9c0a897dca8b1c))
 - Reorganize to better handle GitHub Pages ([#48](https://github.com/tprasadtp/protonvpn-docker/issues/48)) ([96bdfc8](https://github.com/tprasadtp/protonvpn-docker/commit/96bdfc8f683091c060b762529fbec0ded89de075))
 - Enable Github pages and add troubleshooting docs ([a0ba4ee](https://github.com/tprasadtp/protonvpn-docker/commit/a0ba4eec74f5b8ab89db7ed77aae30f786404e59))
 - Update debugging compose file ([c127608](https://github.com/tprasadtp/protonvpn-docker/commit/c1276081a57e737a0b549abc3b839ae4cdca0610))
-- Fix docker logo URL in README ([4cf3b0d](https://github.com/tprasadtp/protonvpn-docker/commit/4cf3b0d189c6a493d8d75c440a884eb58c6c64f2))
+- **fix:** Issue forms ([7062295](https://github.com/tprasadtp/protonvpn-docker/commit/7062295978448cc086dc80d763b7dd6d4bea1961))
+- **fix:** Issue form quore booleans ([1520a11](https://github.com/tprasadtp/protonvpn-docker/commit/1520a1162210212cdf98dd06931f2c9fdbb9e748))
 
 ### 🚧 Maintenance
 - Beta 5.0 ([585b277](https://github.com/tprasadtp/protonvpn-docker/commit/585b277fcd3ca9199bc12db575671878dd48e0f4))
-- Update templates ([51d120c](https://github.com/tprasadtp/protonvpn-docker/commit/51d120c312860930d35efa9005ac3870c530a6d0))
 - Update templates ([c122bed](https://github.com/tprasadtp/protonvpn-docker/commit/c122bed299f910c197fb90f1d21523d22849ed17))
+- Update templates ([51d120c](https://github.com/tprasadtp/protonvpn-docker/commit/51d120c312860930d35efa9005ac3870c530a6d0))
 - Import updated makefiles and changelog templates ([e1e41fb](https://github.com/tprasadtp/protonvpn-docker/commit/e1e41fb26559622946adbdaa0305519698b8b3b9))
 - **automation:** Allow automerge of docker image updates done via dependabot ([74ee95e](https://github.com/tprasadtp/protonvpn-docker/commit/74ee95e83ebdd56e4215fcd83f79c4ddc6df8783))
 - **changelog:** Update changelog emojis to follow common snippets ([91cd108](https://github.com/tprasadtp/protonvpn-docker/commit/91cd108bc2979984ce24d279080cf39ca7083cd1))
-- **deps:** bump ubuntu from focal-20210416 to focal-20210609 ([bf8f27e](https://github.com/tprasadtp/protonvpn-docker/commit/bf8f27e3bcf45ff0c6b9af745af9b382ab5cc2d2))
-- **deps:** bump jinja2 from 2.11.3 to 3.0.1 in /root ([#49](https://github.com/tprasadtp/protonvpn-docker/issues/49)) ([ebff6d6](https://github.com/tprasadtp/protonvpn-docker/commit/ebff6d695b1a1beb297c6826b0707717f851a4ac))
+- **ci:** Cache Trivy DB ([09c68d8](https://github.com/tprasadtp/protonvpn-docker/commit/09c68d823a5cb490870712658b0a3054365baf3d))
+- **ci:** vendor justcontainers key as keybase returns 404 and update dockerfiles for better caching ([f3d5a14](https://github.com/tprasadtp/protonvpn-docker/commit/f3d5a14fd4de1a25c7c51038d3999811c520e21c))
 - **deps:** bump urllib3 from 1.26.5 to 1.26.6 in /root ([#59](https://github.com/tprasadtp/protonvpn-docker/issues/59)) ([ea649cc](https://github.com/tprasadtp/protonvpn-docker/commit/ea649cca549769377516fd27fa546df71bb6b8d1))
-- **deps:** bump protonvpn-cli from 2.2.6 to 2.2.7 in /root ([#58](https://github.com/tprasadtp/protonvpn-docker/issues/58)) ([616e670](https://github.com/tprasadtp/protonvpn-docker/commit/616e670262c5c70b7f5847b6bde37ec15291c942))
+- **deps:** bump ubuntu from focal-20210416 to focal-20210609 ([bf8f27e](https://github.com/tprasadtp/protonvpn-docker/commit/bf8f27e3bcf45ff0c6b9af745af9b382ab5cc2d2))
 - **deps:** bump ubuntu from focal-20210416 to focal-20210609 ([#57](https://github.com/tprasadtp/protonvpn-docker/issues/57)) ([18209c3](https://github.com/tprasadtp/protonvpn-docker/commit/18209c3886f20af08f9cc3a06d0049a48d8c81c5))
 - **deps:** bump urllib3 from 1.26.4 to 1.26.5 in /root ([#53](https://github.com/tprasadtp/protonvpn-docker/issues/53)) ([075ac2e](https://github.com/tprasadtp/protonvpn-docker/commit/075ac2e33e209ebe0bbb0fa92b38bd0713622cf6))
+- **deps:** bump jinja2 from 2.11.3 to 3.0.1 in /root ([#49](https://github.com/tprasadtp/protonvpn-docker/issues/49)) ([ebff6d6](https://github.com/tprasadtp/protonvpn-docker/commit/ebff6d695b1a1beb297c6826b0707717f851a4ac))
+- **deps:** bump ubuntu from focal-20210609 to focal-20210713 ([#64](https://github.com/tprasadtp/protonvpn-docker/issues/64)) ([6b3d787](https://github.com/tprasadtp/protonvpn-docker/commit/6b3d787130c89038a8535a2e00fe0531e3acd05b))
+- **deps:** bump requests from 2.25.1 to 2.26.0 in /root ([#66](https://github.com/tprasadtp/protonvpn-docker/issues/66)) ([ea16a56](https://github.com/tprasadtp/protonvpn-docker/commit/ea16a56799e9fbc77d29b85acb679ba117ef07c9))
+- **deps:** bump ubuntu from focal-20210713 to focal-20210723 ([#68](https://github.com/tprasadtp/protonvpn-docker/issues/68)) ([47caa8e](https://github.com/tprasadtp/protonvpn-docker/commit/47caa8efd58c6774b14cb47c5bf46714a37fffce))
+- **deps:** bump ubuntu from focal-20210723 to focal-20210827 ([c15a941](https://github.com/tprasadtp/protonvpn-docker/commit/c15a9412616e8722fd861c5e28939baa008d3d77))
+- **deps:** bump protonvpn-cli from 2.2.6 to 2.2.7 in /root ([#58](https://github.com/tprasadtp/protonvpn-docker/issues/58)) ([616e670](https://github.com/tprasadtp/protonvpn-docker/commit/616e670262c5c70b7f5847b6bde37ec15291c942))
 
 ### 🤖 CI/CD & Automation
 - Checkout tag corresponding to latest release, before doing scheduled security scan to help populate required fields for codeql action ([842e834](https://github.com/tprasadtp/protonvpn-docker/commit/842e8348be330743ab708d081a61440c7c0e7c56))
 - **dependabot:** Fix wrong label on docker updates ([3adf882](https://github.com/tprasadtp/protonvpn-docker/commit/3adf882c8c50d7df5cf652502b64b8f0adc64fce))
-- **deps:** bump aquasecurity/trivy-action from 0.0.16 to 0.0.17 ([#47](https://github.com/tprasadtp/protonvpn-docker/issues/47)) ([a995116](https://github.com/tprasadtp/protonvpn-docker/commit/a995116c8077e8fa2970c5450109b412dff14e06))
-- **deps:** bump goreleaser/goreleaser-action from 2.6.0 to 2.6.1 ([#56](https://github.com/tprasadtp/protonvpn-docker/issues/56)) ([af63fa7](https://github.com/tprasadtp/protonvpn-docker/commit/af63fa7bf8ce6e26f78b05442139a905ca4ab6b6))
-- **deps:** bump goreleaser/goreleaser-action from 2.5.0 to 2.6.0 ([#52](https://github.com/tprasadtp/protonvpn-docker/issues/52)) ([2e05f51](https://github.com/tprasadtp/protonvpn-docker/commit/2e05f518835ac256e65ed814187a934f36da8699))
-- **deps:** bump aquasecurity/trivy-action from 0.0.15 to 0.0.16 ([#46](https://github.com/tprasadtp/protonvpn-docker/issues/46)) ([7e90b7d](https://github.com/tprasadtp/protonvpn-docker/commit/7e90b7d06dcbd2d85e06393cd109c7575d36fd2d))
-- **deps:** bump aquasecurity/trivy-action from 0.0.14 to 0.0.15 ([#44](https://github.com/tprasadtp/protonvpn-docker/issues/44)) ([a19d7aa](https://github.com/tprasadtp/protonvpn-docker/commit/a19d7aa4aae72f7d883f6e4b6ea3f2f036bd3a9c))
 - **deps:** bump aquasecurity/trivy-action from 0.0.17 to 0.0.18 ([#55](https://github.com/tprasadtp/protonvpn-docker/issues/55)) ([08564f2](https://github.com/tprasadtp/protonvpn-docker/commit/08564f2a3416af3433d7312dad65892d12f5f3e2))
+- **deps:** bump aquasecurity/trivy-action from 0.0.14 to 0.0.15 ([#44](https://github.com/tprasadtp/protonvpn-docker/issues/44)) ([a19d7aa](https://github.com/tprasadtp/protonvpn-docker/commit/a19d7aa4aae72f7d883f6e4b6ea3f2f036bd3a9c))
+- **deps:** bump aquasecurity/trivy-action from 0.0.15 to 0.0.16 ([#46](https://github.com/tprasadtp/protonvpn-docker/issues/46)) ([7e90b7d](https://github.com/tprasadtp/protonvpn-docker/commit/7e90b7d06dcbd2d85e06393cd109c7575d36fd2d))
+- **deps:** bump actions/stale from 3 to 4 ([#65](https://github.com/tprasadtp/protonvpn-docker/issues/65)) ([de1fc14](https://github.com/tprasadtp/protonvpn-docker/commit/de1fc1437411c5561d80b1344702dc75ef3859d8))
+- **deps:** bump goreleaser/goreleaser-action from 2.6.0 to 2.6.1 ([#56](https://github.com/tprasadtp/protonvpn-docker/issues/56)) ([af63fa7](https://github.com/tprasadtp/protonvpn-docker/commit/af63fa7bf8ce6e26f78b05442139a905ca4ab6b6))
+- **deps:** bump goreleaser/goreleaser-action from 2.6.1 to 2.7.0 ([#70](https://github.com/tprasadtp/protonvpn-docker/issues/70)) ([6bb795a](https://github.com/tprasadtp/protonvpn-docker/commit/6bb795a195dec26fa5048a17b8085a76bf48af2d))
+- **deps:** bump goreleaser/goreleaser-action from 2.5.0 to 2.6.0 ([#52](https://github.com/tprasadtp/protonvpn-docker/issues/52)) ([2e05f51](https://github.com/tprasadtp/protonvpn-docker/commit/2e05f518835ac256e65ed814187a934f36da8699))
+- **deps:** bump aquasecurity/trivy-action from 0.0.16 to 0.0.17 ([#47](https://github.com/tprasadtp/protonvpn-docker/issues/47)) ([a995116](https://github.com/tprasadtp/protonvpn-docker/commit/a995116c8077e8fa2970c5450109b412dff14e06))
+- **deps:** bump aquasecurity/trivy-action from 0.0.18 to 0.0.19 ([#69](https://github.com/tprasadtp/protonvpn-docker/issues/69)) ([2e851e3](https://github.com/tprasadtp/protonvpn-docker/commit/2e851e3f9d664d1477ab1cefe58fee91f792013b))
 - **goreleaser:** Migrate from docker.use_buildx to docker.use ([ca7f874](https://github.com/tprasadtp/protonvpn-docker/commit/ca7f874aaee8eba7c166229a2edbea090b92b4b3))
 - **kodiak:** Remove default block on GH-Actions dependency updates ([b5172d4](https://github.com/tprasadtp/protonvpn-docker/commit/b5172d45934d5438a9f9a8007b25ec3c0291d9cf))
 - **stale:** Change stale workflow to run weekly ([c1a4580](https://github.com/tprasadtp/protonvpn-docker/commit/c1a45803573200ba724a4c8efc62ccbfb0a7e97b))
@@ -180,7 +195,7 @@
 
 
 <!-- tag references -->
-[5.0.0-beta.1]: https://github.com/tprasadtp/protonvpn-docker/compare/4.2.1...5.0.0-beta.1
+[5.0.0]: https://github.com/tprasadtp/protonvpn-docker/compare/4.2.1...5.0.0
 [4.2.1]: https://github.com/tprasadtp/protonvpn-docker/compare/4.2.0...4.2.1
 [4.2.0]: https://github.com/tprasadtp/protonvpn-docker/compare/4.1.5...4.2.0
 [4.1.5]: https://github.com/tprasadtp/protonvpn-docker/compare/4.1.4...4.1.5
