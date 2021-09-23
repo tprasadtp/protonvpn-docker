@@ -4,7 +4,7 @@ on:
     tags:
       - "*"
 jobs:
-  pre-flight:
+  checks:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -27,9 +27,14 @@ jobs:
           ignore-unfixed: true
           exit-code: 1
           image-ref: 'ghcr.io/tprasadtp/protonvpn:${{ github.sha }}-DEV'
+          cache-dir: .trivy
+
+      - name: Correct Trivy cache permissions
+        run: sudo chown -R $USER:$GROUP .trivy
+        if: always()
 
   goreleaser:
-    needs: [pre-flight]
+    needs: [checks]
     permissions:
       # For creating releases
       contents: write

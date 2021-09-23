@@ -62,3 +62,8 @@ jobs:
           ignore-unfixed: true
           exit-code: 1
           image-ref: 'ghcr.io/tprasadtp/protonvpn:${{ github.sha }}-amd64'
+          cache-dir: .trivy
+
+      - name: Correct Trivy cache permissions
+        run: sudo chown -R $USER:$GROUP .trivy
+        if: always()
