@@ -36,10 +36,6 @@ $(call check_defined, REPO_ROOT, REPO_ROOT MUST be defined for relative paths to
 # Define Defaults
 # -------------------------------------
 
-# Software/Binary/Docker Image Vendor
-# Used in docker tagging and os packages.
-VENDOR ?= Prasad Tengse <tprasadtp@users.noreply.github.com>
-
 # Export Defaults
 export VENDOR
 

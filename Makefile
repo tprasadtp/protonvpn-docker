@@ -32,7 +32,7 @@ include $(REPO_ROOT)/makefiles/docker.mk
 shellcheck: ## Runs shellcheck
 	@bash $(REPO_ROOT)/scripts/shellcheck.sh \
 	$(shell find $(REPO_ROOT)/root/etc/ -type f -executable) \
-	$(REPO_ROOT)/root/usr/local/lib/loggers/logger.sh
+	$(REPO_ROOT)/root/usr/share/shlib/logger.sh
 
 # go releaser
 .PHONY: snapshot
@@ -69,6 +69,13 @@ release-notes: ## Generate release-notes
 .PHONY: docs-server
 docs-server: ## Server documentation
 	cd docs && python3 -m http.server
+
+
+.PHONY: update-scripts
+update-scripts: ## Update schellscripts and libs
+	curl -sSfL -o scripts/shellcheck.sh https://raw.githubusercontent.com/tprasadtp/dotfiles/master/scripts/shellcheck.sh
+	curl -sSfL -o scripts/changelog.sh https://raw.githubusercontent.com/tprasadtp/dotfiles/master/scripts/changelog.sh
+	curl -sSfL -o root/usr/share/shlib/logger.sh https://raw.githubusercontent.com/tprasadtp/dotfiles/master/libs/logger/logger.sh
 
 # Enforce BUILDKIT
 ifneq ($(DOCKER_BUILDKIT),1)

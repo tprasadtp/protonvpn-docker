@@ -8,6 +8,8 @@ set -o pipefail
 # Script Constants
 readonly CURDIR="$(cd -P -- "$(dirname -- "")" && pwd -P)"
 readonly SCRIPT="$(basename "$0")"
+# Default log level (debug logs are disabled)
+LOG_LVL=0
 
 # Handle Signals
 # trap ctrl-c and SIGTERM
@@ -88,45 +90,56 @@ __logger_core_event_handler()
   # - https://bixense.com/clicolors/ &
   # - https://no-color.org/ standards.
 
+  local lvl_color
+  local lvl_colorized
+  local lvl_color_reset
+
   # Forces colored logs
   # - if CLICOLOR_FORCE is set and non empty and not zero
   #
   if [ -n "${CLICOLOR_FORCE}" ] && [ "${CLICOLOR_FORCE}" != "0" ]; then
-    local lvl_colorized="true"
+    lvl_colorized="true"
     # shellcheck disable=SC2155
-    local lvl_color_reset="$(printf '\e[0m')"
+    lvl_color_reset="$(printf '\e[0m')"
 
   # Disable colors if one of the conditions are true
   # - CLICOLOR = 0
   # - NO_COLOR is set to non empty value
   # - TERM is set to dumb
   elif [ -n "$NO_COLOR" ] || [ "$CLICOLOR" = "0" ] || [ "$TERM" = "dumb" ]; then
-    local lvl_colorized="false"
-    local lvl_color=""
-    local lvl_color_reset=""
+    lvl_colorized="false"
+    lvl_color=""
+    lvl_color_reset=""
 
   # Enable colors if not already disabled or forced and terminal is interactive
   elif [ -t 1 ]; then
-    local lvl_colorized="true"
+    lvl_colorized="true"
     # shellcheck disable=SC2155
-    local lvl_color_reset="$(printf '\e[0m')"
+    lvl_color_reset="$(printf '\e[0m')"
 
   # Default=disable colors
   else
-    local lvl_colorized="false"
-    local lvl_color=""
-    local lvl_color_reset=""
+    lvl_colorized="false"
+    lvl_color=""
+    lvl_color_reset=""
   fi
+
+  # Level name in string format
+  local lvl_prefix
+  # Level timestamp
+  local lvl_ts
+  # Level name in string format or level symbol
+  local lvl_string
 
   # Log and Date formatter
   if [ "${LOG_FMT:-pretty}" = "pretty" ] && [ "$lvl_colorized" = "true" ]; then
-    local lvl_string="•"
+    lvl_string="•"
   elif [ "${LOG_FMT}" = "full" ] || [ "${LOG_FMT}" = "long" ]; then
-    local lvl_prefix="name+ts"
+    lvl_prefix="name+ts"
     # shellcheck disable=SC2155
-    local lvl_ts="$(date --rfc-3339=s)"
+    lvl_ts="$(date --rfc-3339=s)"
   else
-    local lvl_prefix="name"
+    lvl_prefix="name"
   fi
 
   # Define level, color and timestamp
@@ -135,60 +148,62 @@ __logger_core_event_handler()
   # we will enable long format with timestamps
   case "$lvl_caller" in
     trace)
-      [ "$lvl_prefix" = "name" ] && local lvl_string="[TRACE ]"
-      [ "$lvl_prefix" = "name+ts" ] && local lvl_string="$lvl_ts [TRACE ]"
+      [ "$lvl_prefix" = "name" ] && lvl_string="[TRACE ]"
+      [ "$lvl_prefix" = "name+ts" ] && lvl_string="$lvl_ts [TRACE ]"
       # shellcheck disable=SC2155
-      [ "$lvl_colorized" = "true" ] && local lvl_color="$(printf '\e[38;5;246m')"
+      [ "$lvl_colorized" = "true" ] && lvl_color="$(printf '\e[38;5;246m')"
       ;;
     debug)
-      [ "$lvl_prefix" = "name" ] && local lvl_string="[DEBUG ]"
-      [ "$lvl_prefix" = "name+ts" ] && local lvl_string="$lvl_ts [DEBUG ]"
+      [ "$lvl_prefix" = "name" ] && lvl_string="[DEBUG ]"
+      [ "$lvl_prefix" = "name+ts" ] && lvl_string="$lvl_ts [DEBUG ]"
       # shellcheck disable=SC2155
-      [ "$lvl_colorized" = "true" ] && local lvl_color="$(printf '\e[38;5;250m')"
+      [ "$lvl_colorized" = "true" ] && lvl_color="$(printf '\e[38;5;250m')"
       ;;
     info)
-      [ "$lvl_prefix" = "name" ] && local lvl_string="[INFO  ]"
-      [ "$lvl_prefix" = "name+ts" ] && local lvl_string="$lvl_ts [INFO  ]"
+      [ "$lvl_prefix" = "name" ] && lvl_string="[INFO  ]"
+      [ "$lvl_prefix" = "name+ts" ] && lvl_string="$lvl_ts [INFO  ]"
       # Avoid printing color reset sequence as this level is not colored
       [ "$lvl_colorized" = "true" ] && lvl_color_reset=""
       ;;
     success)
-      [ "$lvl_prefix" = "name" ] && local lvl_string="[OK    ]"
-      [ "$lvl_prefix" = "name+ts" ] && local lvl_string="$lvl_ts [OK    ]"
+      [ "$lvl_prefix" = "name" ] && lvl_string="[OK    ]"
+      [ "$lvl_prefix" = "name+ts" ] && lvl_string="$lvl_ts [OK    ]"
       # shellcheck disable=SC2155
-      [ "$lvl_colorized" = "true" ] && local lvl_color="$(printf '\e[38;5;83m')"
+      [ "$lvl_colorized" = "true" ] && lvl_color="$(printf '\e[38;5;83m')"
       ;;
     warning)
-      [ "$lvl_prefix" = "name" ] && local lvl_string="[WARN  ]"
-      [ "$lvl_prefix" = "name+ts" ] && local lvl_string="$lvl_ts [WARN  ]"
+      [ "$lvl_prefix" = "name" ] && lvl_string="[WARN  ]"
+      [ "$lvl_prefix" = "name+ts" ] && lvl_string="$lvl_ts [WARN  ]"
       # shellcheck disable=SC2155
-      [ "$lvl_colorized" = "true" ] && local lvl_color="$(printf '\e[38;5;214m')"
+      [ "$lvl_colorized" = "true" ] && lvl_color="$(printf '\e[38;5;214m')"
       ;;
     notice)
-      [ "$lvl_prefix" = "name" ] && local lvl_string="[NOTICE]"
-      [ "$lvl_prefix" = "name+ts" ] && local lvl_string="$lvl_ts [NOTICE]"
+      [ "$lvl_prefix" = "name" ] && lvl_string="[NOTICE]"
+      [ "$lvl_prefix" = "name+ts" ] && lvl_string="$lvl_ts [NOTICE]"
       # shellcheck disable=SC2155
-      [ "$lvl_colorized" = "true" ] && local lvl_color="$(printf '\e[38;5;81m')"
+      [ "$lvl_colorized" = "true" ] && lvl_color="$(printf '\e[38;5;81m')"
       ;;
     error)
-      [ "$lvl_prefix" = "name" ] && local lvl_string="[ERROR ]"
-      [ "$lvl_prefix" = "name+ts" ] && local lvl_string="$lvl_ts [ERROR ]"
+      [ "$lvl_prefix" = "name" ] && lvl_string="[ERROR ]"
+      [ "$lvl_prefix" = "name+ts" ] && lvl_string="$lvl_ts [ERROR ]"
       # shellcheck disable=SC2155
-      [ "$lvl_colorized" = "true" ] && local lvl_color="$(printf '\e[38;5;197m')"
+      [ "$lvl_colorized" = "true" ] && lvl_color="$(printf '\e[38;5;197m')"
       ;;
     *)
-      [ "$lvl_prefix" = "name" ] && local lvl_string="[UNKOWN]"
-      [ "$lvl_prefix" = "name+ts" ] && local lvl_string="$lvl_ts [UNKNOWN]"
+      [ "$lvl_prefix" = "name" ] && lvl_string="[UNKOWN]"
+      [ "$lvl_prefix" = "name+ts" ] && lvl_string="$lvl_ts [UNKNOWN]"
       # Avoid printing color reset sequence as this level is not colored
       [ "$lvl_colorized" = "true" ] && lvl_color_reset=""
       ;;
   esac
 
-  if [ "${LOG_TO_STDERR:-false}" = "true" ]; then
-    printf "%s%s %s %s\n" "$lvl_color" "${lvl_string}" "$lvl_msg" "${lvl_color_reset}" 1>&2
-  else
-    printf "%s%s %s %s\n" "$lvl_color" "${lvl_string}" "$lvl_msg" "${lvl_color_reset}"
-  fi
+  # By default logs are written to stderr
+  case "${LOG_TO_STDOUT:-false}" in
+    true | True | TRUE | Yes | yes | YES | 1)
+      printf "%s%s %s %s\n" "$lvl_color" "${lvl_string}" "$lvl_msg" "${lvl_color_reset}";;
+    *)
+      printf "%s%s %s %s\n" "$lvl_color" "${lvl_string}" "$lvl_msg" "${lvl_color_reset}" 1>&2;;
+  esac
 }
 
 # Leveled Loggers
@@ -267,9 +282,61 @@ function check_deps()
   if [[ $missing_deps -ne 0 ]]; then
     log_error "Missing one or more dependencies!"
     exit 2
+  else
+    log_info "OK"
   fi
 }
 
+function build_regex()
+{
+  if [[ -n ${NEXT_TAG} ]]; then
+    log_info "using next tag - ${NEXT_TAG}"
+    if git show-ref --tags --quiet --verify -- "refs/tags/${NEXT_TAG}"; then
+      log_error "next tag specified already exists in git"
+      exit 1
+    fi
+    tag="$NEXT_TAG"
+  else
+    log_info "get closest tag"
+    tag="$(git describe --tags --abbrev=0 2>/dev/null)"
+    if [[ -z $tag ]]; then
+      log_error "there are no tags in this repository"
+      log_error "please use --next or create a tag"
+      exit 1
+    fi
+  fi
+
+  # validate tag is a valid semver tag
+  if [[ ${tag} =~ $SEMVER_REGEX ]]; then
+    log_info "${tag} is valid semver"
+    major="${BASH_REMATCH[1]}"
+    minor="${BASH_REMATCH[2]}"
+    patch="${BASH_REMATCH[3]}"
+    pre="${BASH_REMATCH[4]:1}"
+    build="${BASH_REMATCH[8]:1}"
+  else
+    log_error "${tag} is not semver tag!"
+    log_info "all tags must be semver compatible"
+    exit 1
+  fi
+
+  log_info "tag major - $major"
+  log_info "tag minor - $minor"
+  log_info "tag patch - $patch"
+  log_info "tag pre   - $pre"
+  log_info "tag build - $build"
+
+  # Build Regex to filter tags
+  # https://regex101.com/r/0EiAvH/1/
+  if [[ $pre == "" ]]; then
+    tag_filter="[vV]?[\d]+\.[\d]+\.[\d]+\$"
+  else
+    tag_filter="^[vV]?(${major}\.${minor}\.${patch})(\-(alpha|beta|rc)(\.(0|[1-9][0-9]*))?)\$|(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\$"
+  fi
+
+  log_info "chglog tag filter regex is ${tag_filter}"
+
+}
 
 function display_usage()
 {
@@ -362,14 +429,18 @@ function main()
     shift
   done
 
+  if [[ -z $mode ]]; then
+    log_error "No mode specified!"
+    display_usage
+    exit 1
+  fi
+
   if [[ -z $PROJECT_SOURCE ]]; then
     log_error "Repository URL is not defined!"
     log_error "Either define PROJECT_SOURCE or use --repository flag"
     display_usage
     exit 1
   fi
-
-  local -r SEMVER_REGEX="^[vV]?(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\-(0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)(\.(0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*))*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$"
 
   # validate --next is a valid semver tag
   if [[ $bool_use_next_mode == "true" ]]; then
@@ -383,28 +454,30 @@ function main()
 
   # Header file
   if [[ $header_file != "" ]]; then
-    log_info "Using header file: ${header_file}"
+    log_info "using header file: ${header_file}"
     if [[ ! -e $header_file ]]; then
-      log_error "Specified header file ${header_file} not found!"
+      log_error "specified header file ${header_file} not found!"
       exit 1
     else
-      local -r HEADER_FILE_CONTENTS="$(cat "$header_file")"
-      if [[ -z $HEADER_FILE_CONTENTS ]]; then
-        log_warning "Header file is empty!"
+      readonly HEADER_FILE_CONTENTS="$(cat "$header_file")"
+      if [[ -z $FOOTER_FILE_CONTENTS ]]; then
+        log_error "footer file is empty!"
+        exit 1
       fi
     fi
   fi
 
   # Footer file
   if [[ $footer_file != "" ]]; then
-    log_info "Using footer file: ${footer_file}"
+    log_info "using footer file: ${footer_file}"
     if [[ ! -e $footer_file ]]; then
-      log_error "Specified footer file ${footer_file} not found!"
+      log_error "specified footer file ${footer_file} not found!"
       exit 1
     else
-      local -r FOOTER_FILE_CONTENTS="$(cat "$footer_file")"
+      readonly FOOTER_FILE_CONTENTS="$(cat "$footer_file")"
       if [[ -z $FOOTER_FILE_CONTENTS ]]; then
-        log_warn "Footer file is empty!"
+        log_error "footer file is empty!"
+        exit 1
       fi
     fi
   fi
@@ -412,84 +485,37 @@ function main()
   # Output file is specified
   if [[ -n $output_file ]]; then
     output_dir="$(dirname "${output_file}")"
-    log_info "Output will be saved to dir=$output_dir, file=$(basename "$output_file")"
-    if [[ ! -d ${output_dir} ]] || [[ ! -w ${output_dir} ]] ; then
-      log_error "Output was specified but dir $output_dir does not exist or is not writable!"
+    log_info "output will be saved to dir=$output_dir, file=$(basename "$output_file")"
+    if [[ ! -d ${output_dir} ]]; then
+      log_error "output was specified but dir $output_dir does not exist!"
       exit 1
     fi
   fi
 
   # check if a git repo
   if [[ $(git rev-parse --is-inside-work-tree) != "true" ]]; then
-    log_error "Not a git repository!"
+    log_error "not a git repository!"
     exit 1
   fi
 
   # if oldest tag was specified
   if [[ -n $oldest_tag ]]; then
-    log_info "Will generate changelog starting from tag - $oldest_tag"
+    log_info "will generate tags till oldest tag - $oldest_tag"
     if ! git show-ref --tags --quiet --verify -- "refs/tags/${oldest_tag}"; then
-      log_error "Oldest tag specified but the tag does not exist in git!"
+      log_error "oldest tag was specified but the tag does not exist in git!"
       exit 1
     fi
-    local -r CHANGELOG_ARGS="$oldest_tag.."
+    readonly CHANGELOG_ARGS="$oldest_tag.."
   fi
 
   # check for deps
   check_deps
 
   # acquire_tag_tag
-  if [[ -n ${NEXT_TAG} ]]; then
-    log_info "Using next tag - ${NEXT_TAG}"
-    if git show-ref --tags --quiet --verify -- "refs/tags/${NEXT_TAG}"; then
-      log_error "Next tag specified already exists in git"
-      exit 1
-    fi
-    tag="$NEXT_TAG"
-  else
-    log_info "Get closest tag"
-    tag="$(git describe --tags --abbrev=0 2>/dev/null)"
-    if [[ -z $tag ]]; then
-      log_error "There are no tags in this repository"
-      log_error "Please use --next or create a tag"
-      exit 1
-    fi
-  fi
+  build_regex
 
-  log_trace "Parsing tag: ${tag}"
-
-  # validate tag is a valid semver tag
-  if [[ ${tag} =~ $SEMVER_REGEX ]]; then
-    log_info "${tag} is valid semver"
-    major="${BASH_REMATCH[1]}"
-    minor="${BASH_REMATCH[2]}"
-    patch="${BASH_REMATCH[3]}"
-    pre="${BASH_REMATCH[4]:1}"
-    build="${BASH_REMATCH[8]:1}"
-  else
-    log_error "${tag} is not semver tag!"
-    log_info "all tags must be semver compatible"
-    exit 1
-  fi
-
-  log_info "tag major - $major"
-  log_info "tag minor - $minor"
-  log_info "tag patch - $patch"
-  log_info "tag pre   - $pre"
-  log_info "tag build - $build"
-
-  # Build Regex to filter tags
-  # https://regex101.com/r/0EiAvH/1/
-  if [[ $pre == "" ]]; then
-    tag_filter="[vV]?[\d]+\.[\d]+\.[\d]+\$"
-  else
-    tag_filter="^[vV]?(${major}\.${minor}\.${patch})(\-(alpha|beta|rc)(\.(0|[1-9][0-9]*))?)\$|(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\$"
-  fi
-
-  log_info "Tag filter regex is ${tag_filter}"
-
-  if [[ ${mode:-changelog} == "changelog" ]]; then
-    log_info "Generating changelog"
+  if [[ $mode == "changelog" ]]; then
+    log_info "generating changelog"
 
     if [[ -n ${NEXT_TAG} ]]; then
       CHANGELOG_CONTENT="$(git-chglog \
@@ -505,7 +531,7 @@ function main()
     fi
 
     if [[ -z $CHANGELOG_CONTENT ]]; then
-      log_error "Failed to generate changelog"
+      log_error "failed to generate changelog"
       exit 1
     else
       if [[ -n $output_file ]]; then
@@ -517,8 +543,8 @@ function main()
     fi
 
   # release notes
-  elif [[ ${mode:-changelog} == "release-notes" ]]; then
-    log_info "Generating release notes"
+  elif [[ $mode == "release-notes" ]]; then
+    log_info "generating release notes"
 
     if [[ -n ${NEXT_TAG} ]]; then
       RN_CONTENT="$(git-chglog \
@@ -536,18 +562,18 @@ function main()
     fi
 
     if [[ -z $RN_CONTENT ]]; then
-      log_error "Failed to generate release notes"
+      log_error "failed to generate release notes"
       exit 1
     else
       if [[ -n $output_file ]]; then
-        log_info "Saving release notes to $output_file"
+        log_info "saving release notes to $output_file"
         echo "${HEADER_FILE_CONTENTS}${RN_CONTENT}" >"${output_file}"
       else
         echo "${HEADER_FILE_CONTENTS}${RN_CONTENT}"
       fi
     fi
   else
-    log_error "Invalid mode specified: $mode"
+    log_error "invalid mode specified: $mode"
     exit 1
   fi
 

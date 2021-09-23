@@ -70,7 +70,7 @@ body:
         - Kubernetes/k3s with containerd
         - Kubernetes/k3s with cri-o
         - Kubernetes/k3s with gvisor
-        - I dont know!
+        - I don't know!
         - None of the above, I have mentioned the details in additional info section.
     validations:
       required: true
@@ -89,8 +89,8 @@ body:
     attributes:
       label: Version of docker/podman runtime
       description: |
-          - If usng docker, paste the output of command `docker info`
-          - If usng podman, paste the output of command `podman info`
+          - If using docker, paste the output of command `docker info`
+          - If using podman, paste the output of command `podman info`
           - If you are not using docker/podman.
       value: NA
 
@@ -102,7 +102,7 @@ body:
       description: |
         - If you have issues with running a specific container, try by running debugging docker-compose files first.
       options:
-        - label: I have tried debugging with compose file provided as mentioned in [TROUBLESHOOTING](https://tprasadtp.github.io/protonvpn-docker/docs/troubleshooting/)
+        - label: I have tried debugging with compose file provided as mentioned in [TROUBLESHOOTING](https://tprasadtp.github.io/protonvpn-docker/#/troubleshooting)
 
   # Logs
   - type: textarea

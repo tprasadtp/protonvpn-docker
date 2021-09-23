@@ -1,0 +1,42 @@
+name: Feature Request / Enhancement
+description: Add a new feature or enhance existing features
+title: "[FEATURE] -  "
+labels: ["Feature"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        - Thanks for taking the time to fill out this request!
+
+  # version
+  - type: input
+    id: version
+    attributes:
+      label: Version of `protonvpn-docker`
+      description: |
+        - Version of the container
+        - If unable to detect or not applicable, leave the field as is.
+      value: NA
+    validations:
+      required: true
+
+  - type: textarea
+    id: feature-info
+    attributes:
+      label: Details about Feature/Enhancement
+      description: Details of feature request and enhancement. Please be specific.
+
+  - type: checkboxes
+    id: code-of-conduct
+    attributes:
+      label: Code of Conduct & PII Redaction
+      description: |
+        By submitting this issue, you agree to follow code of conduct for this repository.
+        In case the repository is missing code of conduct, Contributor Covenant code of conduct applies.
+        Please also ensure that you remove or redact any sensitive personally identifying information
+        like IP addresses and secrets like your API keys from logs and report included here.
+      options:
+        - label: I agree to follow this project's Code of Conduct
+          required: true
+        - label: I have removed any sensitive personally identifying information(PII) and secrets from in this issue report.
+          required: true

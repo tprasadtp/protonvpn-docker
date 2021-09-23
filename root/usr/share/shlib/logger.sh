@@ -168,11 +168,12 @@ __logger_core_event_handler()
   esac
 
   # By default logs are written to stderr
-  if [ "${LOG_TO_STDOUT:-false}" = "true" ]; then
-    printf "%s%s %s %s\n" "$lvl_color" "${lvl_string}" "$lvl_msg" "${lvl_color_reset}"
-  else
-    printf "%s%s %s %s\n" "$lvl_color" "${lvl_string}" "$lvl_msg" "${lvl_color_reset}" 1>&2
-  fi
+  case "${LOG_TO_STDOUT:-false}" in
+    true | True | TRUE | Yes | yes | YES | 1)
+      printf "%s%s %s %s\n" "$lvl_color" "${lvl_string}" "$lvl_msg" "${lvl_color_reset}";;
+    *)
+      printf "%s%s %s %s\n" "$lvl_color" "${lvl_string}" "$lvl_msg" "${lvl_color_reset}" 1>&2;;
+  esac
 }
 
 # Leveled Loggers

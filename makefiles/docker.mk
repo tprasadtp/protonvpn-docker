@@ -12,8 +12,7 @@ DOCKER_FILE_PATH ?= ./Dockerfile
 # Extra Arguments, useful to pass --build-arg.
 DOCKER_EXTRA_ARGS ?=
 
-
-# Enable Buidkit if not already disabled
+# Enable Buidkit by default
 DOCKER_BUILDKIT ?= 1
 
 # Default to os,library
@@ -38,7 +37,7 @@ $(call check_defined, DOCKER_FILE_PATH, Full path to Dockerfile (default=./Docke
 $(call check_defined, DOCKER_BUILD_CONTEXT, Docker build context (default=.))
 
 # Build Tags
-DOCKER_TAGS  := $(foreach __REG,$(DOCKER_IMAGES),$(__REG):$(GIT_COMMIT)-DEV)
+DOCKER_TAGS  := $(foreach __REG,$(DOCKER_IMAGES),$(__REG):$(GIT_COMMIT_SHORT)-dev)
 
 DOCKER_BUILD_COMMAND ?= build
 DOCKER_INSPECT_ARGS  ?= image inspect $(firstword $(DOCKER_TAGS)) | jq ".[].Config.Labels"
@@ -102,7 +101,7 @@ docker: ## Build docker image
 		--label org.opencontainers.image.source="$(PROJECT_SOURCE)" \
 		--label org.opencontainers.image.title="$(PROJECT_TITLE)" \
 		--label org.opencontainers.image.url="$(DOCKER_IMAGE_URL)" \
-		--label org.opencontainers.image.vendor="$(VENDOR)" \
+		--label org.opencontainers.image.vendor="Prasad Tengse <tprasadtp@users.noreply.github.com>" \
 		--label org.opencontainers.image.version="$(GIT_COMMIT)" \
 		--label io.github.tprasadtp.metadata.version="6" \
 		--label io.github.tprasadtp.metadata.build.system="$(BUILD_SYSTEM)" \

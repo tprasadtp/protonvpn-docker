@@ -3,7 +3,7 @@ project_name: protonvpn
 
 # Snapshot Template
 snapshot:
-  name_template: "{{ .Version }}-{{.ShortCommit}}-SNAPSHOT"
+  name_template: "{{.ShortCommit}}-dev"
 
 # Skip builds
 builds:
@@ -21,7 +21,7 @@ dockers:
       - --label=org.opencontainers.image.revision={{.FullCommit}}
       - --label=org.opencontainers.image.version={{.Version}}
       # Vendor
-      - --label=org.opencontainers.image.vendor="{{.Env.VENDOR}}"
+      - --label=org.opencontainers.image.vendor="Prasad Tengse <tprasadtp@users.noreply.github.com>"
       # Populated from Makefile Env
       # We do not use GitURL because it might be SSH.
       - --label=org.opencontainers.image.source={{.Env.PROJECT_SOURCE}}
@@ -51,16 +51,14 @@ dockers:
       dockerfile: Dockerfile
       use: buildx
       extra_files:
-        # Scripts
-        - root/usr/local/bin/healthcheck.py
-        # Service Init Files
+        - root/usr/bin/healthcheck
         - root/etc/cont-init.d/70-vpn-setup
-        # Service Files
         - root/etc/services.d/protonvpn/run
-        # Pip
+        - root/usr/share/keyrings/just-containers.gpg
+        - root/usr/share/shlib/logger.sh
         - root/requirements.txt
 
-#   # ARM64 image
+  # ARM64 image
   - image_templates:
       # GHCR Images
       - 'ghcr.io/tprasadtp/{{ .ProjectName }}:{{ .Version }}-arm64'
@@ -71,7 +69,7 @@ dockers:
       - --label=org.opencontainers.image.revision={{.FullCommit}}
       - --label=org.opencontainers.image.version={{.Version}}
       # Vendor
-      - --label=org.opencontainers.image.vendor="{{.Env.VENDOR}}"
+      - --label=org.opencontainers.image.vendor="Prasad Tengse <tprasadtp@users.noreply.github.com>"
       # Populated from Makefile Env
       # We do not use GitURL because it might be SSH.
       - --label=org.opencontainers.image.source={{.Env.PROJECT_SOURCE}}
@@ -111,7 +109,7 @@ dockers:
       - --label=org.opencontainers.image.revision={{.FullCommit}}
       - --label=org.opencontainers.image.version={{.Version}}
       # Vendor
-      - --label=org.opencontainers.image.vendor="{{.Env.VENDOR}}"
+      - --label=org.opencontainers.image.vendor="Prasad Tengse <tprasadtp@users.noreply.github.com>"
       # Populated from Makefile Env
       # We do not use GitURL because it might be SSH.
       - --label=org.opencontainers.image.source={{.Env.PROJECT_SOURCE}}
@@ -173,3 +171,7 @@ docker_manifests:
 # Github Releases
 release:
   prerelease: auto
+
+# Use git-chglog to generate release notes
+changelog:
+  skip: true

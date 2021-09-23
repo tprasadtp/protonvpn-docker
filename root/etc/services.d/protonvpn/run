@@ -6,11 +6,11 @@ if [[ $DEBUG == "1" ]]; then
   export LOG_LVL=0
 fi
 
-if [[ -f /usr/local/lib/loggers/logger.sh ]]; then
+if [[ -f /usr/share/shlib/logger.sh ]]; then
   # shellcheck disable=SC1091
-  source /usr/local/lib/loggers/logger.sh
+  source /usr/share/shlib/logger.sh
 else
-  echo "[ERROR ] Failed to load logging library expected at /usr/local/lib/loggers/logger.sh"
+  echo "[ERROR ] Failed to load logging library expected at /usr/share/shlib/logger.sh"
   exit 1
 fi
 
@@ -77,7 +77,7 @@ function reconnect_vpn() {
 }
 
 function api_check() {
-  if python3 /usr/local/bin/healthcheck.py; then
+  if healthcheck; then
     log_success "VPN is running and healthy"
     thrshold_f=0
   else

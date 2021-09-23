@@ -7,11 +7,11 @@ if [[ $DEBUG == "1" ]]; then
   export LOG_LVL=0
 fi
 
-if [[ -f /usr/local/lib/loggers/logger.sh ]]; then
+if [[ -f /usr/share/shlib/logger.sh ]]; then
   # shellcheck disable=SC1091
-  source /usr/local/lib/loggers/logger.sh
+  source /usr/share/shlib/logger.sh
 else
-  echo "[ERROR ] Failed to load logging library expected at /usr/local/lib/loggers/logger.sh"
+  echo "[ERROR ] Failed to load logging library expected at /usr/share/shlib/logger.sh"
   exit 1
 fi
 
@@ -96,7 +96,7 @@ if [[ -z ${PROTONVPN_SERVER} ]]; then
 fi
 
 if [[ ${PROTONVPN_SERVER^^} =~ ^[A-Z]{2}$ ]]; then
-  log_notice "Using fastest server from COUNTRY: ${PROTONVPN_COUNTRY^^}"
+  log_notice "Using fastest server from COUNTRY: ${PROTONVPN_SERVER^^}"
 elif [[ ${PROTONVPN_SERVER} == "RANDOM" ]]; then
   log_notice "Using a RANDOM server"
 elif [[ ${PROTONVPN_SERVER} == "P2P" ]]; then

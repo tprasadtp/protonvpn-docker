@@ -19,20 +19,22 @@ ENV PROTONVPN_DNS_LEAK_PROTECT=1 \
 ARG S6_OVERLAY_VERSION="2.2.0.3"
 
 RUN rm -f /etc/apt/apt.conf.d/docker-clean \
-    && echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache
+    && echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/buildkit-cache
+
+# Copy GPG Keys
+COPY --chown=root:root --chmod=0644 root/usr/share/keyrings/ /usr/share/keyrings/
 
 # Install Packages
-# hadolint ignore=DL3008
-RUN --mount=type=tmpfs,target=/root/.gnupg/ \
+# hadolint ignore=DL3008,DL3009
+RUN --mount=type=tmpfs,target=/downloads/ \
+    --mount=type=tmpfs,target=/var/lib/apt \
+    --mount=type=cache,sharing=private,target=/var/cache/apt \
     apt-get update \
     && apt-get install --no-install-recommends --yes \
     curl \
     procps \
     iptables \
-    iputils-ping \
-    net-tools \
     openvpn \
-    bind9-host \
     dialog \
     python3-pip \
     && ARCH="$(uname -m)" \
@@ -50,20 +52,11 @@ RUN --mount=type=tmpfs,target=/root/.gnupg/ \
     && mkdir -p /downloads \
     && curl -sSfL "https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-${S6_ARCH}-installer" -o /downloads/s6-overlay-installer \
     && curl -sSfL "https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-${S6_ARCH}-installer.sig" -o /downloads/s6-overlay-installer.sig \
-    && apt-get -qq -o=Dpkg::Use-Pty=0 install --no-install-recommends --yes gnupg \
-    && curl -sSfL https://keybase.io/justcontainers/key.asc --output /downloads/just-containers-key.asc \
-    && gpg --no-tty --batch --yes --import /downloads/just-containers-key.asc \
-    && gpg --no-tty --batch --yes --verify /downloads/s6-overlay-installer.sig /downloads/s6-overlay-installer \
-    && apt-get -qq -o=Dpkg::Use-Pty=0 --yes purge gnupg \
-    && apt-get -qq -o=Dpkg::Use-Pty=0 --yes autoremove \
+    && gpgv --keyring /usr/share/keyrings/just-containers.gpg /downloads/s6-overlay-installer.sig /downloads/s6-overlay-installer \
     && chmod +x /downloads/s6-overlay-installer \
-    && /downloads/s6-overlay-installer / \
-    && rm -rf /downloads/ \
-    && rm -rf /var/lib/apt/lists/*
+    && /downloads/s6-overlay-installer /
 
-COPY --chown=root:root --chmod=0755 root/ /
-
-# Install Proton CLI
+COPY --chown=root:root --chmod=0644 root/requirements.txt /requirements.txt
 # hadolint ignore=DL3042
 RUN --mount=type=cache,target=/root/.cache/pip \
     --mount=type=cache,target=/root/.cache/wheel \
@@ -72,5 +65,9 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     --upgrade \
     --disable-pip-version-check \
     -r requirements.txt
+
+COPY --chown=root:root --chmod=0755 root/etc /etc
+COPY --chown=root:root --chmod=0755 root/usr/bin /usr/bin
+COPY --chown=root:root --chmod=0644 root/usr/share/shlib /usr/share/shlib
 
 ENTRYPOINT ["/init"]
