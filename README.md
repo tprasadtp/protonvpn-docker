@@ -18,7 +18,6 @@
 [![security](https://github.com/tprasadtp/protonvpn-docker/actions/workflows/security.yml/badge.svg)](https://github.com/tprasadtp/protonvpn-docker/actions/workflows/security.yml)
 [![releases](https://img.shields.io/github/v/tag/tprasadtp/protonvpn-docker?label=version&sort=semver&logo=semver&color=7f50a6&labelColor=3a3a3a)](https://github.com/tprasadtp/protonvpn-docker/releases/latest)
 [![license](https://img.shields.io/github/license/tprasadtp/protonvpn-docker?logo=github&labelColor=3A3A3A)](https://github.com/tprasadtp/protonvpn-docker/blob/master/LICENSE)
-![analytics](https://ga-beacon.prasadt.com/UA-101760811-3/github/protonvpn-docker)
 
 ## Docker Images
 

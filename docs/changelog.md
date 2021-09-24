@@ -1,6 +1,13 @@
 # Changelog
 
 
+<a name="5.0.1"></a>
+## [5.0.1] - 2021-09-24
+
+### 🐛 Bug Fixes
+- Conditional checks for `PROTONVPN_TIER` [#74](https://github.com/tprasadtp/protonvpn-docker/issues/74) ([244dbae](https://github.com/tprasadtp/protonvpn-docker/commit/244dbae9ce2989f30976765a4fae459fc4366c7a))
+
+
 <a name="5.0.0"></a>
 ## [5.0.0] - 2021-09-23
 
@@ -195,6 +202,7 @@
 
 
 <!-- tag references -->
+[5.0.1]: https://github.com/tprasadtp/protonvpn-docker/compare/5.0.0...5.0.1
 [5.0.0]: https://github.com/tprasadtp/protonvpn-docker/compare/4.2.1...5.0.0
 [4.2.1]: https://github.com/tprasadtp/protonvpn-docker/compare/4.2.0...4.2.1
 [4.2.0]: https://github.com/tprasadtp/protonvpn-docker/compare/4.1.5...4.2.0
