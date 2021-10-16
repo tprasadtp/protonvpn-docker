@@ -3,6 +3,9 @@
 FROM ubuntu:focal-20210921 as upstream
 FROM upstream as base
 
+ARG VERSION="v0.0.0"
+ENV VERSION="${VERSION}"
+
 # Overlay defaults
 ENV S6_BEHAVIOUR_IF_STAGE2_FAILS=2 \
     S6_CMD_WAIT_FOR_SERVICES=1 \
@@ -34,9 +37,11 @@ RUN --mount=type=tmpfs,target=/downloads/ \
     curl \
     procps \
     iptables \
+    ca-certificates \
     openvpn \
     dialog \
     python3-pip \
+    && update-ca-certificates \
     && ARCH="$(uname -m)" \
     && export ARCH \
     && if [ "$ARCH" = "x86_64" ]; then \

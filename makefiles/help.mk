@@ -82,6 +82,12 @@ else
 	GIT_BRANCH            :=
 endif
 
+# Version ID
+# This can return only commit id, if in a shallow clone repo,
+# otherwise can return something like 5.0.1-3-gf24fb56-dirty
+VERSION_ID := $(shell git -c log.showSignature=false describe --tags --always --broken --dirty 2> /dev/null )
+export VERSION_ID
+
 # Base Buidler/CI Info collector
 # -------------------------------------
 
@@ -146,6 +152,7 @@ show-vars-base: ## Show Base variables
 	@echo "GIT_COMMIT_TIMESTAMP : $(GIT_COMMIT_TIMESTAMP)"
 	@echo "GIT_DEFAULT_BRANCH   : $(GIT_DEFAULT_BRANCH)"
 	@echo "GIT_TREE_STATE       : $(GIT_TREE_STATE)"
+	@echo "VERSION_ID           : $(VERSION_ID)"
 
 	@echo "----------- BASE BUILD VARIABLES --------------"
 	@echo "BUILD_HOST           : $(BUILD_HOST)"

@@ -49,12 +49,17 @@ logging.debug(f"Allowed IPs: {connected_server_ips}")
 
 ip_endpoint = os.getenv("PROTONVPN_IPCHECK_ENDPOINT",
                         "https://ip.prasadt.workers.dev/")
+hciv = os.getenv("PROTONVPN_CHECK_INTERVAL", "0")
+version = os.getenv("VERSION", "v0.0.0")
+user_agent = f"protonvpn-docker/{version}/{hciv}"
+
 logging.debug(f"Fetch Public IP from {ip_endpoint}")
+logging.debug(f"Using User-Agent - {user_agent}")
 
 ip_resp_request = urllib.request.Request(
     ip_endpoint,
     data=None,
-    headers={"User-Agent": "protonvpn-cli-docker"},
+    headers={"User-Agent": user_agent},
 )
 with urllib.request.urlopen(ip_resp_request) as ip_response:
     current_ip = str(ip_response.read(), "utf-8")

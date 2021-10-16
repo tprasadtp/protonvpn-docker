@@ -27,6 +27,8 @@ UPSTREAM_URL     := https://github.com/ProtonVPN/linux-cli
 include $(REPO_ROOT)/makefiles/help.mk
 include $(REPO_ROOT)/makefiles/docker.mk
 
+# Inject Version into image
+DOCKER_EXTRA_ARGS := --build-arg VERSION=$(VERSION_ID)
 
 .PHONY: shellcheck
 shellcheck: ## Runs shellcheck

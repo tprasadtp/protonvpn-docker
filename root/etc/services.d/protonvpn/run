@@ -82,7 +82,6 @@ function api_check() {
     thrshold_f=0
   else
     log_error "Healthcheck #$((++thrshold_f)) Failed!"
-    log_error "Connected to #${COUNTRY} instead of #${PROTONVPN_COUNTRY}"
     if [[ $thrshold_f -gt "${PROTONVPN_FAIL_THRESHOLD}" ]]; then
       log_error "Reconnecting! (${PROTONVPN_FAIL_THRESHOLD})"
       reconnect_vpn
