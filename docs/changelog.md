@@ -1,6 +1,15 @@
 # Changelog
 
 
+<a name="5.0.2-beta.1"></a>
+## [5.0.2-beta.1] - 2021-10-16
+
+### 🚧 Maintenance
+- **deps:** bump jinja2 from 3.0.1 to 3.0.2 in /root ([#79](https://github.com/tprasadtp/protonvpn-docker/issues/79)) ([f24fb56](https://github.com/tprasadtp/protonvpn-docker/commit/f24fb56380750bba4995786fac230485c231bbef))
+- **deps:** bump ubuntu from focal-20210827 to focal-20210921 ([#77](https://github.com/tprasadtp/protonvpn-docker/issues/77)) ([748bcf6](https://github.com/tprasadtp/protonvpn-docker/commit/748bcf6681269066cd70bb038929a6e5e7d66255))
+- **deps:** bump urllib3 from 1.26.6 to 1.26.7 in /root ([#75](https://github.com/tprasadtp/protonvpn-docker/issues/75)) ([958f78d](https://github.com/tprasadtp/protonvpn-docker/commit/958f78d3b24c64f0e088a52edaaa6ac5f2f3bf68))
+
+
 <a name="5.0.1"></a>
 ## [5.0.1] - 2021-09-24
 
@@ -202,6 +211,7 @@
 
 
 <!-- tag references -->
+[5.0.2-beta.1]: https://github.com/tprasadtp/protonvpn-docker/compare/5.0.1...5.0.2-beta.1
 [5.0.1]: https://github.com/tprasadtp/protonvpn-docker/compare/5.0.0...5.0.1
 [5.0.0]: https://github.com/tprasadtp/protonvpn-docker/compare/4.2.1...5.0.0
 [4.2.1]: https://github.com/tprasadtp/protonvpn-docker/compare/4.2.0...4.2.1
