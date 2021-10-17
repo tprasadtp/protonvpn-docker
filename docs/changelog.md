@@ -1,6 +1,10 @@
 # Changelog
 
 
+<a name="5.0.2-beta.3"></a>
+## [5.0.2-beta.3] - 2021-10-17
+
+
 <a name="5.0.2-beta.2"></a>
 ## [5.0.2-beta.2] - 2021-10-17
 
@@ -222,6 +226,7 @@
 
 
 <!-- tag references -->
+[5.0.2-beta.3]: https://github.com/tprasadtp/protonvpn-docker/compare/5.0.2-beta.2...5.0.2-beta.3
 [5.0.2-beta.2]: https://github.com/tprasadtp/protonvpn-docker/compare/5.0.2-beta.1...5.0.2-beta.2
 [5.0.2-beta.1]: https://github.com/tprasadtp/protonvpn-docker/compare/5.0.1...5.0.2-beta.1
 [5.0.1]: https://github.com/tprasadtp/protonvpn-docker/compare/5.0.0...5.0.1
