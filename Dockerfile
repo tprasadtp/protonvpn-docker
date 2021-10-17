@@ -41,7 +41,7 @@ RUN --mount=type=tmpfs,target=/downloads/ \
     openvpn \
     dialog \
     python3-pip \
-    && update-ca-certificates \
+    && update-ca-certificates --fresh \
     && ARCH="$(uname -m)" \
     && export ARCH \
     && if [ "$ARCH" = "x86_64" ]; then \
