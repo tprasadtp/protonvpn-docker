@@ -36,6 +36,13 @@ jobs:
           make show-vars-base || true
           make show-vars-docker || true
 
+      - uses: actions/cache@v2
+        with:
+          path: .trivy
+          key: ${{ runner.os }}-trivy-${{ github.run_id }}
+          restore-keys: |
+            ${{ runner.os }}-trivy-
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
 
@@ -54,7 +61,7 @@ jobs:
 
       - name: Run Trivy vulnerability scanner
         id: trivy
-        uses: aquasecurity/trivy-action@0.0.22
+        uses: aquasecurity/trivy-action@1ccef265f594a7555a720f623a461a3d69b45bf7
         with:
           scan-type: 'image'
           vuln-type: os

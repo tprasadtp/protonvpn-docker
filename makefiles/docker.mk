@@ -37,7 +37,8 @@ $(call check_defined, DOCKER_FILE_PATH, Full path to Dockerfile (default=./Docke
 $(call check_defined, DOCKER_BUILD_CONTEXT, Docker build context (default=.))
 
 # Build Tags
-DOCKER_TAGS  := $(foreach __REG,$(DOCKER_IMAGES),$(__REG):$(GIT_COMMIT_SHORT)-dev)
+DOCKER_TAGS  := $(foreach __REG,$(DOCKER_IMAGES),$(__REG):dev)
+DOCKER_TAGS  += $(foreach __REG,$(DOCKER_IMAGES),$(__REG):$(GIT_COMMIT)-dev)
 
 DOCKER_BUILD_COMMAND ?= build
 DOCKER_INSPECT_ARGS  ?= image inspect $(firstword $(DOCKER_TAGS)) | jq ".[].Config.Labels"

@@ -14,12 +14,19 @@ jobs:
           make show-vars-base
           make show-vars-docker
 
+      - uses: actions/cache@v2
+        with:
+          path: .trivy
+          key: ${{ runner.os }}-trivy-${{ github.run_id }}
+          restore-keys: |
+            ${{ runner.os }}-trivy-
+
       - name: Build Image
         run: make docker
 
       - name: Run Trivy vulnerability scanner
         id: trivy
-        uses: aquasecurity/trivy-action@0.0.22
+        uses: aquasecurity/trivy-action@1ccef265f594a7555a720f623a461a3d69b45bf7
         with:
           scan-type: 'image'
           vuln-type: os
@@ -36,10 +43,9 @@ jobs:
   goreleaser:
     needs: [checks]
     permissions:
-      # For creating releases
       contents: write
-      # For milestone management
       repository-projects: write
+      packages: write
 
     runs-on: ubuntu-latest
     steps:

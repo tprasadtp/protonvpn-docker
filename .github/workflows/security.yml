@@ -32,9 +32,16 @@ jobs:
         with:
           ref: ${{ steps.get_latest_release.outputs.TAG_NAME }}
 
+      - uses: actions/cache@v2
+        with:
+          path: .trivy
+          key: ${{ runner.os }}-trivy-${{ github.run_id }}
+          restore-keys: |
+            ${{ runner.os }}-trivy-
+
       - name: Run Trivy vulnerability scanner
         id: trivy
-        uses: aquasecurity/trivy-action@0.0.22
+        uses: aquasecurity/trivy-action@1ccef265f594a7555a720f623a461a3d69b45bf7
         with:
           scan-type: 'image'
           vuln-type: os
@@ -45,6 +52,10 @@ jobs:
           format: 'template'
           template: '@/contrib/sarif.tpl'
           output: 'trivy-results.sarif'
+
+      - name: Correct Trivy cache permissions
+        run: sudo chown -R $USER:$GROUP .trivy
+        if: always()
 
       - name: Upload Trivy scan results to GitHub Security tab
         if: github.ref == 'refs/heads/master' && always()

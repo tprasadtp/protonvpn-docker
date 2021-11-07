@@ -2,9 +2,11 @@ version: 2
 updates:
   - package-ecosystem: docker
     labels:
-      - "Actor:Dependabot"
-      - "Deps:Docker"
-      - "Luna:AutoMerge"
+      - "dependabot"
+      - "dependencies"
+      - "docker"
+      - "luna/automerge"
+      - "luna/autoupdate"
     commit-message:
       prefix: "chore(deps):"
     directory: "/"
@@ -16,8 +18,10 @@ updates:
 
   - package-ecosystem: pip
     labels:
-      - "Actor:Dependabot"
-      - "Deps:Python"
+      - "dependabot"
+      - "dependencies"
+      - "python"
+      - "luna/autoupdate"
     commit-message:
       prefix: "chore(deps):"
     directory: "/root"
@@ -35,8 +39,10 @@ updates:
   # Actions
   - package-ecosystem: github-actions
     labels:
-      - "Actor:Dependabot"
-      - "Deps:Actions"
+      - "dependabot"
+      - "dependencies"
+      - "github-action"
+      - "luna/autoupdate"
     commit-message:
       prefix: "ci(deps):"
     directory: "/"

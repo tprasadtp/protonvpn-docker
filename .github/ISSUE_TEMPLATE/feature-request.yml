@@ -1,7 +1,7 @@
 name: Feature Request / Enhancement
 description: Add a new feature or enhance existing features
 title: "[FEATURE] -  "
-labels: ["Feature"]
+labels: ["feature"]
 body:
   - type: markdown
     attributes:
