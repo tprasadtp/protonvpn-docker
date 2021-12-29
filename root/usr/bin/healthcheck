@@ -37,13 +37,23 @@ logging.debug(f"Reading {SRV_INFO}")
 with open(SRV_INFO, "r") as f:
     servers = json.load(f)
     connected_server_ips = []
+    connected_server_domain = "unknown"
+
+    # Find the logical server domain
     for logical_server in servers["LogicalServers"]:
-        # IF logical server name matches
         if logical_server["Name"] == connected_server:
-            # Iterate over servers
-            for server in logical_server["Servers"]:
-                # Get Their IPs and append to allow list
-                connected_server_ips.append(server["ExitIP"])
+            connected_server_domain = logical_server["Domain"]
+
+    if connected_server_domain != "unknown":
+        for logical_server in servers["LogicalServers"]:
+            # IF logical server domain matches
+            if logical_server["Domain"] == connected_server_domain:
+                # Iterate over servers
+                for server in logical_server["Servers"]:
+                    # Get Their IPs and append to allow list
+                    connected_server_ips.append(server["ExitIP"])
+    else:
+        logging.debug(f"Unknown server domain for: {connected_server}")        
 
 logging.debug(f"Allowed IPs: {connected_server_ips}")
 
