@@ -16,15 +16,13 @@ updates:
     pull-request-branch-name:
       separator: "-"
 
-  # pip patch updates
   - package-ecosystem: pip
     labels:
       - "dependabot"
       - "dependencies"
       - "python"
-      - "dependabot/patch-update"
+      - "dependabot"
       - "luna/autoupdate"
-      - "luna/automerge"
     commit-message:
       prefix: "chore(deps):"
     directory: "/root"
@@ -34,36 +32,10 @@ updates:
     pull-request-branch-name:
       separator: "-"
     ignore:
-      # Upstream is horrible at following semver specs
-      # They change interface names and even replace entire repos
-      # to a new ones between patch releases!
       - dependency-name: "protonvpn-cli"
       - dependency-name: "*"
         update-types:
-          - version-update:semver-minor
           - version-update:semver-major
-
-  # pip minor and major updates.
-  - package-ecosystem: pip
-    labels:
-      - "dependabot"
-      - "dependencies"
-      - "python"
-      - "dependabot"
-      - "luna/autoupdate"
-    commit-message:
-      prefix: "chore(deps):"
-    directory: "/root"
-    schedule:
-      interval: "weekly"
-      day: "saturday"
-    pull-request-branch-name:
-      separator: "-"
-    ignore:
-      - dependency-name: "protonvpn-cli"
-      - dependency-name: "*"
-        update-types:
-          - version-update:semver-patch
 
   # Actions
   - package-ecosystem: github-actions
