@@ -21,7 +21,6 @@ updates:
       - "dependabot"
       - "dependencies"
       - "python"
-      - "dependabot"
       - "luna/autoupdate"
     commit-message:
       prefix: "chore(deps):"
