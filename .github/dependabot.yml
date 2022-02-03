@@ -31,10 +31,10 @@ updates:
     pull-request-branch-name:
       separator: "-"
     ignore:
-      # Upstream is horrible at following semver specs
-      # They change interface names and even replace entire repos
-      # to a new ones between patch releases!
       - dependency-name: "protonvpn-cli"
+      - dependency-name: "*"
+        update-types:
+          - version-update:semver-major
 
   # Actions
   - package-ecosystem: github-actions

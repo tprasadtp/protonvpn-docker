@@ -26,7 +26,7 @@ jobs:
 
       - name: Run Trivy vulnerability scanner
         id: trivy
-        uses: aquasecurity/trivy-action@0769bbf0d2a77b3c15b3b57fbcdd2edd25a1c3f0
+        uses: aquasecurity/trivy-action@8f4c7160b470bafe4299efdc1c8a1fb495f8325a
         with:
           scan-type: 'image'
           vuln-type: os
@@ -67,7 +67,7 @@ jobs:
         uses: docker/setup-buildx-action@v1
 
       - name: Install GoReleaser
-        uses: goreleaser/goreleaser-action@5df302e5e9e4c66310a6b6493a8865b12c555af2
+        uses: goreleaser/goreleaser-action@79d4afbba1b4eff8b9a98e3d2e58c4dbaf094e2b
         with:
           version: latest
           install-only: true
