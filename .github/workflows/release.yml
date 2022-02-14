@@ -76,6 +76,8 @@ jobs:
         run: |
           brew tap git-chglog/git-chglog
           brew install git-chglog
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: 1
 
       - name: Generate Release notes
         run: |
