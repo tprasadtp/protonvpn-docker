@@ -1,7 +1,8 @@
 # Changelog
 
-<a name="unreleased"></a>
-## [Unreleased]
+
+<a name="5.1.1"></a>
+## [5.1.1] - 2022-02-14
 
 ### 🍒 Features & Enhancements
 - Refresh server info using cron (hourly) ([b75a7df](https://github.com/tprasadtp/protonvpn-docker/commit/b75a7dfddd129b895e1b4093b70677fe6135afdf))
@@ -242,7 +243,7 @@
 
 
 <!-- tag references -->
-[Unreleased]: https://github.com/tprasadtp/protonvpn-docker/compare/5.0.1...HEAD
+[5.1.1]: https://github.com/tprasadtp/protonvpn-docker/compare/5.0.1...5.1.1
 [5.0.1]: https://github.com/tprasadtp/protonvpn-docker/compare/5.0.0...5.0.1
 [5.0.0]: https://github.com/tprasadtp/protonvpn-docker/compare/4.2.1...5.0.0
 [4.2.1]: https://github.com/tprasadtp/protonvpn-docker/compare/4.2.0...4.2.1
