@@ -1,0 +1,3 @@
+#!/usr/bin/execlineb -P
+# shellcheck shell=sh
+cron -f -L 15
