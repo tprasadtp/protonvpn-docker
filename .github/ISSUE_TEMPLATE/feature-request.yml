@@ -1,6 +1,6 @@
-name: Feature Request / Enhancement
+name: RFE/Feature Request
 description: Add a new feature or enhance existing features
-title: "[FEATURE] -  "
+title: "[RFE] -  "
 labels: ["feature"]
 body:
   - type: markdown
