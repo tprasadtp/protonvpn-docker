@@ -9,6 +9,9 @@
 ### 🐛 Bug Fixes
 - Allow checking exit ips for servers with the same domain ([#88](https://github.com/tprasadtp/protonvpn-docker/issues/88)) ([2fbd795](https://github.com/tprasadtp/protonvpn-docker/commit/2fbd7951113a09eea88d2f31758cada9698408ab))
 
+### 📖 Documentation
+- Add info about libsecomp issues on 32 bit arm ([4a21b51](https://github.com/tprasadtp/protonvpn-docker/commit/4a21b512126f7f552045010e58aa725ade134dd5))
+
 ### 🚧 Maintenance
 - Update changelog scripts ([25cab16](https://github.com/tprasadtp/protonvpn-docker/commit/25cab16c12f5c3dcb380dc83e14268e725117e2a))
 - **deps:** bump ubuntu from focal-20220105 to focal-20220113 ([#95](https://github.com/tprasadtp/protonvpn-docker/issues/95)) ([3e80ba0](https://github.com/tprasadtp/protonvpn-docker/commit/3e80ba057c4b7d1458065cc2412041ed217afe40))
@@ -22,17 +25,18 @@
 - **deps:** bump urllib3 from 1.26.6 to 1.26.7 in /root ([#75](https://github.com/tprasadtp/protonvpn-docker/issues/75)) ([958f78d](https://github.com/tprasadtp/protonvpn-docker/commit/958f78d3b24c64f0e088a52edaaa6ac5f2f3bf68))
 
 ### 🤖 CI/CD & Automation
-- Fix duplicate labels in dependabot config ([ea002c4](https://github.com/tprasadtp/protonvpn-docker/commit/ea002c4fad1e65689be0ef5afb20c6bb028eec72))
+- Remove dependabot patch update config for pip config as it dependabot handle splitting patch and major version updates with different settings. ([6a0dd73](https://github.com/tprasadtp/protonvpn-docker/commit/6a0dd73013644b228753e829dad9ee2df8bd2dd8))
+- Update logging, CI, script & Issue templates ([fd92c6a](https://github.com/tprasadtp/protonvpn-docker/commit/fd92c6a80210ebefdd4517e088278fb2e3f5cf29))
 - Add configuration for Semantic PR app ([d2c74a9](https://github.com/tprasadtp/protonvpn-docker/commit/d2c74a9d9ece83ed401d6cb85e9788224e8b007d))
 - Disable homebrew auto update ([9df7e92](https://github.com/tprasadtp/protonvpn-docker/commit/9df7e927888d8b2a6cbd7db0267c06c0e8c00fb8))
 - Dependeabot and Kodiak - Sync automerge labels ([09e8042](https://github.com/tprasadtp/protonvpn-docker/commit/09e80421e10bcef728d16bc2ce0da5089d6b237c))
-- Remove dependabot patch update config for pip config as it dependabot handle splitting patch and major version updates with different settings. ([6a0dd73](https://github.com/tprasadtp/protonvpn-docker/commit/6a0dd73013644b228753e829dad9ee2df8bd2dd8))
-- Update logging, CI, script & Issue templates ([fd92c6a](https://github.com/tprasadtp/protonvpn-docker/commit/fd92c6a80210ebefdd4517e088278fb2e3f5cf29))
+- Fix duplicate labels in dependabot config ([ea002c4](https://github.com/tprasadtp/protonvpn-docker/commit/ea002c4fad1e65689be0ef5afb20c6bb028eec72))
 - **chore:** Update labels ([0f8b15d](https://github.com/tprasadtp/protonvpn-docker/commit/0f8b15d445e851c1996f4ea89ef5c2925c5881a6))
+- **deps:** bump aquasecurity/trivy-action from 0.2.1 to 0.2.2 ([#96](https://github.com/tprasadtp/protonvpn-docker/issues/96)) ([1188fc8](https://github.com/tprasadtp/protonvpn-docker/commit/1188fc8f1d59374cff3b6655fe6cae6247fbe4e9))
 - **deps:** bump aquasecurity/trivy-action from 0.2.0 to 0.2.1 ([d86eb2b](https://github.com/tprasadtp/protonvpn-docker/commit/d86eb2b1e9e013687e7029d54cdba298ccc91093))
-- **deps:** bump goreleaser/goreleaser-action from 2.8.0 to 2.8.1 ([#94](https://github.com/tprasadtp/protonvpn-docker/issues/94)) ([26cb672](https://github.com/tprasadtp/protonvpn-docker/commit/26cb672152ff587388a94d417c9c1e5c3cc80ad4))
 - **deps:** bump aquasecurity/trivy-action from 0.1.0 to 0.2.0 ([#86](https://github.com/tprasadtp/protonvpn-docker/issues/86)) ([7cec976](https://github.com/tprasadtp/protonvpn-docker/commit/7cec9765383d5fadb9ca63766638e09d05b47d2b))
 - **deps:** bump aquasecurity/trivy-action from 0.0.22 to 0.1.0 ([#84](https://github.com/tprasadtp/protonvpn-docker/issues/84)) ([10f05b5](https://github.com/tprasadtp/protonvpn-docker/commit/10f05b52bd201d6a350b367d8cfa1a5bfe809997))
+- **deps:** bump goreleaser/goreleaser-action from 2.8.0 to 2.8.1 ([#94](https://github.com/tprasadtp/protonvpn-docker/issues/94)) ([26cb672](https://github.com/tprasadtp/protonvpn-docker/commit/26cb672152ff587388a94d417c9c1e5c3cc80ad4))
 - **deps:** bump aquasecurity/trivy-action from 0.0.19 to 0.0.22 ([#83](https://github.com/tprasadtp/protonvpn-docker/issues/83)) ([6104bd4](https://github.com/tprasadtp/protonvpn-docker/commit/6104bd41efeb803927e0b2707f3d3f48ee7005b1))
 - **deps:** bump goreleaser/goreleaser-action from 2.7.0 to 2.8.0 ([#82](https://github.com/tprasadtp/protonvpn-docker/issues/82)) ([4e67ed1](https://github.com/tprasadtp/protonvpn-docker/commit/4e67ed10f83827433a70b182b40a8a6723fda048))
 
