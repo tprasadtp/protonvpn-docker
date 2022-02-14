@@ -1,28 +1,40 @@
 # Changelog
 
+<a name="unreleased"></a>
+## [Unreleased]
 
-<a name="5.0.2-beta.3"></a>
-## [5.0.2-beta.3] - 2021-10-17
+### 🍒 Features & Enhancements
+- Refresh server info using cron (hourly) ([b75a7df](https://github.com/tprasadtp/protonvpn-docker/commit/b75a7dfddd129b895e1b4093b70677fe6135afdf))
 
-
-<a name="5.0.2-beta.2"></a>
-## [5.0.2-beta.2] - 2021-10-17
+### 🐛 Bug Fixes
+- Allow checking exit ips for servers with the same domain ([#88](https://github.com/tprasadtp/protonvpn-docker/issues/88)) ([2fbd795](https://github.com/tprasadtp/protonvpn-docker/commit/2fbd7951113a09eea88d2f31758cada9698408ab))
 
 ### 🚧 Maintenance
 - Update changelog scripts ([25cab16](https://github.com/tprasadtp/protonvpn-docker/commit/25cab16c12f5c3dcb380dc83e14268e725117e2a))
+- **deps:** bump ubuntu from focal-20220105 to focal-20220113 ([#95](https://github.com/tprasadtp/protonvpn-docker/issues/95)) ([3e80ba0](https://github.com/tprasadtp/protonvpn-docker/commit/3e80ba057c4b7d1458065cc2412041ed217afe40))
+- **deps:** bump urllib3 from 1.26.7 to 1.26.8 in /root ([#90](https://github.com/tprasadtp/protonvpn-docker/issues/90)) ([d1111c7](https://github.com/tprasadtp/protonvpn-docker/commit/d1111c7cf8f7ec65ced22aa2e6095c98312cc72f))
+- **deps:** bump requests from 2.26.0 to 2.27.1 in /root ([e9523c2](https://github.com/tprasadtp/protonvpn-docker/commit/e9523c2ac7a5b1f30defbd49084541b31a0c4524))
+- **deps:** bump ubuntu from focal-20211006 to focal-20220105 ([c0a9edd](https://github.com/tprasadtp/protonvpn-docker/commit/c0a9edd1886a22e7ca3e815075ee1de71f1039e5))
+- **deps:** bump jinja2 from 3.0.2 to 3.0.3 in /root ([#85](https://github.com/tprasadtp/protonvpn-docker/issues/85)) ([b44b17a](https://github.com/tprasadtp/protonvpn-docker/commit/b44b17afd45086c7af630af23a0bc295e89514d5))
 - **deps:** bump ubuntu from focal-20210921 to focal-20211006 ([#81](https://github.com/tprasadtp/protonvpn-docker/issues/81)) ([fe7dca6](https://github.com/tprasadtp/protonvpn-docker/commit/fe7dca622c11a939a7f356a55da20ab6f0d77866))
-
-### 🤖 CI/CD & Automation
-- **deps:** bump goreleaser/goreleaser-action from 2.7.0 to 2.8.0 ([#82](https://github.com/tprasadtp/protonvpn-docker/issues/82)) ([4e67ed1](https://github.com/tprasadtp/protonvpn-docker/commit/4e67ed10f83827433a70b182b40a8a6723fda048))
-
-
-<a name="5.0.2-beta.1"></a>
-## [5.0.2-beta.1] - 2021-10-16
-
-### 🚧 Maintenance
 - **deps:** bump jinja2 from 3.0.1 to 3.0.2 in /root ([#79](https://github.com/tprasadtp/protonvpn-docker/issues/79)) ([f24fb56](https://github.com/tprasadtp/protonvpn-docker/commit/f24fb56380750bba4995786fac230485c231bbef))
 - **deps:** bump ubuntu from focal-20210827 to focal-20210921 ([#77](https://github.com/tprasadtp/protonvpn-docker/issues/77)) ([748bcf6](https://github.com/tprasadtp/protonvpn-docker/commit/748bcf6681269066cd70bb038929a6e5e7d66255))
 - **deps:** bump urllib3 from 1.26.6 to 1.26.7 in /root ([#75](https://github.com/tprasadtp/protonvpn-docker/issues/75)) ([958f78d](https://github.com/tprasadtp/protonvpn-docker/commit/958f78d3b24c64f0e088a52edaaa6ac5f2f3bf68))
+
+### 🤖 CI/CD & Automation
+- Fix duplicate labels in dependabot config ([ea002c4](https://github.com/tprasadtp/protonvpn-docker/commit/ea002c4fad1e65689be0ef5afb20c6bb028eec72))
+- Add configuration for Semantic PR app ([d2c74a9](https://github.com/tprasadtp/protonvpn-docker/commit/d2c74a9d9ece83ed401d6cb85e9788224e8b007d))
+- Disable homebrew auto update ([9df7e92](https://github.com/tprasadtp/protonvpn-docker/commit/9df7e927888d8b2a6cbd7db0267c06c0e8c00fb8))
+- Dependeabot and Kodiak - Sync automerge labels ([09e8042](https://github.com/tprasadtp/protonvpn-docker/commit/09e80421e10bcef728d16bc2ce0da5089d6b237c))
+- Remove dependabot patch update config for pip config as it dependabot handle splitting patch and major version updates with different settings. ([6a0dd73](https://github.com/tprasadtp/protonvpn-docker/commit/6a0dd73013644b228753e829dad9ee2df8bd2dd8))
+- Update logging, CI, script & Issue templates ([fd92c6a](https://github.com/tprasadtp/protonvpn-docker/commit/fd92c6a80210ebefdd4517e088278fb2e3f5cf29))
+- **chore:** Update labels ([0f8b15d](https://github.com/tprasadtp/protonvpn-docker/commit/0f8b15d445e851c1996f4ea89ef5c2925c5881a6))
+- **deps:** bump aquasecurity/trivy-action from 0.2.0 to 0.2.1 ([d86eb2b](https://github.com/tprasadtp/protonvpn-docker/commit/d86eb2b1e9e013687e7029d54cdba298ccc91093))
+- **deps:** bump goreleaser/goreleaser-action from 2.8.0 to 2.8.1 ([#94](https://github.com/tprasadtp/protonvpn-docker/issues/94)) ([26cb672](https://github.com/tprasadtp/protonvpn-docker/commit/26cb672152ff587388a94d417c9c1e5c3cc80ad4))
+- **deps:** bump aquasecurity/trivy-action from 0.1.0 to 0.2.0 ([#86](https://github.com/tprasadtp/protonvpn-docker/issues/86)) ([7cec976](https://github.com/tprasadtp/protonvpn-docker/commit/7cec9765383d5fadb9ca63766638e09d05b47d2b))
+- **deps:** bump aquasecurity/trivy-action from 0.0.22 to 0.1.0 ([#84](https://github.com/tprasadtp/protonvpn-docker/issues/84)) ([10f05b5](https://github.com/tprasadtp/protonvpn-docker/commit/10f05b52bd201d6a350b367d8cfa1a5bfe809997))
+- **deps:** bump aquasecurity/trivy-action from 0.0.19 to 0.0.22 ([#83](https://github.com/tprasadtp/protonvpn-docker/issues/83)) ([6104bd4](https://github.com/tprasadtp/protonvpn-docker/commit/6104bd41efeb803927e0b2707f3d3f48ee7005b1))
+- **deps:** bump goreleaser/goreleaser-action from 2.7.0 to 2.8.0 ([#82](https://github.com/tprasadtp/protonvpn-docker/issues/82)) ([4e67ed1](https://github.com/tprasadtp/protonvpn-docker/commit/4e67ed10f83827433a70b182b40a8a6723fda048))
 
 
 <a name="5.0.1"></a>
@@ -226,9 +238,7 @@
 
 
 <!-- tag references -->
-[5.0.2-beta.3]: https://github.com/tprasadtp/protonvpn-docker/compare/5.0.2-beta.2...5.0.2-beta.3
-[5.0.2-beta.2]: https://github.com/tprasadtp/protonvpn-docker/compare/5.0.2-beta.1...5.0.2-beta.2
-[5.0.2-beta.1]: https://github.com/tprasadtp/protonvpn-docker/compare/5.0.1...5.0.2-beta.1
+[Unreleased]: https://github.com/tprasadtp/protonvpn-docker/compare/5.0.1...HEAD
 [5.0.1]: https://github.com/tprasadtp/protonvpn-docker/compare/5.0.0...5.0.1
 [5.0.0]: https://github.com/tprasadtp/protonvpn-docker/compare/4.2.1...5.0.0
 [4.2.1]: https://github.com/tprasadtp/protonvpn-docker/compare/4.2.0...4.2.1
