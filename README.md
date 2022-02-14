@@ -23,6 +23,8 @@
 
 Images are published on [GitHub Container Registry][ghcr].
 
+> Its recommended that you use 64 bit hosts. ARM32 hosts have known issues [see here][troubleshooting].
+
 ## Environment Variables
 
 | Name | Required | Description
@@ -48,14 +50,12 @@ Images are published on [GitHub Container Registry][ghcr].
 
 ## PROTONVPN_SERVER
 
-- If set to `RANDOM`, a random server will be chosen which is compatible with your plan.
+- If set to `RANDOM`, a random server compatible with your plan will be chosen.
 - If set to `P2P` will choose fastest `P2P` server. Please note that this requires setting correct plan in `PROTONVPN_TIER`.
 - If none of the above are true, container will attempt to connect to this server and fail if it is not possible. Please note that `Secure Core` servers are only available with pro plan and above.
 - If set to ProtonVPN supported country code, will choose the fastest server from this country. (case insensitive). For example to connect to fastest server from Netherlands, set `PROTONVPN_SERVER` to `NL`. This option is only available on versions 5.0.0 and above. on 4.x releases, set `PROTONVPN_COUNTRY`
 
 ## Run Container
-
-- If using 5.x and above,
 
   ```bash
   # Pull Image
@@ -74,39 +74,18 @@ Images are published on [GitHub Container Registry][ghcr].
   ghcr.io/tprasadtp/protonvpn:latest
   ```
 
-- If using version 4.x and below
-
-  ```bash
-  # Pull Image
-  docker pull ghcr.io/tprasadtp/protonvpn:latest
-  # Run in background
-  docker run \
-  --rm \
-  --detach \
-  --name=protonvpn \
-  --device=/dev/net/tun \
-  --cap-add=NET_ADMIN \
-  --env PROTONVPN_USERNAME="xxxx" \
-  --env PROTONVPN_PASSWORD="xxxx" \
-  --env PROTONVPN_TIER=0 \
-  --env PROTONVPN_COUNTRY=NL \
-  ghcr.io/tprasadtp/protonvpn:4.2.1
-  ```
-
 ## Using VPN in other containers
 
-You can use
+You can use,
 
 ```bash
 docker run \
 --name container-with-vpn \
 --net=container:protonvpn \
-my-awesome-image-name
+my-awesome-image-name:tag
 ```
 
 ## Docker-Compose
-
-- If using 5.x and above,
 
   ```yaml
   version: '3.4'
@@ -162,69 +141,13 @@ my-awesome-image-name
       internal: true
   ```
 
-- If using version 4.x and below
-
-  ```yaml
-  version: '3.4'
-  services:
-    protonvpn:
-      container_name: protonvpn
-      environment:
-        # Credentials
-        PROTONVPN_USERNAME: ${PROTONVPN_USERNAME}
-        PROTONVPN_PASSWORD: ${PROTONVPN_PASSWORD}
-        # Override these where applicable
-        PROTONVPN_COUNTRY: ${PROTONVPN_COUNTRY:-NL}
-        PROTONVPN_TIER: ${PROTONVPN_TIER:-0}
-      # Always use semver tags, avoid using tag latest!
-      image: ghcr.io/tprasadtp/protonvpn:latest
-      restart: unless-stopped
-      networks:
-        - internet
-        - proxy
-      cap_add:
-        - NET_ADMIN
-      devices:
-        - /dev/net/tun:/dev/net/tun
-      # Expose pyload container's port here!
-      expose:
-        - 8000
-    # Your app using the VPN
-    # Here we use pyload as an example
-    pyload:
-      depends_on:
-        - protonvpn
-      container_name: pyload
-      environment:
-        TZ: "Europe/Berlin"
-        PGID: "1000"
-        PUID: "1000"
-      image: linuxserver/pyload:latest
-      restart: unless-stopped
-      userns_mode: host
-      # Do not apply any networking configs
-      # on this container!
-      # All networking labels and settings should be defined
-      # on the vpn container.
-      network_mode: service:protonvpn
-      volumes:
-        - config:/config
-        - ./downloads/:/downloads/:rw
-  volumes:
-    config:
-  networks:
-    internet:
-    proxy:
-      internal: true
-  ```
-
 - It is essential to apply labels and expose port on protonvpn container instead of your application. This is because your application container shares network namespace of protonvpn container.
 - If using Traefik, apply labels to protonvpn container, and expose your application ports.
-- You **DO NOT** need to run the container as privileged. by passing the right tun device and adding capabilities should be sufficient.
+- You **DO NOT** need to run the container as privileged. By passing the right tun device and adding `NET_ADMIN` capabilities should be sufficient.
 
-## CHANGELOG
+## Changelog
 
-This project follows [Semantic Versioning 2.0.0](https://semver.org/). Changelogs can be found at [changelog][].
+This project follows [Semantic Versioning 2.0.0](https://semver.org/). Changelogs can be found at [here][changelog].
 
 ## Troubleshooting
 
