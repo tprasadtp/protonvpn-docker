@@ -33,7 +33,7 @@ jobs:
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           exit-code: 1
-          image-ref: 'ghcr.io/tprasadtp/protonvpn:${{ github.sha }}-DEV'
+          image-ref: 'ghcr.io/tprasadtp/protonvpn:${{ github.sha }}-dev'
           cache-dir: .trivy
 
       - name: Correct Trivy cache permissions

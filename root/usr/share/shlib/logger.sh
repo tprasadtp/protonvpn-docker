@@ -1,4 +1,3 @@
-#diana::snippet:shlib-logger:begin#
 # shellcheck shell=sh
 # shellcheck disable=SC3043
 
@@ -211,4 +210,3 @@ log_tail() {
         __logger_core_event_handler "trace" "$prefix$line"
     done
 }
-#diana::snippet:shlib-logger:end#

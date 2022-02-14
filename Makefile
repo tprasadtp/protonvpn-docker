@@ -75,7 +75,6 @@ docs-server: ## Server documentation
 .PHONY: update-scripts
 update-scripts: ## Update schellscripts and libs
 	curl -sSfL -o scripts/shellcheck.sh https://raw.githubusercontent.com/tprasadtp/dotfiles/master/scripts/shellcheck.sh
-	curl -sSfL -o scripts/changelog.sh https://raw.githubusercontent.com/tprasadtp/dotfiles/master/scripts/changelog.sh
 	curl -sSfL -o root/usr/share/shlib/logger.sh https://raw.githubusercontent.com/tprasadtp/dotfiles/master/libs/logger/logger.sh
 
 # Enforce BUILDKIT
