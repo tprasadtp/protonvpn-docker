@@ -47,7 +47,6 @@ jobs:
           vuln-type: os
           severity: HIGH,CRITICAL
           ignore-unfixed: true
-          exit-code: 1
           image-ref: 'ghcr.io/tprasadtp/protonvpn:latest'
           format: 'template'
           template: '@/contrib/sarif.tpl'

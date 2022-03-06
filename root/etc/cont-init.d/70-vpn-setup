@@ -211,7 +211,7 @@ if [[ ${ENABLE_SPLIT_TUNNEL} -eq 1 ]]; then
 fi
 
 log_info "Writing credentials file"
-# https://github.com/ProtonVPN/linux-cli/blob/089af8d309cf774adc31c158a62a27733ae39ee0/protonvpn_cli/utils.py#L530
+# https://github.com/ProtonVPN/linux-cli-community/blob/089af8d309cf774adc31c158a62a27733ae39ee0/protonvpn_cli/utils.py#L530
 cat >/root/.pvpn-cli/pvpnpass <<EOF
 ${PROTONVPN_USERNAME}+plc
 ${PROTONVPN_PASSWORD}

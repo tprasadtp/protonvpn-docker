@@ -240,6 +240,8 @@ log_tail() {
 #diana::snippet:shlib-logger:end#
 
 
+readonly SEMVER_REGEX="^[vV]?(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\-(0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)(\.(0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*))*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$"
+
 # Checks if command is available
 function has_command() {
     if command -v "$1" >/dev/null; then
@@ -366,7 +368,7 @@ function main() {
         changelog) mode="changelog" ;;
         release-notes) mode="release-notes" ;;
         # Options
-        -r | --repo)
+        -r | --repo | --repository)
             shift
             PROJECT_SOURCE="${1}"
             ;;
@@ -404,7 +406,7 @@ function main() {
             exit 0
             ;;
         *)
-            log_error "Invalid argument(s). See usage below."
+            log_error "Invalid argument(s) - $*. See usage below."
             display_usage
             exit 1
             ;;
@@ -585,6 +587,3 @@ function main() {
 }
 
 main "$@"
-
-# diana:{diana_urn_flavor}:{remote}:{source}:{version}:{remote_path}:{type}
-# diana:2:github:tprasadtp/templates::common/scripts/changelog.sh:static

@@ -96,13 +96,14 @@ body:
 
 
   - type: checkboxes
-    id: docker-compose
+    id: troubleshooting
     attributes:
-      label:
+      label: Troubleshooting
       description: |
         - If you have issues with running a specific container, try by running debugging docker-compose files first.
       options:
-        - label: I have tried debugging with compose file provided as mentioned in [TROUBLESHOOTING](https://tprasadtp.github.io/protonvpn-docker/#/troubleshooting)
+        - label: I have tried steps mentioned in [TROUBLESHOOTING](https://tprasadtp.github.io/protonvpn-docker/#/troubleshooting)
+        - label: I am using latest version of the docker image
 
   # Logs
   - type: textarea

@@ -15,7 +15,6 @@
 
 [![build](https://github.com/tprasadtp/protonvpn-docker/actions/workflows/build.yml/badge.svg)](https://github.com/tprasadtp/protonvpn-docker/actions/workflows/build.yml)
 [![release](https://github.com/tprasadtp/protonvpn-docker/actions/workflows/release.yml/badge.svg)](https://github.com/tprasadtp/protonvpn-docker/actions/workflows/release.yml)
-[![security](https://github.com/tprasadtp/protonvpn-docker/actions/workflows/security.yml/badge.svg)](https://github.com/tprasadtp/protonvpn-docker/actions/workflows/security.yml)
 [![releases](https://img.shields.io/github/v/tag/tprasadtp/protonvpn-docker?label=version&sort=semver&logo=semver&color=7f50a6&labelColor=3a3a3a)](https://github.com/tprasadtp/protonvpn-docker/releases/latest)
 [![license](https://img.shields.io/github/license/tprasadtp/protonvpn-docker?logo=github&labelColor=3A3A3A)](https://github.com/tprasadtp/protonvpn-docker/blob/master/LICENSE)
 
@@ -33,27 +32,20 @@ Images are published on [GitHub Container Registry][ghcr].
 | `PROTONVPN_USERNAME`      | Yes | OpenVPN Username. This is **NOT** your Proton Account Username.
 | `PROTONVPN_PASSWORD`      | Yes | OpenVPN Password. This is **NOT** your Proton Account Password.
 | `PROTONVPN_SERVER`        | Yes | ProtonVPN server to connect to. See `PROTONVPN_SERVER` for more info.
-| `PROTONVPN_COUNTRY`       | *** | Only available in version 4.x and below. See `PROTONVPN_COUNTRY` for more info.
 | `PROTONVPN_PROTOCOL`      | No  | Protocol to use. By default `udp` is used.
 | `PROTONVPN_EXCLUDE_CIDRS` | No  | Comma separated list of CIDRs to exclude from VPN. Uses split tunnel. Default is set to `169.254.169.254/32,169.254.170.2/32`
 | `PROTONVPN_DNS_LEAK_PROTECT` | No  | (Integer) Setting this to `0` will disable DNS leak protection. If you wish to specify custom DNS server via `--dns` option or running on k8s, you **MUST** set this to `0`.
 | `PROTONVPN_CHECK_INTERVAL`   | No  | (Integer) Interval between internal healthcheck in seconds. Defaults to 90 if not specified or invalid.
-| `PROTONVPN_IPCHECK_ENDPOINT` | No | Healthcheck endpoint to determine if you are connected via VPN. Defaults to `https://ip.prasadt.workers.dev/`. Must return Your public IP
+| `PROTONVPN_IPCHECK_ENDPOINT` | No | Healthcheck endpoint to determine if you are connected via VPN. Defaults to `https://icanhazip.com/`. Must return Your public IP
 | `PROTONVPN_FAIL_THRESHOLD`   | No  | (Integer) Number of allowed consecutive internal healthcheck failures before an attempt to reconnect is made. Defaults to 3 if invalid or not specified.
-
-## PROTONVPN_COUNTRY
-
-- If using v5.x use `PROTONVPN_SERVER`, as both options are merged into `PROTONVPN_SERVER`
-- If using 4.x or below this value is mutually exclusive with `PROTONVPN_SERVER`. i.e Only one of them can be used.
-- Set this to ProtonVPN two letter country code. This will choose the fastest server from this country.
 
 
 ## PROTONVPN_SERVER
 
 - If set to `RANDOM`, a random server compatible with your plan will be chosen.
 - If set to `P2P` will choose fastest `P2P` server. Please note that this requires setting correct plan in `PROTONVPN_TIER`.
+- If set to ProtonVPN supported country code, will choose the fastest server from this country. (case insensitive). For example to connect to fastest server from Netherlands, set `PROTONVPN_SERVER` to `NL`.
 - If none of the above are true, container will attempt to connect to this server and fail if it is not possible. Please note that `Secure Core` servers are only available with pro plan and above.
-- If set to ProtonVPN supported country code, will choose the fastest server from this country. (case insensitive). For example to connect to fastest server from Netherlands, set `PROTONVPN_SERVER` to `NL`. This option is only available on versions 5.0.0 and above. on 4.x releases, set `PROTONVPN_COUNTRY`
 
 ## Run Container
 

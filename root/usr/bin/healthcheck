@@ -34,34 +34,37 @@ config.read(CFG_FILE)
 connected_server = config.get("metadata", "connected_server", fallback="None")
 
 logging.debug(f"Reading {SRV_INFO}")
-with open(SRV_INFO, "r") as f:
-    servers = json.load(f)
-    connected_server_ips = []
-    connected_server_domain = "unknown"
+try:
+    with open(SRV_INFO, "r") as f:
+        servers = json.load(f)
+        connected_server_ips = []
+        connected_server_domain = "unknown"
 
-    # Find the logical server domain
-    for logical_server in servers["LogicalServers"]:
-        if logical_server["Name"] == connected_server:
-            connected_server_domain = logical_server["Domain"]
-
-    if connected_server_domain != "unknown":
+        # Find the logical server domain
         for logical_server in servers["LogicalServers"]:
-            # IF logical server domain matches
-            if logical_server["Domain"] == connected_server_domain:
-                # Iterate over servers
-                for server in logical_server["Servers"]:
-                    # Get Their IPs and append to allow list
-                    connected_server_ips.append(server["ExitIP"])
-    else:
-        logging.debug(f"Unknown server domain for: {connected_server}")        
+            if logical_server["Name"] == connected_server:
+                connected_server_domain = logical_server["Domain"]
 
-logging.debug(f"Allowed IPs: {connected_server_ips}")
+        if connected_server_domain != "unknown":
+            for logical_server in servers["LogicalServers"]:
+                # If logical server domain matches
+                if logical_server["Domain"] == connected_server_domain:
+                    # Iterate over servers
+                    for server in logical_server["Servers"]:
+                        # Get Their IPs and append to allow list
+                        connected_server_ips.append(server["ExitIP"])
+        else:
+            logging.debug(f"Unknown server domain for: {connected_server}")
+except (IOError, FileNotFoundError, PermissionError) as err:
+    logging.error(f"Error reading file -  {SRV_INFO}, {str(err)}")
+    sys.exit(1)
 
-ip_endpoint = os.getenv("PROTONVPN_IPCHECK_ENDPOINT",
-                        "https://ip.prasadt.workers.dev/")
+logging.debug(f"Allowed IPs are - {connected_server_ips}")
+
+ip_endpoint = os.getenv("PROTONVPN_IPCHECK_ENDPOINT", "https://icanhazip.com/")
 hciv = os.getenv("PROTONVPN_CHECK_INTERVAL", "0")
 version = os.getenv("VERSION", "v0.0.0")
-user_agent = f"protonvpn-docker/{version}/{hciv}"
+user_agent = f"protonvpn-docker/{version}"
 
 logging.debug(f"Fetch Public IP from {ip_endpoint}")
 logging.debug(f"Using User-Agent - {user_agent}")
@@ -71,9 +74,13 @@ ip_resp_request = urllib.request.Request(
     data=None,
     headers={"User-Agent": user_agent},
 )
-with urllib.request.urlopen(ip_resp_request) as ip_response:
-    current_ip = str(ip_response.read(), "utf-8")
-    logging.debug(f"Current IP is {current_ip}")
+try:
+    with urllib.request.urlopen(ip_resp_request) as ip_response:
+        current_ip = str(ip_response.read(), "utf-8").strip()
+        logging.debug(f"Current IP is {current_ip}")
+except Exception as err:
+    logging.error(f"Failed to get IP from - {ip_endpoint}, {str(err)}")
+    sys.exit(1)
 
 ip_match = False
 for ip in connected_server_ips:

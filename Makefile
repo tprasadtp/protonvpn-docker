@@ -20,7 +20,7 @@ PROJECT_LICENSE  := GPLv3
 
 # Upstream Metadata
 UPSTREAM_VERSION := 2.2.6
-UPSTREAM_URL     := https://github.com/ProtonVPN/linux-cli
+UPSTREAM_URL     := https://github.com/ProtonVPN/linux-cli-community
 
 
 # Include makefiles
