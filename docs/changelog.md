@@ -1,6 +1,20 @@
 # Changelog
 
 
+<a name="5.2.0"></a>
+## [5.2.0] - 2022-03-06
+
+### 🐛 Bug Fixes
+- Change default health-check endpoint to `https://icanhazip.com/` and strip newlines from healthcheck endpoint responses ([14f0796](https://github.com/tprasadtp/protonvpn-docker/commit/14f07967be581517ab86b07a18903c439de9a972))
+
+### 🚧 Maintenance
+- **deps:** bump ubuntu from focal-20220113 to focal-20220302 ([#97](https://github.com/tprasadtp/protonvpn-docker/issues/97)) ([4206035](https://github.com/tprasadtp/protonvpn-docker/commit/42060356e9bd905ba0bc430e3d720817daa0654d))
+
+### 🤖 CI/CD & Automation
+- **deps:** bump goreleaser/goreleaser-action from 2.8.1 to 2.9.1 ([#98](https://github.com/tprasadtp/protonvpn-docker/issues/98)) ([315fa3b](https://github.com/tprasadtp/protonvpn-docker/commit/315fa3b9c4ad7683cecb9366661d7a8388864a6d))
+- **deps:** bump actions/checkout from 2 to 3 ([#99](https://github.com/tprasadtp/protonvpn-docker/issues/99)) ([ed9a212](https://github.com/tprasadtp/protonvpn-docker/commit/ed9a2120a9e3643c2cc058b600a8ec65e20c66ff))
+
+
 <a name="5.1.2"></a>
 ## [5.1.2] - 2022-02-14
 
@@ -244,6 +258,7 @@
 
 
 <!-- tag references -->
+[5.2.0]: https://github.com/tprasadtp/protonvpn-docker/compare/5.1.2...5.2.0
 [5.1.2]: https://github.com/tprasadtp/protonvpn-docker/compare/5.0.1...5.1.2
 [5.0.1]: https://github.com/tprasadtp/protonvpn-docker/compare/5.0.0...5.0.1
 [5.0.0]: https://github.com/tprasadtp/protonvpn-docker/compare/4.2.1...5.0.0
