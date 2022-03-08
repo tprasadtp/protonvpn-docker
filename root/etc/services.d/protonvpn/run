@@ -42,6 +42,19 @@ function connect_vpn() {
     exit 4
   fi
 
+  # Fix for #101
+  if [[ -f /root/.pvpn-cli/resolv.conf.backup ]]; then
+    log_info "Deleting resolv.conf.backup"
+    if rm -f /root/.pvpn-cli/resolv.conf.backup; then
+      log_success "Deleted resolv.conf.backup"
+    else
+      log_error "Failed to delete resolv.conf.backup"
+      exit 4
+    fi
+  else
+    log_success "resolv.conf.backup - not found"
+  fi
+
   if [[ ${PROTONVPN_SERVER^^} =~ ^[A-Z]{2}$ ]]; then
     log_notice "Using fastest server from COUNTRY: ${PROTONVPN_SERVER^^}"
     PVPN_DEBUG="${DEBUG:-0}" protonvpn connect --cc "${PROTONVPN_SERVER^^}"

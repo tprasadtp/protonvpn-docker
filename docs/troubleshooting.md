@@ -55,10 +55,10 @@ This depends on your shell. Please consult your shell's manpage/docs for how to 
     ```
 1. Visit the link in your browser.
 
-## DNS and Healthcheck
+## DNS and Healthchecks
 
-- Healthchecks use `https://ip.prasadt.workers.dev/` service. If your DNS or gateway is blocking it.
-- This healthcheck endpoint is running on Cloudflare workers.
+- Healthchecks use `https://icanhazip.com/` service. If your DNS or gateway is blocking it.
+- This healthcheck endpoint is Operated by cloudflare.
 - You can host your own if you wish.
 
 [compose file]: https://tprasadtp.github.io/protonvpn-docker/manifests/docker-compose.yml
