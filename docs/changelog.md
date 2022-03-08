@@ -1,6 +1,13 @@
 # Changelog
 
 
+<a name="5.2.1"></a>
+## [5.2.1] - 2022-03-08
+
+### 🐛 Bug Fixes
+- Delete resolve.conf backup file on startup/fresh connection. Fixes [#101](https://github.com/tprasadtp/protonvpn-docker/issues/101). ([195cdb7](https://github.com/tprasadtp/protonvpn-docker/commit/195cdb7e503ce88f2a81e321ac7905e0c22f70d0))
+
+
 <a name="5.2.0"></a>
 ## [5.2.0] - 2022-03-06
 
@@ -258,6 +265,7 @@
 
 
 <!-- tag references -->
+[5.2.1]: https://github.com/tprasadtp/protonvpn-docker/compare/5.2.0...5.2.1
 [5.2.0]: https://github.com/tprasadtp/protonvpn-docker/compare/5.1.2...5.2.0
 [5.1.2]: https://github.com/tprasadtp/protonvpn-docker/compare/5.0.1...5.1.2
 [5.0.1]: https://github.com/tprasadtp/protonvpn-docker/compare/5.0.0...5.0.1
