@@ -32,7 +32,7 @@ jobs:
         with:
           ref: ${{ steps.get_latest_release.outputs.TAG_NAME }}
 
-      - uses: actions/cache@v2
+      - uses: actions/cache@v3
         with:
           path: .trivy
           key: ${{ runner.os }}-trivy-${{ github.run_id }}
