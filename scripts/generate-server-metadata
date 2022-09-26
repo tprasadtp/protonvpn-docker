@@ -590,8 +590,8 @@ def write_metadata(
         logical_server_name_file = metadata_dir_v1 / Path(
             logical_server_name.replace("#", "-") + ".json"
         )
-        logical_server_domain_file = (
-            metadata_dir_v1 / Path(f"{logical_server_domain}.json")
+        logical_server_domain_file = metadata_dir_v1 / Path(
+            f"{logical_server_domain}.json"
         )
 
         with open(logical_server_name_file, "w", encoding="utf-8") as f:
@@ -600,6 +600,40 @@ def write_metadata(
         with open(logical_server_domain_file, "w", encoding="utf-8") as f:
             json.dump(logical_server, f, indent=2)
 
+    logging.info("Writing Vercel config")
+    vercel_config_file = metadata_dir / Path("vercel.json")
+    vercel_config = {
+        "github": {"silent": True},
+        "trailingSlash": False,
+        "cleanUrls": True,
+        "headers": [
+            {
+                "source": "/(.*)",
+                "headers": [
+                    {"key": "X-Content-Type-Options", "value": "nosniff"},
+                    {"key": "X-Frame-Options", "value": "DENY"},
+                    {"key": "X-XSS-Protection", "value": "1; mode=block"},
+                ],
+            }
+        ],
+        "redirects": [
+            {
+                "source": "/",
+                "destination": "https://github.com/tprasadtp/protonwire",
+                "permanent": False,
+            },
+            {
+                "source": "/index.html",
+                "destination": "https://github.com/tprasadtp/protonwire",
+                "permanent": False,
+            },
+        ],
+    }
+
+    with open(vercel_config_file, "w", encoding="utf-8") as f:
+        json.dump(vercel_config, f, indent=2)
+
+    logging.info("Writing metadata config")
     metadata_ts_file = metadata_dir / Path("version.json")
     metadata_ts = {"timestamp": time.strftime("%d-%m-%Y %H:%M UTC")}
     with open(metadata_ts_file, "w", encoding="utf-8") as f:
