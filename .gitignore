@@ -140,4 +140,4 @@ release-notes.md
 *.apk
 __pycache__/
 api/metadata/
-metadata/v1/
+metadata/
