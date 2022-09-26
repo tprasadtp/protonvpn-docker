@@ -19,13 +19,13 @@ jobs:
           app_id: ${{ secrets.APP_ID }}
           installation_id: ${{ secrets.APP_INSTALLATION_ID }}
           private_key: ${{ secrets.APP_PRIVATE_KEY }}
-      - name: Checkout Metadata Repo
-        uses: actions/checkout@v3 # ratchet:exclude
-        with:
-          repository: tprasadtp/protonvpn-metadata
-          path: protonvpn-metadata
-          token: ${{ steps.metadata.outputs.token }}
-          persist-credentials: true
+      # - name: Checkout Metadata Repo
+      #   uses: actions/checkout@v3 # ratchet:exclude
+      #   with:
+      #     repository: tprasadtp/protonvpn-metadata
+      #     path: protonvpn-metadata
+      #     token: ${{ steps.metadata.outputs.token }}
+      #     persist-credentials: true
       - name: Checkout Project Repo
         uses: actions/checkout@v3 # ratchet:exclude
         with:
@@ -53,8 +53,11 @@ jobs:
       - name: Push Metadata
         working-directory: protonvpn-metadata
         run: |
+          git init
           git config user.name 'protonvpn-metadata[bot]'
           git config user.email '114404808+protonvpn-metadata[bot]@users.noreply.github.com'
           git add --all
           git commit --allow-empty -m "Update server metadata at - $(date)"
-          git push
+          git branch -M master
+          git remote add origin https://${{ steps.metadata.outputs.token }}@github.com/tprasadtp/protonvpn-metadata.git
+          git push -u origin master
