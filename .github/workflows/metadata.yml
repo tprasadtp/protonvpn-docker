@@ -38,10 +38,15 @@ jobs:
           python3-requests \
           python3-bcrypt \
           python3-coloredlogs
+
+      - name: Cleanup stale data
+        run: |
+          rm -rf ./protonvpn-metadata/v1
+
       - name: Generate metadata
         run: |
           ./protonwire/scripts/generate-server-metadata \
-          --output ./protonvpn-metadata/v1
+          --output ./protonvpn-metadata
         env:
           PROTON_USERNAME: ${{ secrets.PROTON_USERNAME }}
           PROTON_PASSWORD: ${{ secrets.PROTON_PASSWORD }}
