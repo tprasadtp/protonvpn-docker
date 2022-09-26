@@ -10,11 +10,18 @@
   <a href="https://github.com/tprasadtp/protonwire/actions/workflows/build.yml" target="_blank" rel="noreferrer">
     <img src="https://github.com/tprasadtp/protonvpn-docker/actions/workflows/build.yml/badge.svg" height="24" alt="badge-build">
   </a>
+  <a href="https://github.com/tprasadtp/protonwire/actions/workflows/metadata.yml" target="_blank" rel="noreferrer">
+    <img src="https://github.com/tprasadtp/protonvpn-docker/actions/workflows/metadata.yml/badge.svg" height="24" alt="metadata-build">
+  </a>
   <a href="https://github.com/tprasadtp/protonwire/actions/workflows/release.yml" target="_blank" rel="noreferrer">
     <img src="https://github.com/tprasadtp/protonvpn-docker/actions/workflows/release.yml/badge.svg" height="24" alt="badge-release">
   </a>
   <a href="https://github.com/tprasadtp/protonwire/releases/latest" target="_blank" rel="noreferrer">
     <img src="https://img.shields.io/github/v/tag/tprasadtp/protonvpn-docker?label=version&sort=semver&logo=semver&color=7f50a6&labelColor=3a3a3a" height="24" alt="badge-release">
+  </a>
+  <a href="https://github.com/tprasadtp/protonwire/actions/workflows/metadata.yml" target="_blank" rel="noreferrer">
+    <img src="https://img.shields.io/badge/dynamic/json?label=&query=timestamp&url=https%3A%2F%2Fprotonvpn-metadata.vercel.app%2Fversion.json
+&logo=protonvpn&labelColor=3a3a3a&logoColor=white&color=7f50a6" height="24" alt="badge-release">
   </a>
   <a href="https://github.com/tprasadtp/protonwire/blob/master/LICENSE" target="_blank" rel="noreferrer">
     <img src="https://img.shields.io/github/license/tprasadtp/protonvpn-docker?logo=github&labelColor=3A3A3A" height="24" alt="badge-license">
