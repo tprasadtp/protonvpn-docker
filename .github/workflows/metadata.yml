@@ -17,6 +17,7 @@ jobs:
         with:
           repository: tprasadtp/protonvpn-metadata
           app_id: ${{ secrets.APP_ID }}
+          installation_id: ${{ secrets.APP_INSTALLATION_ID }}
           private_key: ${{ secrets.APP_PRIVATE_KEY }}
       - name: Checkout Metadata Repo
         uses: actions/checkout@v3 # ratchet:exclude
