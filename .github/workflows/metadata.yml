@@ -33,7 +33,7 @@ jobs:
           persist-credentials: false
       - name: Install
         run: |
-          apt-get install -y \
+          sudo apt-get install -y \
           python3-gnupg \
           python3-requests \
           python3-bcrypt \
