@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+log() {
+    local msg="$*"
+    printf "%s \n" "$msg"
+}
+
+log "==> Pinning workflow/build.yml"
+docker run \
+    --rm \
+    -v $(pwd)/.github/workflows:/workflows:rw \
+    --userns=host \
+    ghcr.io/sethvargo/ratchet:0.3.0 \
+    pin /workflows/build.yml
+
+log "==> Pinning workflow/metadata.yml"
+docker run \
+    --rm \
+    -v $(pwd)/.github/workflows:/workflows:rw \
+    --userns=host \
+    ghcr.io/sethvargo/ratchet:0.3.0 \
+    pin /workflows/metadata.yml

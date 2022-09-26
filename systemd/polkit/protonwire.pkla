@@ -1,0 +1,34 @@
+# SPDX-License-Identifier: GPL-3.0
+# Do not modify this file manually
+# This file is part of protonwire package.
+
+[Allow protonwire to change DNS]
+Identity=unix-user:protonwire
+Action=org.freedesktop.resolve1.set-dns-servers
+ResultAny=yes
+ResultInactive=yes
+ResultActive=yes
+
+[Allow protonwire to change Routing Domains]
+Identity=unix-user:protonwire
+Action=org.freedesktop.resolve1.set-domains
+ResultAny=yes
+ResultInactive=yes
+ResultActive=yes
+
+[Allow protonwire to set set-dnssec]
+Identity=unix-user:protonwire
+Action=org.freedesktop.resolve1.set-dnssec
+ResultAny=yes
+ResultInactive=yes
+ResultActive=yes
+
+# This is strictly not necessary as protonwire will
+# remove the link once it down.
+# But it is here for completeness.
+[Allow protonwire to reset Link]
+Identity=unix-user:protonwire
+Action=org.freedesktop.resolve1.revert
+ResultAny=yes
+ResultInactive=yes
+ResultActive=yes

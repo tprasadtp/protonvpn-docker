@@ -1,0 +1,70 @@
+#!/bin/bash
+set -eo pipefail
+
+log() {
+    local lvl_msg="$*"
+    printf "%s \n" "$lvl_msg"
+}
+
+if [[ $1 == "version" ]]; then
+    # goreleaser insists on checking go version
+    # even if using a custom go binary
+    printf "goreleaser-wrapper version tip linux/amd64"
+    exit 0
+
+elif [[ $1 == "build" ]]; then
+
+    # Get Version and commit from ld flags
+    # -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
+
+    shift
+    build_args="$*"
+    declare -a go_build_args
+    read -r -a go_build_args <<<"$build_args"
+
+    log "Build Arguments = ${go_build_args[*]} (${#go_build_args[@]})"
+
+    for arg in "${go_build_args[@]}"; do
+        case ${arg} in
+        main.version*)
+            log "$arg"
+            PROTONWIRE_VERSION="${arg##*=}"
+            ;;
+        main.commit*)
+            log "$arg"
+            PROTONWIRE_COMMIT="${arg##*=}"
+            ;;
+        esac
+    done
+
+    # Required if invoked outside goreleaser
+    if [[ ! -e dist ]]; then
+        if ! mkdir -p dist; then
+            log "Failed to create dir - $dist"
+            exit 1
+        fi
+    fi
+
+    # Inject version and commit info
+    if [[ -n $PROTONWIRE_COMMIT ]] && [[ -n $PROTONWIRE_VERSION ]]; then
+        log "PROTONWIRE_COMMIT=$PROTONWIRE_COMMIT"
+        log "PROTONWIRE_VERSION=$PROTONWIRE_VERSION"
+        sed "/#diana::dynamic:version:begin#/,/#diana::dynamic:version:end#/!b;//!d;/#diana::dynamic:version:end#/e echo 'PROTONWIRE_VERSION=\"$PROTONWIRE_VERSION\"\nPROTONWIRE_COMMIT=\"$PROTONWIRE_COMMIT\"'" \
+            protonwire | install -m 755 /dev/stdin dist/protonwire
+    else
+        install -m 755 protonwire dist/protonwire
+    fi
+
+    # Generate mapages
+    log "Generating manpages"
+    if ! help2man --no-info \
+        --manual="ProtonWire - ProtonVPN Wireguard Client" \
+        dist/protonwire >dist/protonwire.1; then
+        log "Failed to generate manpages"
+        exit 1
+    fi
+
+else
+    log "Unknown wrapper command!"
+    exit 1
+fi

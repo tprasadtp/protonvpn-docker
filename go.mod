@@ -1,3 +1,3 @@
-module github.com/tprasadtp/protonvpn-docker
+module github.com/tprasadtp/protonwire
 
-go 1.16
+go 1.18

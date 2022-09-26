@@ -1,5 +1,5 @@
 name: Bug Report
-description: Report a bug in protonvpn-docker
+description: Report a bug
 title: "[BUG] -  "
 labels: ["bug"]
 body:
@@ -12,9 +12,9 @@ body:
   - type: input
     id: version
     attributes:
-      label: Version of `protonvpn-docker`
+      label: Version
       description: |
-        - Version of the container you are running
+        - Version of the software you are running
         - If unable to detect or not applicable, leave the field as is.
       value: NA
     validations:
@@ -23,22 +23,30 @@ body:
   - type: checkboxes
     id: credential-validation
     attributes:
-      label: Credential & Plan
+      label: Credential Validation
       options:
-        - label: I have verified that my VPN credentials are valid
-          required: true
-        - label: I am using OpenVPN credentials and **not** my proton account credentials.
-          required: true
         - label: I have verified that the servers I am trying to connect to are available under my plan.
           required: true
 
-  # arch
+  # Arch
   - type: input
     id: arch
     attributes:
       label: System Architecture
       description: |
         - Output of `uname -m` command.
+        - If unable to detect or not applicable, leave the field as is.
+      value: NA
+    validations:
+      required: true
+
+  # Kernel version
+  - type: input
+    id: kernel-version
+    attributes:
+      label: Kernel Version
+      description: |
+        - Output of `uname -r` command.
         - If unable to detect or not applicable, leave the field as is.
       value: NA
     validations:
@@ -58,66 +66,76 @@ body:
   - type: dropdown
     id: runtime
     attributes:
-      label: Container Runtime
+      label: Runtime
+      multiple: true
       options:
-        - Docker with defaults
-        - Docker with usernamespaces
-        - Docker rootless
-        - Docker with gvisor
-        - Docker with nabla containers
-        - Podman with defaults
-        - Kubernetes/k3s with docker
+        - Manually via CLI
+        - Systemd Unit
+        - Systemd Unit as podman container
+        - docker
         - Kubernetes/k3s with containerd
         - Kubernetes/k3s with cri-o
-        - Kubernetes/k3s with gvisor
         - I don't know!
         - None of the above, I have mentioned the details in additional info section.
     validations:
       required: true
 
   - type: textarea
-    id: k8s-version
+    id: runtime-info
     attributes:
-      label: Version of Kubernetes
+      label: Version of Runtime
       description: |
-          - Paste the output of command `kubectl version -o json`
-          - If you are not using kubernetes, you can leave this field empty or as is.
-      value: NA
-
-  - type: textarea
-    id: docker-version
-    attributes:
-      label: Version of docker/podman runtime
-      description: |
+          - For kubernetes paste output of `kubectl version -o json`
+          - For systemd paste output of `systemd --version && resolvectl status --no-pager`
           - If using docker, paste the output of command `docker info`
           - If using podman, paste the output of command `podman info`
-          - If you are not using docker/podman.
-      value: NA
+          - If using systemd with podman, paste the output of command `podman info && systemd --version`
+          - If not using any of the above, please specify your runtime info.
+    validations:
+      required: true
 
+  - type: textarea
+    id: config
+    attributes:
+      label: Your configuration
+      description: |
+          - For docker-compose, include your docker-compose file.
+          - For kubernetes, include your Pod/Deployment, Service and Network configurations.
+          - For systemd include your systemd unit files.
+      value: NA
+      render: markdown
 
   - type: checkboxes
     id: troubleshooting
     attributes:
-      label: Troubleshooting
+      label: Troubleshooting & Runtime
       description: |
-        - If you have issues with running a specific container, try by running debugging docker-compose files first.
+        - Check common troubleshooting steps.
       options:
-        - label: I have tried steps mentioned in [TROUBLESHOOTING](https://tprasadtp.github.io/protonvpn-docker/#/troubleshooting)
-        - label: I am using latest version of the docker image
+        - label: I have reviewed [troubleshooting steps](https://protonwire.prasadt.com/troubleshooting)
+          required: true
+        - label: I am **NOT** using container runtime which use user-mode networking, [Docker Rootless](https://docs.docker.com/engine/security/rootless/), [gVisor](https://gvisor.dev), [Podman Rootless](https://github.com/containers/podman/blob/main/rootless.md) etc.
+          required: true
+        - label: I am using latest stable version
+          required: true
 
   # Logs
   - type: textarea
     id: logs
     attributes:
-      label: Relevant log output
-      description: What do you see when you run the script with debug logs enabled?
-      render: shell
+      label: Container/Pod/systemd Log output
+      description: |
+        - What do you see when you run the script with debug logs enabled
+          - Set env variable `DEBUG` to 1
+          - Use `--debug` cli flag
+          - Add drop-in unit to enable DEBUG or run with `systemd-run --env DEBUG=1`
+      render: log
 
   - type: textarea
     id: additional-info
     attributes:
       label: Any additional info
-      description: Any additional details like steps to reproduce intermittant bugs, race conditions etc.
+      description: Any additional details like steps to reproduce intermittent bugs, race conditions etc.
 
   - type: checkboxes
     id: code-of-conduct

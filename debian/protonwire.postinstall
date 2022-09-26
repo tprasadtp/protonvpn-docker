@@ -1,0 +1,11 @@
+#!/usr/bin/bash
+
+set -e
+
+case "$1" in
+    configure)
+	systemd-sysusers protonwire.conf
+    systemd-sysctl protonwire.conf
+    systemd-tmpfiles --create protonwire.conf
+    ;;
+esac

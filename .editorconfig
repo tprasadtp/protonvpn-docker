@@ -4,7 +4,7 @@ root = true
 [*]
 charset = utf-8
 end_of_line = lf
-indent_size = 2
+indent_size = 4
 indent_style = space
 max_line_length = 80
 insert_final_newline = true
@@ -19,29 +19,8 @@ indent_size = 4
 [{*.yml,*.yaml}]
 indent_size = 2
 
-# Python
-[*.py]
-indent_size = 4
-indent_style = space
-
-[healthcheck]
-indent_size = 4
-indent_style = space
-
-
-# Shellscript
-[{*.sh,*.bash,*.zsh}]
-indent_size = 4
-indent_style = space
-
-# Go
-# https://golang.org/cmd/gofmt/
-[{go.mod,go.sum,*.go}]
-indent_style = tab
-indent_size = 4
-
 [Dockerfile]
 indent_size = 4
 
-# diana:{diana_urn_flavor}:{remote}:{source}:{version}:{remote_path}:{type}
-# diana:2:github:tprasadtp/templates::core/.editorconfig:static
+[*.key]
+insert_final_newline = false

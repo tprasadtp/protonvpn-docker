@@ -1,3 +1,17 @@
 {
-    "python.pythonPath": "python3"
+    "files.associations": {
+        "*.pkla": "ini",
+        "*.rules": "javascript"
+    },
+    "yaml.schemas": {
+        "https://json.schemastore.org/github-workflow.json": "file:///home/prasad/Git/protonvpn-docker/.github/workflows/build.yml"
+    },
+    "cSpell.words": [
+        "apiversion",
+        "appversion",
+        "clientsecret",
+        "hashpw",
+        "logicals",
+        "nbytes"
+    ]
 }

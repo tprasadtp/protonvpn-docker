@@ -1,0 +1,15 @@
+#!/usr/bin/bash
+
+set -e
+
+echo "Stopping unit potonwire"
+systemctl stop -q potonwire || true
+
+for i in $(seq 20); do
+    echo "Waiting until unit $unit is stopped [attempt $i]"
+    if ! systemctl is-active -q potonwire; then
+        echo "potonwire is stopped."
+        return
+    fi
+    sleep 0.1
+done

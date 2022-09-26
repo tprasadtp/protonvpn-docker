@@ -1,0 +1,54 @@
+name: build
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "*"
+  schedule:
+    # '*'' is a special character in YAML so you have to quote this string
+    - cron: "0 */6 * * *"
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate Token
+        id: metadata
+        uses: tibdex/github-app-token@f717b5ecd4534d3c4df4ce9b5c1c2214f0f7cd06 # ratchet:tibdex/github-app-token@v1
+        with:
+          repository: tprasadtp/protonvpn-metadata
+          app_id: ${{ secrets.APP_ID }}
+          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+      - name: Checkout Metadata Repo
+        uses: actions/checkout@v3 # ratchet:exclude
+        with:
+          repository: tprasadtp/protonvpn-metadata
+          path: protonvpn-metadata
+          token: ${{ steps.metadata.outputs.token }}
+          persist-credentials: true
+      - name: Checkout Project Repo
+        uses: actions/checkout@v3 # ratchet:exclude
+        with:
+          path: protonwire
+          persist-credentials: false
+      - name: Install
+        run: |
+          apt-get install -y \
+          python3-gnupg \
+          python3-requests \
+          python3-bcrypt \
+          python3-coloredlogs
+      - name: Generate metadata
+        run: |
+          ./protonwire/scripts/generate-server-metadata \
+          --output ./protonvpn-metadata/v1
+        env:
+          PROTON_USERNAME: ${{ secrets.PROTON_USERNAME }}
+          PROTON_PASSWORD: ${{ secrets.PROTON_PASSWORD }}
+      - name: Push Metadata
+        working-directory: protonvpn-metadata
+        run: |
+          git config user.name 'protonvpn-metadata[bot]'
+          git config user.email '114404808+protonvpn-metadata[bot]@users.noreply.github.com'
+          git add --all
+          git commit --allow-empty -m "Update server metadata at - $(date)"
+          git push

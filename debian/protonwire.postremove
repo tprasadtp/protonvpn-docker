@@ -1,0 +1,7 @@
+#!/usr/bin/bash
+
+if [ "$1" = "purge" ]; then
+    deluser --quiet --system protonwire 2>/dev/null || userdel --force protonwire 2>/dev/null || true
+    delgroup --quiet --system protonwire 2>/dev/null || groupdel protonwire 2>/dev/null || true
+    systemd-tmpfiles --remove protonwire.conf 2>/dev/null || true
+fi

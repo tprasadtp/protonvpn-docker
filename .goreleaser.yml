@@ -1,50 +1,188 @@
-# This is goreleaser template.
-project_name: protonvpn
+project_name: protonwire
 
-# Snapshot Template
 snapshot:
   name_template: "{{.ShortCommit}}-dev"
 
-# Skip builds
 builds:
-  - skip: true
+  - id: build-binary
+    goos:
+      - linux
+    goarch:
+      - amd64
+    binary: protonwire
+    gobinary: ./scripts/goreleaser-wrapper
+    mod_timestamp: '{{ .CommitTimestamp }}'
+    skip: false
+    no_main_check: true
+    no_unique_dist_dir: true
+
+archives:
+  - format: binary
+
+nfpms:
+  - id: linux-packages
+    file_name_template: "{{ .PackageName }}"
+    homepage: https://github.com/tprasadtp/protonwire
+    maintainer: Prasad Tengse <tprasadtp@users.noreply.github.com>
+    description: ProtonVPN Wireguard Client for Linux
+    license: GPLv3
+    formats:
+      - deb
+      - rpm
+
+    overrides:
+      deb:
+        dependencies:
+          - wireguard-tools
+          - iproute2
+          - procps
+          - curl
+          - jq
+          - bash
+          - coreutils
+          - openresolv|resolvconf|systemd
+
+        recommends:
+          - systemd
+          - policykit-1
+
+        scripts:
+          postinstall: debian/protonwire.postinstall
+          postremove: debian/protonwire.postremove
+          preremove: debian/protonwire.preremove
+
+      rpm:
+        dependencies:
+          - wireguard-tools
+          - iproute
+          - curl
+          - jq
+          - procps-ng
+          - bash
+          - coreutils
+          - openresolv|systemd-resolved
+        recommends:
+          - polkit
+          - polkit-pkla-compat
+
+        scripts:
+          postinstall: rpm/protonwire.postinstall
+          postremove: rpm/protonwire.postremove
+          preremove: rpm/protonwire.preremove
+
+    release: 1
+    section: default
+    priority: extra
+    contents:
+      - src: systemd/sysctl.d/protonwire.conf
+        dst: /usr/lib/sysctl.d/protonwire.conf
+        file_info:
+          mode: 0644
+          owner: root
+          group: root
+
+      - src: systemd/sysusers.d/protonwire.conf
+        dst: /usr/lib/sysusers.d/protonwire.conf
+        file_info:
+          mode: 0644
+          owner: root
+          group: root
+
+      - src: systemd/tmpfiles.d/protonwire.conf
+        dst: /usr/lib/tmpfiles.d/protonwire.conf
+        file_info:
+          mode: 0644
+          owner: root
+          group: root
+
+      - src: systemd/system/protonwire.service
+        dst: /usr/lib/systemd/system/protonwire.service
+        file_info:
+          mode: 0644
+          owner: root
+          group: root
+
+      - src: systemd/polkit/protonwire.pkla
+        dst: /var/lib/polkit-1/localauthority/10-vendor.d/protonwire.pkla
+        file_info:
+          mode: 0644
+          owner: root
+          group: root
+
+      - src: systemd/polkit/protonwire.rules
+        dst: /usr/share/polkit-1/rules.d/protonwire.rules
+        file_info:
+          mode: 0644
+          owner: root
+          group: root
+
+      - src: dist/protonwire.1
+        dst: /usr/share/man/man1/protonwire.1
+        file_info:
+          mode: 0644
+          owner: root
+          group: root
+
+changelog:
+  sort: asc
+  groups:
+    - title: "🍒 Features & Enhancements"
+      regexp: "^.*feat[(\\w)]*:+.*$"
+      order: 0
+    - title: "🐛 Bug Fixes"
+      regexp: "^.*fix[(\\w)]*:+.*$"
+      order: 1
+    - title: "🚧 Maintenance"
+      regexp: "^.*chore[(\\w)]*:+.*$"
+      order: 2
+    - title: "🤖 CI/CD & Automation"
+      regexp: "^.*ci[(\\w)]*:+.*$"
+      order: 3
+    - title: Others
+      order: 999
+
+  filters:
+    exclude:
+      - '^.*doc(s)?[(\\w)]*:+.*$'
+      - '^.*release(s)?[(\\w)]*:+.*$'
+
+checksum:
+  name_template: checksums.txt
+  algorithm: sha256
+  ids:
+    - linux-packages
+  extra_files:
+    - glob: dist/protonwire
+
 # Build docker images
 dockers:
-  # amd64 image
   - image_templates:
-      # GHCR Images
       - 'ghcr.io/tprasadtp/{{ .ProjectName }}:{{ .Version }}-amd64'
       - 'ghcr.io/tprasadtp/{{ .ProjectName }}:{{ .FullCommit }}-amd64'
+      - 'ghcr.io/tprasadtp/protonvpn:{{ .Version }}-amd64'
+      - 'ghcr.io/tprasadtp/protonvpn:{{ .FullCommit }}-amd64'
 
     build_flag_templates:
-      - --build-arg=VERSION={{ .Version }}
       - --label=org.opencontainers.image.created={{.Date}}
       - --label=org.opencontainers.image.revision={{.FullCommit}}
       - --label=org.opencontainers.image.version={{.Version}}
-      # Vendor
       - --label=org.opencontainers.image.vendor="Prasad Tengse <tprasadtp@users.noreply.github.com>"
-      # Populated from Makefile Env
-      # We do not use GitURL because it might be SSH.
-      - --label=org.opencontainers.image.source={{.Env.PROJECT_SOURCE}}
-      - --label=org.opencontainers.image.title={{.Env.PROJECT_TITLE}}
-      - --label=org.opencontainers.image.description={{.Env.PROJECT_DESC}}
-      - --label=org.opencontainers.image.documentation={{.Env.PROJECT_URL}}
-      - --label=org.opencontainers.image.licenses={{.Env.PROJECT_LICENSE}}
-      - --label=org.opencontainers.image.url={{.Env.DOCKER_IMAGE_URL}}
-      # Custom Metadata
-      - --label=io.github.tprasadtp.metadata.version=6
-      # Build system Info. Useful to trace flaky builds on build machines
-      - --label=io.github.tprasadtp.metadata.build.system={{.Env.BUILD_SYSTEM }}-release
-      - --label=io.github.tprasadtp.metadata.build.number={{.Env.BUILD_NUMBER }}
-      - --label=io.github.tprasadtp.metadata.build.host={{.Env.BUILD_HOST }}
+      - --label=org.opencontainers.image.source="https://github.com/tprasadtp/protonwire"
+      - --label=org.opencontainers.image.title=protonwire
+      - --label=org.opencontainers.image.description="ProtonVPN Wireguard Client for Linux"
+      - --label=org.opencontainers.image.documentation=https://tprasadtp.github.io/protonwire
+      - --label=org.opencontainers.image.licenses=GPLv3
+      - --label=org.opencontainers.image.url=https://ghcr.io/tprasadtp/protonwire
       # Git Info
       - --label=io.github.tprasadtp.metadata.git.commit={{.FullCommit}}
-      - --label=io.github.tprasadtp.metadata.git.branch={{.Branch }}
-      - --label=io.github.tprasadtp.metadata.git.treeState={{.Env.GIT_TREE_STATE}}
-      # We have an upstream!
-      - --label=io.github.tprasadtp.metadata.upstream.present=true
-      - --label=io.github.tprasadtp.metadata.upstream.version={{.Env.UPSTREAM_VERSION}}
-      - --label=io.github.tprasadtp.metadata.upstream.url={{.Env.UPSTREAM_URL}}
+      - --label=io.github.tprasadtp.metadata.git.shortCommit={{.ShortCommit}}
+      - --label=io.github.tprasadtp.metadata.git.branch={{.Branch}}
+      - --label=io.github.tprasadtp.metadata.git.tag={{.Tag}}
+      - --label=io.github.tprasadtp.metadata.version.major={{.Major}}
+      - --label=io.github.tprasadtp.metadata.version.minor={{.Minor}}
+      - --label=io.github.tprasadtp.metadata.version.patch={{.Patch}}
+      - --label=io.github.tprasadtp.metadata.version.prerelease={{.Prerelease}}
+      - --label=io.github.tprasadtp.metadata.version.snapshot={{.IsSnapshot}}
       # Platform
       - --platform=linux/amd64
 
@@ -52,91 +190,38 @@ dockers:
       dockerfile: Dockerfile
       use: buildx
       extra_files:
-        - root/usr/bin/healthcheck
-        - root/etc/cont-init.d/70-vpn-setup
-        - root/etc/services.d/protonvpn/run
-        - root/usr/share/keyrings/just-containers.gpg
-        - root/usr/share/shlib/logger.sh
-        - root/requirements.txt
+        - protonwire
 
   # ARM64 image
   - image_templates:
-      # GHCR Images
       - 'ghcr.io/tprasadtp/{{ .ProjectName }}:{{ .Version }}-arm64'
       - 'ghcr.io/tprasadtp/{{ .ProjectName }}:{{ .FullCommit }}-arm64'
+      - 'ghcr.io/tprasadtp/protonvpn:{{ .Version }}-arm64'
+      - 'ghcr.io/tprasadtp/protonvpn:{{ .FullCommit }}-arm64'
 
     build_flag_templates:
-      - --build-arg=VERSION={{ .Version }}
       - --label=org.opencontainers.image.created={{.Date}}
       - --label=org.opencontainers.image.revision={{.FullCommit}}
       - --label=org.opencontainers.image.version={{.Version}}
-      # Vendor
       - --label=org.opencontainers.image.vendor="Prasad Tengse <tprasadtp@users.noreply.github.com>"
-      # Populated from Makefile Env
-      # We do not use GitURL because it might be SSH.
-      - --label=org.opencontainers.image.source={{.Env.PROJECT_SOURCE}}
-      - --label=org.opencontainers.image.title={{.Env.PROJECT_TITLE}}
-      - --label=org.opencontainers.image.description={{.Env.PROJECT_DESC}}
-      - --label=org.opencontainers.image.documentation={{.Env.PROJECT_URL}}
-      - --label=org.opencontainers.image.licenses={{.Env.PROJECT_LICENSE}}
-      - --label=org.opencontainers.image.url={{.Env.DOCKER_IMAGE_URL}}
-      # Custom Metadata
-      - --label=io.github.tprasadtp.metadata.version=6
-      # Build system Info. Useful to trace flaky builds on build machines
-      - --label=io.github.tprasadtp.metadata.build.system={{.Env.BUILD_SYSTEM }}-release
-      - --label=io.github.tprasadtp.metadata.build.number={{.Env.BUILD_NUMBER }}
-      - --label=io.github.tprasadtp.metadata.build.host={{.Env.BUILD_HOST }}
+      - --label=org.opencontainers.image.source="https://github.com/tprasadtp/protonwire"
+      - --label=org.opencontainers.image.title=protonwire
+      - --label=org.opencontainers.image.description="ProtonVPN Wireguard Client for Linux"
+      - --label=org.opencontainers.image.documentation=https://tprasadtp.github.io/protonwire
+      - --label=org.opencontainers.image.licenses=GPLv3
+      - --label=org.opencontainers.image.url=https://ghcr.io/tprasadtp/protonwire
       # Git Info
       - --label=io.github.tprasadtp.metadata.git.commit={{.FullCommit}}
-      - --label=io.github.tprasadtp.metadata.git.branch={{.Branch }}
-      - --label=io.github.tprasadtp.metadata.git.treeState={{.Env.GIT_TREE_STATE}}
-      # We have an upstream!
-      - --label=io.github.tprasadtp.metadata.upstream.present=true
-      - --label=io.github.tprasadtp.metadata.upstream.version={{.Env.UPSTREAM_VERSION}}
-      - --label=io.github.tprasadtp.metadata.upstream.url={{.Env.UPSTREAM_URL}}
+      - --label=io.github.tprasadtp.metadata.git.shortCommit={{.ShortCommit}}
+      - --label=io.github.tprasadtp.metadata.git.branch={{.Branch}}
+      - --label=io.github.tprasadtp.metadata.git.tag={{.Tag}}
+      - --label=io.github.tprasadtp.metadata.version.major={{.Major}}
+      - --label=io.github.tprasadtp.metadata.version.minor={{.Minor}}
+      - --label=io.github.tprasadtp.metadata.version.patch={{.Patch}}
+      - --label=io.github.tprasadtp.metadata.version.prerelease={{.Prerelease}}
+      - --label=io.github.tprasadtp.metadata.version.snapshot={{.IsSnapshot}}
       # Platform
       - --platform=linux/arm64
-
-    # Import defaults
-    <<: *docker_defaults
-
-  # ARM 32 Bit image
-  - image_templates:
-      # GHCR Images
-      - 'ghcr.io/tprasadtp/{{ .ProjectName }}:{{ .Version }}-arm'
-      - 'ghcr.io/tprasadtp/{{ .ProjectName }}:{{ .FullCommit }}-arm'
-
-    build_flag_templates:
-      - --build-arg=VERSION={{ .Version }}
-      - --label=org.opencontainers.image.created={{.Date}}
-      - --label=org.opencontainers.image.revision={{.FullCommit}}
-      - --label=org.opencontainers.image.version={{.Version}}
-      # Vendor
-      - --label=org.opencontainers.image.vendor="Prasad Tengse <tprasadtp@users.noreply.github.com>"
-      # Populated from Makefile Env
-      # We do not use GitURL because it might be SSH.
-      - --label=org.opencontainers.image.source={{.Env.PROJECT_SOURCE}}
-      - --label=org.opencontainers.image.title={{.Env.PROJECT_TITLE}}
-      - --label=org.opencontainers.image.description={{.Env.PROJECT_DESC}}
-      - --label=org.opencontainers.image.documentation={{.Env.PROJECT_URL}}
-      - --label=org.opencontainers.image.licenses={{.Env.PROJECT_LICENSE}}
-      - --label=org.opencontainers.image.url={{.Env.DOCKER_IMAGE_URL}}
-      # Custom Metadata
-      - --label=io.github.tprasadtp.metadata.version=6
-      # Build system Info. Useful to trace flaky builds on build machines
-      - --label=io.github.tprasadtp.metadata.build.system={{.Env.BUILD_SYSTEM }}-release
-      - --label=io.github.tprasadtp.metadata.build.number={{.Env.BUILD_NUMBER }}
-      - --label=io.github.tprasadtp.metadata.build.host={{.Env.BUILD_HOST }}
-      # Git Info
-      - --label=io.github.tprasadtp.metadata.git.commit={{.FullCommit}}
-      - --label=io.github.tprasadtp.metadata.git.branch={{.Branch }}
-      - --label=io.github.tprasadtp.metadata.git.treeState={{.Env.GIT_TREE_STATE}}
-      # We have an upstream!
-      - --label=io.github.tprasadtp.metadata.upstream.present=true
-      - --label=io.github.tprasadtp.metadata.upstream.version={{.Env.UPSTREAM_VERSION}}
-      - --label=io.github.tprasadtp.metadata.upstream.url={{.Env.UPSTREAM_URL}}
-      # Platform
-      - --platform=linux/arm
 
     # Import defaults
     <<: *docker_defaults
@@ -148,33 +233,53 @@ docker_manifests:
     image_templates:
     - 'ghcr.io/tprasadtp/{{.ProjectName}}:{{ .Version }}-amd64'
     - 'ghcr.io/tprasadtp/{{.ProjectName}}:{{ .Version }}-arm64'
-    - 'ghcr.io/tprasadtp/{{.ProjectName}}:{{ .Version }}-arm'
 
   # MAJOR.MINOR
   - name_template: 'ghcr.io/tprasadtp/{{.ProjectName}}:{{ .Major }}.{{ .Minor }}{{ if .Prerelease }}-unstable{{ end }}'
     image_templates:
     - 'ghcr.io/tprasadtp/{{.ProjectName}}:{{ .Version }}-amd64'
     - 'ghcr.io/tprasadtp/{{.ProjectName}}:{{ .Version }}-arm64'
-    - 'ghcr.io/tprasadtp/{{.ProjectName}}:{{ .Version }}-arm'
 
   # Commit SHA
   - name_template: 'ghcr.io/tprasadtp/{{.ProjectName}}:{{ .FullCommit }}'
     image_templates:
      - 'ghcr.io/tprasadtp/{{ .ProjectName }}:{{ .FullCommit }}-amd64'
      - 'ghcr.io/tprasadtp/{{ .ProjectName }}:{{ .FullCommit }}-arm64'
-     - 'ghcr.io/tprasadtp/{{ .ProjectName }}:{{ .FullCommit }}-arm'
 
   # Latest
   - name_template: 'ghcr.io/tprasadtp/{{.ProjectName}}:{{ if .Prerelease }}unstable{{else}}latest{{ end }}'
     image_templates:
     - 'ghcr.io/tprasadtp/{{.ProjectName}}:{{ .Version }}-amd64'
     - 'ghcr.io/tprasadtp/{{.ProjectName}}:{{ .Version }}-arm64'
-    - 'ghcr.io/tprasadtp/{{.ProjectName}}:{{ .Version }}-arm'
 
-# Github Releases
+  - name_template: 'ghcr.io/tprasadtp/protonvpn:{{ .Version }}'
+    image_templates:
+    - 'ghcr.io/tprasadtp/protonvpn:{{ .Version }}-amd64'
+    - 'ghcr.io/tprasadtp/protonvpn:{{ .Version }}-arm64'
+
+  # MAJOR.MINOR
+  - name_template: 'ghcr.io/tprasadtp/protonvpn:{{ .Major }}.{{ .Minor }}{{ if .Prerelease }}-unstable{{ end }}'
+    image_templates:
+    - 'ghcr.io/tprasadtp/protonvpn:{{ .Version }}-amd64'
+    - 'ghcr.io/tprasadtp/protonvpn:{{ .Version }}-arm64'
+
+  # Commit SHA
+  - name_template: 'ghcr.io/tprasadtp/protonvpn:{{ .FullCommit }}'
+    image_templates:
+     - 'ghcr.io/tprasadtp/{{ .ProjectName }}:{{ .FullCommit }}-amd64'
+     - 'ghcr.io/tprasadtp/{{ .ProjectName }}:{{ .FullCommit }}-arm64'
+
+  # Latest
+  - name_template: 'ghcr.io/tprasadtp/protonvpn:{{ if .Prerelease }}unstable{{else}}latest{{ end }}'
+    image_templates:
+    - 'ghcr.io/tprasadtp/protonvpn:{{ .Version }}-amd64'
+    - 'ghcr.io/tprasadtp/protonvpn:{{ .Version }}-arm64'
+
 release:
+  mode: replace
   prerelease: auto
-
-# Use git-chglog to generate release notes
-changelog:
-  skip: true
+  ids:
+    - linux-packages
+  extra_files:
+    - glob: dist/protonwire
+    - glob: dist/protonwire.1

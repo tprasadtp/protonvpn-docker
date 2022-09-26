@@ -1,0 +1,100 @@
+# SPDX-License-Identifier: GPL-3.0
+# This file is part of protonwire package.
+
+[Unit]
+Description=ProtonVPN Wireguard Client
+Documentation=man:protonwire(1)
+Documentation=https://tprasadtp.github.io/protonwire
+
+# Wait for Network dependency (networking)
+Wants=network-online.target
+After=network-online.target
+After=systemd-resolved.service
+
+[Service]
+# Service Type
+# ----------------------------------------
+Type=notify
+NotifyAccess=all
+
+# Service Identity
+# ----------------------------------------
+User=protonwire
+Group=systemd-network
+
+# Service Settings and Environment
+# ----------------------------------------
+Environment=HOME=/var/lib/protonwire
+Environment=LANG=C.UTF-8
+EnvironmentFile=-/etc/defaults/protonwire
+EnvironmentFile=-/etc/protonwire/*.env
+
+## OOM Settings
+# ----------------------------------------
+ManagedOOMPreference=avoid
+OOMPolicy=stop
+
+# Sandboxing (Capabilities & System calls)
+# ----------------------------------------
+AmbientCapabilities=CAP_NET_ADMIN
+CapabilityBoundingSet=CAP_NET_ADMIN
+SystemCallFilter=@system-service
+SystemCallArchitectures=native
+
+## Sandboxing (Kernel, sysfs and procfs)
+# ----------------------------------------
+ProtectProc=invisible
+ProtectHostname=true
+ProtectControlGroups=true
+
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectKernelLogs=true
+KeyringMode=private
+
+ProtectClock=true
+RestrictRealtime=true
+
+RestrictNamespaces=true
+LockPersonality=true
+
+MemoryDenyWriteExecute=true
+RestrictSUIDSGID=true
+
+# Sandboxing (Filesystem)
+# ----------------------------------------
+ProtectSystem=full
+ProtectHome=yes
+PrivateTmp=yes
+
+# Create cache directory for metadata cache
+CacheDirectory=protonwire
+RuntimeDirectory=protonwire
+RuntimeDirectoryPreserve=restart
+
+# Other Settings
+# ----------------------------------------
+IPAccounting=true
+CPUAccounting = true
+BlockIOAccounting = true
+MemoryAccounting = true
+TasksAccounting = true
+
+# Service commands
+# ----------------------------------------
+ExecStart=protonwire --systemd
+
+# Service lifecycle
+# ----------------------------------------
+Restart=on-failure
+
+# Service timeouts & Watchdog
+# ----------------------------------------
+WatchdogSec=120
+TimeoutAbortSec=30
+
+TimeoutStopSec=30
+TimeoutStartSec=180
+
+[Install]
+WantedBy=multi-user.target

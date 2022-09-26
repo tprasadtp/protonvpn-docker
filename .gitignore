@@ -1,13 +1,23 @@
+### Go ###
 
-# Created by https://www.gitignore.io/api/vim,code,linux,virtualenv
-# Edit at https://www.gitignore.io/?templates=vim,code,linux,virtualenv
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
 
-### Code ###
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Dependency directories
+vendor/
+
+# Go workspace file
+go.work
 
 ### Linux ###
 *~
@@ -24,9 +34,41 @@
 # .nfs files are created when an open file is removed but is still being accessed
 .nfs*
 
+### macOS ###
+# General
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Icon must end with two \r
+Icon
+
+# Thumbnails
+._*
+
+# Files that might appear in the root of a volume
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Directories potentially created on remote AFP share
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# iCloud generated files
+*.icloud
+
 ### Vim ###
 # Swap
 [._]*.s[a-v][a-z]
+!*.svg  # comment out if you don't need vector files
 [._]*.sw[a-p]
 [._]s[a-rt-v][a-z]
 [._]ss[a-gi-z]
@@ -45,51 +87,49 @@ tags
 # Persistent undo
 [._]*.un~
 
-# Coc configuration directory
-.vim
 
-### VirtualEnv ###
-# Virtualenv
-# http://iamzed.com/2009/05/07/a-primer-on-virtualenv/
-.Python
-pyvenv.cfg
-.env
-*.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-pip-selfcheck.json
+### Windows ###
+# Windows thumbnail cache files
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
 
-# End of https://www.gitignore.io/api/vim,code,linux,virtualenv
+# Dump file
+*.stackdump
 
-### Credentials and Tokens ###
-*.env
-.env
-**/.aws/credentials
+# Folder config file
+[Dd]esktop.ini
 
-credentials
-credentials.csv
-credentials.json
-credentials.yml
+# Recycle Bin used on file shares
+$RECYCLE.BIN/
 
-token.json
-token.yml
-token.toml
+# Windows Installer files
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
 
-auth.yml
-auth.toml
+# Windows shortcuts
+*.lnk
 
-hosts.yml
-hosts.toml
-hosts.json
+### Vagrant ###
 
-# Exclude samples
-!sample.env
+# General
+.vagrant/
+
+# Log files
+*.log
+
+# Boxes
+*.box
 
 ### CI & Generated Files ###
+
+dist/
+proton.sh
+*.key
 
 # Ignore release notes generated
 RELEASE_NOTES.md
@@ -98,18 +138,6 @@ release-notes.md
 *.deb
 *.rpm
 *.apk
-
-build/
-
-#### Project specific ###
-downloads/
-config/
-proton.sh
-dist/
-logs/
-
-
-### Project Specific ###
-downloads/
-config/
-proton.sh
+__pycache__/
+api/metadata/
+metadata/v1/

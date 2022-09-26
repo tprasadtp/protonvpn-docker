@@ -1,0 +1,645 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-only
+# This is partially based on proton.api package,
+# licensed under GPLv3.
+
+"""
+Get ProtonVPN server metadata
+"""
+
+import base64
+import json
+import hashlib
+import logging
+import os
+import argparse
+import sys
+from pathlib import Path
+
+try:
+    import coloredlogs
+
+    coloredlogs.install(logging.INFO)
+except ImportError:
+    logging.basicConfig(level=logging.INFO)
+
+try:
+    import bcrypt
+except ImportError:
+    logging.critical(
+        "Failed to import bcrypt package, install via pip "
+        "install bcrypt or python3-bcrypt package"
+    )
+    sys.exit(1)
+
+try:
+    import gnupg
+except ImportError:
+    logging.critical(
+        "Failed to import gpg package, install via package manager - python3-gpg"
+    )
+    sys.exit(1)
+
+import gnupg
+import requests
+
+PM_VERSION = 4
+DEFAULT_TIMEOUT = (10, 30)
+SRP_MODULUS_KEY = """
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+xjMEXAHLgxYJKwYBBAHaRw8BAQdAFurWXXwjTemqjD7CXjXVyKf0of7n9Ctm
+L8v9enkzggHNEnByb3RvbkBzcnAubW9kdWx1c8J3BBAWCgApBQJcAcuDBgsJ
+BwgDAgkQNQWFxOlRjyYEFQgKAgMWAgECGQECGwMCHgEAAPGRAP9sauJsW12U
+MnTQUZpsbJb53d0Wv55mZIIiJL2XulpWPQD/V6NglBd96lZKBmInSXX/kXat
+Sv+y0io+LR8i2+jV+AbOOARcAcuDEgorBgEEAZdVAQUBAQdAeJHUz1c9+KfE
+kSIgcBRE3WuXC4oj5a2/U3oASExGDW4DAQgHwmEEGBYIABMFAlwBy4MJEDUF
+hcTpUY8mAhsMAAD/XQD8DxNI6E78meodQI+wLsrKLeHn32iLvUqJbVDhfWSU
+WO4BAMcm1u02t4VKw++ttECPt+HUgPUq5pqQWe5Q2cW4TMsE
+=Y4Mw
+-----END PGP PUBLIC KEY BLOCK-----
+"""
+SRP_MODULUS_KEY_FINGERPRINT = "248097092b458509c508dac0350585c4e9518f26"
+
+
+class PMHash:
+    """
+    Proton Hash's implementation for SRP
+    """
+
+    # pylint: disable=locally-disabled, missing-function-docstring, invalid-name
+    def __init__(self, b=b""):
+        self.b = b
+
+    @property
+    def name(self):
+        return "PMHash"
+
+    @property
+    def digest_size(self):
+        return 256
+
+    def update(self, b):
+        self.b += b
+
+    def digest(self):
+        return (
+            hashlib.sha512(self.b + b"\0").digest()
+            + hashlib.sha512(self.b + b"\1").digest()
+            + hashlib.sha512(self.b + b"\2").digest()
+            + hashlib.sha512(self.b + b"\3").digest()
+        )
+
+    def hexdigest(self):
+        return self.digest().hex()
+
+    def copy(self):
+        return PMHash(self.b)
+
+
+# pylint: disable=locally-disabled, too-many-instance-attributes, invalid-name
+class User:
+    """
+    Implements Proton SRP protocol
+    """
+
+    # pylint: disable=locally-disabled, too-many-arguments
+    def __init__(
+        self, password, n_bin, g_hex=b"2", bytes_a=None, bytes_A=None
+    ):
+        if bytes_a and len(bytes_a) != 32:
+            raise ValueError("32 bytes required for bytes_a")
+
+        if not isinstance(password, str) or len(password) == 0:
+            raise ValueError("Invalid password")
+
+        self.N, self.g = self.__get_ng(n_bin, g_hex)
+        self.k = self.__hash_k(
+            self.g, self.N, width=self.__long_length(self.N)
+        )
+
+        self.p = password.encode()
+        if bytes_a:
+            self.a = self.__bytes_to_long(bytes_a)
+        else:
+            self.a = self.__get_random_of_length(32)
+        if bytes_A:
+            self.A = self.__bytes_to_long(bytes_A)
+        else:
+            self.A = pow(self.g, self.a, self.N)
+        self.v = None
+        self.M = None
+        self.K = None
+        self.expected_server_proof = None
+        self._authenticated = False
+        self.bytes_s = None
+        self.S = None
+        self.B = None
+        self.u = None
+        self.x = None
+
+    @property
+    def authenticated(self):
+        """Checks if authenticated
+
+        Returns:
+            bool: True if authenticated false otherwise
+        """
+        return self._authenticated
+
+    @staticmethod
+    def __bcrypt_b64encode(s):
+        bcrypt_base64 = (
+            b"./ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+        )
+        std_base64chars = (
+            b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+        )
+        s = base64.b64encode(s)
+        return s.translate(bytes.maketrans(std_base64chars, bcrypt_base64))
+
+    def __hash_pw_3(self, password, salt, modulus):
+        salt = (salt + b"proton")[:16]
+        salt = self.__bcrypt_b64encode(salt)[:22]
+        hashed = bcrypt.hashpw(password, b"$2y$10$" + salt)
+        return PMHash(hashed + modulus).digest()
+
+    def __hash_password(self, password, salt, modulus, version):
+        if version == 4 or version == 3:
+            return self.__hash_pw_3(password, salt, modulus)
+        raise ValueError(f"Unsupported auth version - {version}")
+
+    def __get_random(self, nbytes):
+        return self.__bytes_to_long(os.urandom(nbytes))
+
+    def __get_random_of_length(self, nbytes):
+        offset = (nbytes * 8) - 1
+        return self.__get_random(nbytes) | (1 << offset)
+
+    def __custom_hash(self, *args):
+        h = PMHash()
+        for s in args:
+            if s is not None:
+                data = self.__long_to_bytes(s) if isinstance(s, int) else s
+                h.update(data)
+
+        return self.__bytes_to_long(h.digest())
+
+    @staticmethod
+    def __long_length(n):
+        return (n.bit_length() + 7) // 8
+
+    @staticmethod
+    def __bytes_to_long(s: bytes):
+        return int.from_bytes(s, "little")
+
+    def __long_to_bytes(self, n: int):
+        return n.to_bytes(self.__long_length(n), "little")
+
+    def __get_ng(self, n_bin, g_hex):
+        return self.__bytes_to_long(n_bin), int(g_hex, 16)
+
+    def __hash_k(self, g, modulus, width):
+        h = PMHash()
+        h.update(g.to_bytes(width, "little"))
+        h.update(modulus.to_bytes(width, "little"))
+        return self.__bytes_to_long(h.digest())
+
+    def __calculate_x(self, salt, password, modulus, version):
+        exp = self.__hash_password(
+            password, salt, self.__long_to_bytes(modulus), version
+        )
+        return self.__bytes_to_long(exp)
+
+    def __calculate_client_proof(self, A, B, K):
+        h = PMHash()
+        h.update(self.__long_to_bytes(A))
+        h.update(self.__long_to_bytes(B))
+        h.update(K)
+        return h.digest()
+
+    def __calculate_server_proof(self, A, M, K):
+        h = PMHash()
+        h.update(self.__long_to_bytes(A))
+        h.update(M)
+        h.update(K)
+        return h.digest()
+
+    # pylint: disable=unused-private-member
+    def __compute_v(self, bytes_s=None, version=PM_VERSION):
+        self.bytes_s = (
+            self.__long_to_bytes(self.__get_random_of_length(10))
+            if bytes_s is None
+            else bytes_s
+        )
+        self.x = self.__calculate_x(self.bytes_s, self.p, self.N, version)
+        return self.bytes_s, self.__long_to_bytes(pow(self.g, self.x, self.N))
+
+    def get_ephemeral_secret(self):
+        """Salt"""
+        return self.__long_to_bytes(self.a)
+
+    def get_session_key(self):
+        """Get Session Key"""
+        return self.K if self._authenticated else None
+
+    def get_challenge(self):
+        """SRP Challenge"""
+        return self.__long_to_bytes(self.A)
+
+    # Returns M or None if SRP-6a safety check is violated
+    def process_challenge(
+        self, bytes_s, bytes_server_challenge, version=PM_VERSION
+    ):
+        """Process SRP challenge"""
+        self.bytes_s = bytes_s
+        self.B = self.__bytes_to_long(bytes_server_challenge)
+
+        # SRP-6a safety check
+        if (self.B % self.N) == 0:
+            return None
+
+        self.u = self.__custom_hash(self.A, self.B)
+
+        # SRP-6a safety check
+        if self.u == 0:
+            return None
+
+        self.x = self.__calculate_x(self.bytes_s, self.p, self.N, version)
+
+        self.v = pow(self.g, self.x, self.N)
+
+        self.S = pow(
+            (self.B - self.k * self.v), (self.a + self.u * self.x), self.N
+        )
+
+        self.K = self.__long_to_bytes(self.S)
+        self.M = self.__calculate_client_proof(self.A, self.B, self.K)
+        self.expected_server_proof = self.__calculate_server_proof(
+            self.A, self.M, self.K
+        )
+
+        return self.M
+
+    def verify_session(self, server_proof):
+        """
+        Verify server proof and checks if authenticated
+        """
+        if self.expected_server_proof == server_proof:
+            self._authenticated = True
+
+
+class ProtonError(Exception):
+    """
+    Generic API error
+    """
+
+    def __init__(self, ret):
+        self.code = ret["Code"]
+        self.error = ret["Error"]
+        try:
+            self.headers = ret["Headers"]
+        except KeyError:
+            self.headers = ""
+
+        super().__init__(f"[{self.code}] {self.error} {self.headers}")
+
+
+class Session:
+    """
+    API Session
+
+    Raises:
+        ValueError: On invalid inputs
+        ProtonError: On API errors
+    """
+
+    # pylint: disable=locally-disabled, missing-function-docstring, invalid-name
+    def __init__(
+        self,
+        api_url,
+        appversion="Other",
+        user_agent="None",
+        client_secret=None,
+        timeout=DEFAULT_TIMEOUT,
+    ):
+        self.__api_url = api_url
+        self.__appversion = appversion
+        self.__user_agent = user_agent
+        self.__clientsecret = client_secret
+        self.__timeout = timeout
+
+        # Verify modulus
+        self.__gnupg = gnupg.GPG()
+        self.__gnupg.import_keys(SRP_MODULUS_KEY)
+
+        self._session_data = {}
+
+        self.s = requests.Session()
+        self.s.headers["x-pm-appversion"] = appversion
+        self.s.headers["User-Agent"] = user_agent
+
+    def api_request(
+        self, endpoint, data=None, additional_headers=None, method=None
+    ):
+        fct = self.s.post
+        if method is None:
+            if data is None:
+                fct = self.s.get
+            else:
+                fct = self.s.post
+        else:
+            fct = {
+                "get": self.s.get,
+                "post": self.s.post,
+                "put": self.s.put,
+                "delete": self.s.delete,
+                "patch": self.s.patch,
+            }.get(method.lower())
+
+        if fct is None:
+            raise ValueError(f"Unknown method: {method}")
+
+        ret = fct(
+            self.__api_url + endpoint,
+            headers=additional_headers,
+            json=data,
+            timeout=self.__timeout,
+        )
+
+        try:
+            ret = ret.json()
+        except json.decoder.JSONDecodeError as err:
+            raise ProtonError(
+                {
+                    "Code": ret.status_code,
+                    "Error": ret.reason,
+                    "Headers": ret.headers,
+                }
+            ) from err
+
+        if ret["Code"] != 1000:
+            raise ProtonError(ret)
+
+        return ret
+
+    @property
+    def _base_headers(self):
+        return {
+            "x-pm-apiversion": "3",
+            "Accept": "application/vnd.protonmail.v1+json",
+        }
+
+    def __verify_modulus(self, armored_modulus):
+        # gpg.decrypt verifies the signature too, and returns the parsed data.
+        # By using gpg.verify the data is not returned
+        verified = self.__gnupg.decrypt(armored_modulus)
+
+        if not (
+            verified.valid
+            and verified.fingerprint.lower() == SRP_MODULUS_KEY_FINGERPRINT
+        ):
+            raise ValueError("Invalid modulus")
+
+        return base64.b64decode(verified.data.strip())
+
+    def dump(self):
+        return {
+            "api_url": self.__api_url,
+            "appversion": self.__appversion,
+            "User-Agent": self.__user_agent,
+            "session_data": self._session_data,
+        }
+
+    def authenticate(self, username, password):
+        self.logout()
+
+        payload = {"Username": username}
+        if self.__clientsecret:
+            payload["ClientSecret"] = self.__clientsecret
+        info_response = self.api_request("/auth/info", payload)
+
+        modulus = self.__verify_modulus(info_response["Modulus"])
+        server_challenge = base64.b64decode(info_response["ServerEphemeral"])
+        salt = base64.b64decode(info_response["Salt"])
+        version = info_response["Version"]
+
+        usr = User(password, modulus)
+        client_challenge = usr.get_challenge()
+        client_proof = usr.process_challenge(salt, server_challenge, version)
+
+        if client_proof is None:
+            raise ValueError("Invalid challenge")
+
+        # Send response
+        payload = {
+            "Username": username,
+            "ClientEphemeral": base64.b64encode(client_challenge).decode(
+                "utf8"
+            ),
+            "ClientProof": base64.b64encode(client_proof).decode("utf8"),
+            "SRPSession": info_response["SRPSession"],
+        }
+        if self.__clientsecret:
+            payload["ClientSecret"] = self.__clientsecret
+        auth_response = self.api_request("/auth", payload)
+
+        if "ServerProof" not in auth_response:
+            raise ValueError("Invalid password")
+
+        usr.verify_session(base64.b64decode(auth_response["ServerProof"]))
+        if not usr.authenticated:
+            raise ValueError("Invalid server proof")
+
+        self._session_data = {
+            "UID": auth_response["UID"],
+            "AccessToken": auth_response["AccessToken"],
+            "RefreshToken": auth_response["RefreshToken"],
+            "Scope": auth_response["Scope"].split(),
+        }
+
+        if self.UID is not None:
+            self.s.headers["x-pm-uid"] = self.UID
+            self.s.headers["Authorization"] = f"Bearer {self.AccessToken}"
+
+        return self.Scope
+
+    def provide_2fa(self, code):
+        ret = self.api_request("/auth/2fa", {"TwoFactorCode": code})
+        self._session_data["Scope"] = ret["Scope"]
+
+        return self.Scope
+
+    def logout(self):
+        if self._session_data:
+            self.api_request("/auth", method="DELETE")
+            del self.s.headers["Authorization"]
+            del self.s.headers["x-pm-uid"]
+            self._session_data = {}
+
+    def refresh(self):
+        refresh_response = self.api_request(
+            "/auth/refresh",
+            {
+                "ResponseType": "token",
+                "GrantType": "refresh_token",
+                "RefreshToken": self.RefreshToken,
+                "RedirectURI": "http://protonmail.ch",
+            },
+        )
+        self._session_data["AccessToken"] = refresh_response["AccessToken"]
+        self._session_data["RefreshToken"] = refresh_response["RefreshToken"]
+        self.s.headers["Authorization"] = f"Bearer {self.AccessToken}"
+
+    @property
+    def UID(self):
+        return self._session_data.get("UID", None)
+
+    @property
+    def AccessToken(self):
+        return self._session_data.get("AccessToken", None)
+
+    @property
+    def RefreshToken(self):
+        return self._session_data.get("RefreshToken", None)
+
+    @property
+    def Scope(self):
+        return self._session_data.get("Scope", [])
+
+
+class EnvDefault(argparse.Action):
+    """ENV Default"""
+
+    def __init__(self, envvar, required=True, default=None, **kwargs):
+        if not default and envvar:
+            if envvar in os.environ:
+                default = os.environ[envvar]
+        if required and default:
+            required = False
+        super(EnvDefault, self).__init__(
+            default=default, required=required, **kwargs
+        )
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        setattr(namespace, self.dest, values)
+
+
+def write_metadata(
+    api_url: str, username: str, password: str, metadata_dir: Path
+):
+    metadata_dir = Path(metadata_dir)
+
+    if metadata_dir.exists():
+        if not metadata_dir.is_dir():
+            logging.error("{metadata_dir} exits, but is not a directory")
+    else:
+        metadata_dir.mkdir(parents=True)
+
+    logging.info("Creating Session")
+    try:
+        s = Session(api_url=api_url)
+        logging.info("Logging in to Proton API")
+        s.authenticate(
+            username=username,
+            password=password,
+        )
+    except (ValueError, ProtonError):
+        logging.error("Failed to Login!")
+        sys.exit(1)
+
+    try:
+        logging.info("Getting VPN Servers")
+        logicals = s.api_request(endpoint="/vpn/logicals")
+    except (ValueError, ProtonError):
+        logging.error("Failed to get API response")
+        sys.exit(1)
+    finally:
+        s.logout()
+
+    logging.info("Processing Data")
+    for logical_server in logicals["LogicalServers"]:
+        logical_server_name = logical_server["Name"]
+        logical_server_domain = logical_server["Domain"]
+        servers = []
+
+        logging.info("Logical Server - %s", logical_server_name)
+        for server in logical_server["Servers"]:
+            server = {
+                "Domain": server["Domain"],
+                "X25519PublicKey": server["X25519PublicKey"],
+                "EntryIP": server["EntryIP"],
+                "ExitIP": server["ExitIP"],
+            }
+            servers.append(server)
+
+        logical_server = {
+            "Name": logical_server_name,
+            "Domain": logical_server_domain,
+            "Servers": servers,
+        }
+
+        logical_server_name_file = metadata_dir / Path(
+            logical_server_name.replace("#", "-") + ".json"
+        )
+        logical_server_domain_file = metadata_dir / Path(f"{logical_server_domain}.json")
+
+        with open(logical_server_name_file, "w", encoding="utf-8") as f:
+            json.dump(logical_server, f, indent=2)
+
+        with open(logical_server_domain_file, "w", encoding="utf-8") as f:
+            json.dump(logical_server, f, indent=2)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__)
+
+    parser.add_argument(
+        "--username",
+        dest="username",
+        type=str,
+        action=EnvDefault,
+        envvar="PROTON_USERNAME",
+        default=None,
+        required=True,
+        help="Proton Account Username",
+    )
+
+    parser.add_argument(
+        "--password",
+        dest="password",
+        action=EnvDefault,
+        envvar="PROTON_PASSWORD",
+        type=str,
+        default=None,
+        required=True,
+        help="Proton Account Password",
+    )
+
+    parser.add_argument(
+        "--output",
+        required=True,
+        dest="output",
+        type=str,
+        help="Output directory",
+    )
+
+    parser.add_argument(
+        "--api-url",
+        required=False,
+        dest="api_url",
+        type=str,
+        action=EnvDefault,
+        envvar="PROTON_API_ENDPOINT",
+        default="https://api.protonvpn.ch",
+        help="Proton API endpoint.",
+    )
+
+    args = parser.parse_args()
+
+    write_metadata(
+        api_url=args.api_url,
+        username=args.username,
+        password=args.password,
+        metadata_dir=Path(args.output),
+    )

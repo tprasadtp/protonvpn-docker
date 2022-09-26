@@ -1,0 +1,82 @@
+#!/bin/bash
+log() {
+    local msg="$*"
+    printf "%s \n" "$msg"
+}
+
+info() {
+    local msg="$*"
+    printf "==> %s \n" "$msg"
+}
+
+function main() {
+    declare -a docker_extra_args=()
+    declare -a cli_args=()
+    declare give_shell="false"
+
+    while [[ ${1} != "" ]]; do
+        case ${1} in
+        --shell | -s)
+            give_shell="true"
+            ;;
+        *)
+            cli_args+=("$1")
+            ;;
+        esac
+        shift
+    done
+
+    if [[ -z $PROTONVPN_SERVER ]]; then
+        export PROTONVPN_SERVER="NL-FREE"
+    fi
+
+    if [[ -S ./notify.sock ]]; then
+        extra_args+=(
+            "-e" "NOTIFY_SOCKET=/tmp/notify.sock"
+            "-e" "WATCHDOG_USEC=${WATCHDOG_USEC:-20000000}"
+            "--mount" "type=bind,src=$(pwd)/notify.sock,dst=/tmp/notify.sock"
+        )
+    else
+        extra_args+=("-e" "IPCHECK_INTERVAL=10")
+    fi
+
+    if [[ $give_shell == "true" ]]; then
+        info "Dropping you in shell"
+        docker run \
+            -it \
+            --rm \
+            --name=protonwire \
+            --init \
+            -e DEBUG \
+            -e PROTONVPN_SERVER \
+            --cap-add=CAP_NET_ADMIN \
+            --userns=host \
+            -p=8000:80 \
+            -v $(pwd)/protonwire:/usr/bin/protonwire:ro \
+            --mount type=bind,src="$(pwd)"/private.key,dst=/etc/protonwire/private-key,readonly \
+            --sysctl net.ipv4.conf.all.rp_filter=2 \
+            --tmpfs /tmp \
+            "${extra_args[@]}" \
+            ghcr.io/tprasadtp/protonwire:dev \
+            bash -c "echo \"alias c='clear';alias e='exit';export PS1='\\e[38;5;220m\u@\\e[38;5;208mprotonwire\\e[0m on \\e[32m\W\[\033[0;35m\] \[\033[1;36m\]\n🐳\\e[0m ➜ '\" >> ~/.bashrc && bash"
+    else
+        docker run \
+            -it \
+            --rm \
+            --name=protonwire \
+            --init \
+            -e DEBUG \
+            -e PROTONVPN_SERVER \
+            --cap-add=CAP_NET_ADMIN \
+            --userns=host \
+            -p=8000:80 \
+            -v $(pwd)/protonwire:/usr/bin/protonwire:ro \
+            --mount type=bind,src="$(pwd)"/private.key,dst=/etc/protonwire/private-key,readonly \
+            --sysctl net.ipv4.conf.all.rp_filter=2 \
+            --tmpfs /tmp \
+            "${extra_args[@]}" \
+            ghcr.io/tprasadtp/protonwire:dev "${cli_args[@]}"
+    fi
+}
+
+main "$@"

@@ -1,7 +1,7 @@
 name: RFE/Feature Request
 description: Add a new feature or enhance existing features
 title: "[RFE] -  "
-labels: ["feature"]
+labels: ["rfe"]
 body:
   - type: markdown
     attributes:
@@ -12,9 +12,9 @@ body:
   - type: input
     id: version
     attributes:
-      label: Version of `protonvpn-docker`
+      label: Version
       description: |
-        - Version of the container
+        - Version of the package/container or commit hash
         - If unable to detect or not applicable, leave the field as is.
       value: NA
     validations:
@@ -24,7 +24,9 @@ body:
     id: feature-info
     attributes:
       label: Details about Feature/Enhancement
-      description: Details of feature request and enhancement. Please be specific.
+      description: |
+        Details of feature request and enhancement.
+        Please be specific. Include details with relevant links/data.
 
   - type: checkboxes
     id: code-of-conduct

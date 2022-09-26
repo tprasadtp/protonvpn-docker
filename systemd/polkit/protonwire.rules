@@ -1,0 +1,23 @@
+// SPDX-License-Identifier: GPL-3.0
+// Do not modify this file manually
+// This file is part of protonwire package.
+
+// Authorize 'protonwire' user to use
+// the systemd-resolved DBus interface
+polkit.addRule(function (action, subject) {
+
+    if (action.id == 'org.freedesktop.resolve1.set-dns-servers' ||
+        action.id == 'org.freedesktop.resolve1.set-domains' ||
+        action.id == 'org.freedesktop.resolve1.set-default-route' ||
+        action.id == 'org.freedesktop.resolve1.revert' ||
+        action.id == 'org.freedesktop.resolve1.set-dnssec') {
+
+        // Allow protonwire user to use
+        // systemd-resolved DBus interface
+        if (subject.user == 'protonwire') {
+            return polkit.Result.YES;
+        }
+    }
+    // Let other rules decide
+    return polkit.Result.NOT_HANDLED;
+});

@@ -20,12 +20,11 @@ automerge_label = "luna/automerge"
 #-----------------------------------
 autoupdate_label = "luna/autoupdate"
 
-
 # Methods
 method = "squash"
 
 # Blacklisted Labels
-blocking_labels = ["s/wip", "luna/lock", "luna", "s/review-required", "s/wont-fix", "luna" ]
+blocking_labels = ["s/wip", "luna/lock", "luna", "s/review-required", "s/wont-fix"]
 
 # Priority
 priority_merge_label = "p/critical"
@@ -44,11 +43,11 @@ body = "pull_request_body"
 strip_html_comments = true
 body_type = "markdown"
 cut_body_before = "<!-- COMMIT-NOTES-BEGIN -->"
-cut_body_after = "<!-- COMMIT-NOTES-END-->"
+cut_body_after = "<!-- COMMIT-NOTES-END -->"
 
 [update]
 require_automerge_label = false
 
 # Ignore bots or other apps with automerge built in,
 # and kodiak should ignore them
-ignored_usernames = ["valarie-ci-bot", "dependabot-preview", "luna-bot"]
+ignored_usernames = ["luna-bot"]

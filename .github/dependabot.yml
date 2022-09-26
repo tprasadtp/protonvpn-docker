@@ -13,41 +13,33 @@ updates:
     schedule:
       interval: "weekly"
       day: "saturday"
+    ignore:
+      # Ignore major and minor updates
+      # (patch updates are auto applied)
+      - dependency-name: "alpine"
+        update-types:
+          - version-update:semver-major
+          - version-update:semver-minor
     pull-request-branch-name:
       separator: "-"
 
-  - package-ecosystem: pip
+  - package-ecosystem: docker
     labels:
       - "dependabot"
       - "dependencies"
-      - "python"
+      - "docker"
       - "luna/autoupdate"
     commit-message:
       prefix: "chore(deps):"
-    directory: "/root"
-    schedule:
-      interval: "weekly"
-      day: "saturday"
-    pull-request-branch-name:
-      separator: "-"
-    ignore:
-      - dependency-name: "protonvpn-cli"
-      - dependency-name: "*"
-        update-types:
-          - version-update:semver-major
-
-  # Actions
-  - package-ecosystem: github-actions
-    labels:
-      - "dependabot"
-      - "dependencies"
-      - "github-action"
-      - "luna/autoupdate"
-    commit-message:
-      prefix: "ci(deps):"
     directory: "/"
     schedule:
       interval: "weekly"
       day: "saturday"
+    # Ignore patch updates
+    # (these are NOT auto applied)
+    ignore:
+      - dependency-name: "alpine"
+        update-types:
+          - version-update:semver-patch
     pull-request-branch-name:
       separator: "-"

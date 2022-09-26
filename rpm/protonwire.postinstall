@@ -1,0 +1,6 @@
+#!/usr/bin/bash
+set -e
+
+systemd-sysusers protonwire.conf
+systemd-sysctl protonwire.conf
+systemd-tmpfiles --create protonwire.conf

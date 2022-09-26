@@ -9,69 +9,32 @@ jobs:
   shellcheck:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-
+      - uses: actions/checkout@v3 # ratchet:exclude
       - name: Shellcheck
-        run: |
-          make show-vars-base
-          make shellcheck
-  # Lint Dockerfile
-  docker-lint:
+        run: make shellcheck
+  build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-
-      - name: Lint
-        run: |
-          make show-vars-base
-          make docker-lint
-  # Build docker images
-  docker:
-    needs: [shellcheck, docker-lint]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Make Variables for Debugging
-        run: |
-          make show-vars-base || true
-          make show-vars-docker || true
-
-      - uses: actions/cache@v2
+      - uses: actions/checkout@v3 # ratchet:exclude
         with:
-          path: .trivy
-          key: ${{ runner.os }}-trivy-${{ github.run_id }}
-          restore-keys: |
-            ${{ runner.os }}-trivy-
-
+          fetch-depth: 0
+          persist-credentials: false
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v1
-
+        uses: docker/setup-qemu-action@8b122486cedac8393e77aa9734c3528886e4a1a8 # ratchet:docker/setup-qemu-action@v2
       - name: Set up Docker Buildx
-        id: buildx
-        uses: docker/setup-buildx-action@v1
-
+        uses: docker/setup-buildx-action@dc7b9719a96d48369863986a06765841d7ea23f6 # ratchet:docker/setup-buildx-action@v2
       - name: Install GoReleaser
-        uses: goreleaser/goreleaser-action@b953231f81b8dfd023c58e0854a721e35037f28b
+        uses: goreleaser/goreleaser-action@ff11ca24a9b39f2d36796d1fbd7a4e39c182630a # ratchet:goreleaser/goreleaser-action@v3
         with:
           version: latest
           install-only: true
-
-      - name: Build snapshot
-        run: make snapshot
-
-      - name: Run Trivy vulnerability scanner
-        id: trivy
-        uses: aquasecurity/trivy-action@a7a829a4345428ddd92ca57b18257440f6a18c90
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@49ed152c8eca782a232dede0303416e8f356c37b # ratchet:docker/login-action@v2
         with:
-          scan-type: 'image'
-          vuln-type: os
-          severity: HIGH,CRITICAL
-          ignore-unfixed: true
-          exit-code: 1
-          image-ref: 'ghcr.io/tprasadtp/protonvpn:${{ github.sha }}-amd64'
-          cache-dir: .trivy
-
-      - name: Correct Trivy cache permissions
-        run: sudo chown -R $USER:$GROUP .trivy
-        if: always()
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install help2man
+        run: sudo apt-get install -y help2man
+      - name: Run GoReleaser
+        run: make release

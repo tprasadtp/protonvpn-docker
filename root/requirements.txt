@@ -1,8 +1,0 @@
-# Only dependencies which have usually have
-# security updates are enabled here.
-# This file is not a complete lock file
-Jinja2==3.0.3
-protonvpn-cli==2.2.6
-requests==2.27.1
-urllib3==1.26.8
-pytoml==0.1.21
