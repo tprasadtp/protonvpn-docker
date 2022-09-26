@@ -544,6 +544,13 @@ def write_metadata(
     else:
         metadata_dir_v1.mkdir(parents=True)
 
+    metadata_dir_v1_srv = metadata_dir_v1 / Path("server")
+    if metadata_dir_v1_srv.exists():
+        if not metadata_dir_v1_srv.is_dir():
+            logging.error("{metadata_dir_v1_srv} exits, but is not a directory")
+    else:
+        metadata_dir_v1_srv.mkdir(parents=True)
+
     logging.info("Creating Session")
     try:
         s = Session(api_url=api_url)
@@ -563,8 +570,10 @@ def write_metadata(
         logging.error("Failed to get API response")
         sys.exit(1)
     finally:
+        logging.info("Logging out")
         s.logout()
 
+    key_map = {}
     logging.info("Processing Data")
     for logical_server in logicals["LogicalServers"]:
         logical_server_name = logical_server["Name"]
@@ -581,24 +590,33 @@ def write_metadata(
             }
             servers.append(server)
 
+            if server["X25519PublicKey"] not in key_map:
+                key_map[server["X25519PublicKey"]] = logical_server_name
+            else:
+                logging.info("%s already present in keymap", server["X25519PublicKey"])
+
         logical_server = {
             "Name": logical_server_name,
             "Domain": logical_server_domain,
             "Servers": servers,
         }
 
-        logical_server_name_file = metadata_dir_v1 / Path(
+        logical_server_name_file = metadata_dir_v1_srv / Path(
             logical_server_name.replace("#", "-") + ".json"
         )
-        logical_server_domain_file = metadata_dir_v1 / Path(
+        logical_server_domain_file = metadata_dir_v1_srv / Path(
             f"{logical_server_domain}.json"
         )
-
         with open(logical_server_name_file, "w", encoding="utf-8") as f:
             json.dump(logical_server, f, indent=2)
 
         with open(logical_server_domain_file, "w", encoding="utf-8") as f:
             json.dump(logical_server, f, indent=2)
+
+    logging.info("Writing Keymap config")
+    keymap_file = metadata_dir_v1 / Path("keymap.json")
+    with open(keymap_file, "w", encoding="utf-8") as f:
+        json.dump(key_map, f, indent=2)
 
     logging.info("Writing Vercel config")
     vercel_config_file = metadata_dir / Path("vercel.json")

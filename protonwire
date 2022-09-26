@@ -1133,27 +1133,21 @@ function protonvpn_fetch_metadata() {
     if [[ $metadata_stale != "false" ]] || [[ $force_refresh == "true" ]]; then
         log_info "Refresing ProtonVPN server metadata"
         local curl_rc="-1"
-        # duplicate headers from official app except user-agent
-
         # we use wait to ensure the term signals can be handled properly
-        # this is potentially a long operation (can download ~2MB of data)
         { curl \
             --fail \
             --location \
-            --max-time 120 \
+            --max-time 30 \
             --connect-timeout 20 \
             --silent \
             --show-error \
             --user-agent 'protonwire/v7' \
-            --header 'x-pm-appversion: Other' \
-            --header 'x-pm-apiversion: 3' \
-            --header 'Accept: application/vnd.protonmail.v1+json' \
             --output "${__PROTONWIRE_SRV_INFO}.bak" \
-            https://api.protonvpn.ch/vpn/logicals 2>&1 | log_tail "curl" & }
+            "https://protonvpn-metadata.vercel.app/v1/${PROTONVPN_SERVER}.json" 2>&1 | log_tail "curl" & }
         wait $!
         curl_rc="$?"
 
-        # we save to a backup file as download can faile or be corrupt
+        # we save to a backup file as download can fail or be corrupt
         # we want to ensure we don't end up with corrupt json
         if [[ $curl_rc == "0" ]]; then
             # ensure file is json formatted and valid

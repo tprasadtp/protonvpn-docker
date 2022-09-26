@@ -32,8 +32,8 @@
 
 - Connects to a server in ~5 seconds
 - LAN/private networks remain accessible and are not routed over VPN, no special configuration required!
-- Supports split horizon DNS **automatically** if `systemd-resolved` is in use
-(aka your lan/corporate hostnames resolve perfectly fine when ProtonVPN is active)
+- Supports split horizon DNS **automatically** if `systemd-resolved` is in use (non-container use only)
+(aka your lan/corporate host-names resolve perfectly fine when ProtonVPN is active)
 - Supports running as systemd unit (natively and as podman container)
 - Supports roaming clients
 
@@ -95,11 +95,11 @@ Images are published at [ghcr.io/tprasadtp/protonwire][ghcr].
 
 ## PROTONVPN_SERVER
 
-If you already have configured a peer on the WireGuard interface, it will be preferred to avoid disrupting sessions. This should server name like `NL-FREE#1` or domain name like,
+This should server name like `NL-FREE#1` or domain name like,
 `nl-free-01.protonvpn.net`.
 
-
-> Script cannot validate if specified server is available under your plan. Its user's responsibility to ensure that server specified is available under your subscription.
+> Script cannot validate if specified server is available under your plan. Its user's responsibility to ensure that server specified is available under your subscription
+and supports required features!
 
 ## Dependencies
 
