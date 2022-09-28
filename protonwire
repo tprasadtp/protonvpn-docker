@@ -822,27 +822,7 @@ function __resolvctl_down_hook() {
 
 # Detect cache, runtime data and config paths
 function __detect_paths() {
-    local cache_dir
     local runtime_dir
-
-    log_variable "CACHE_DIRECTORY"
-    log_variable "XDG_CACHE_HOME"
-
-    if [[ -z $CACHE_DIRECTORY ]]; then
-        if [[ -n $XDG_CACHE_HOME ]]; then
-            if [[ -d "${XDG_CACHE_HOME}" ]] && [[ -w "${XDG_CACHE_HOME}" ]]; then
-                cache_dir="${XDG_CACHE_HOME}"
-            else
-                log_warning "XDG_CACHE_HOME(${XDG_CACHE_HOME}) is not a directory or not writable!"
-            fi
-        fi
-    else
-        if [[ -d $CACHE_DIRECTORY ]] && [[ -w $CACHE_DIRECTORY ]]; then
-            cache_dir="${XDG_CACHE_HOME}"
-        else
-            log_warning "CACHE_DIRECTORY($CACHE_DIRECTORY) is not a directory or not writable!"
-        fi
-    fi
 
     log_variable "RUNTIME_DIRECTORY"
     log_variable "XDG_RUNTIME_DIR"
@@ -874,11 +854,7 @@ function __detect_paths() {
         runtime_dir="/tmp"
     fi
 
-    if [[ -z ${cache_dir} ]]; then
-        cache_dir="/tmp"
-    fi
-
-    declare -g __PROTONWIRE_SRV_INFO="${cache_dir%/}/protonwire.serverinfo.json"
+    declare -g __PROTONWIRE_SRV_INFO="${runtime_dir%/}/protonwire.serverinfo.json"
     declare -g __PROTONWIRE_HCR="${runtime_dir%/}/protonwire.hc.response"
 
     log_variable "__PROTONWIRE_SRV_INFO"
@@ -886,13 +862,12 @@ function __detect_paths() {
 
 }
 
-# looper via --systemd or --container
 function protonvpn_looper_cmd() {
     case "$__PROTONWIRE_LOOPER" in
     systemd)
         log_debug "Running as systemd unit, IDENTITY=$(id)"
         ;;
-    container | docker)
+    container)
         log_debug "Running as container"
         ;;
     *)
@@ -913,9 +888,7 @@ function protonvpn_looper_cmd() {
     log_variable "PROTONVPN_CHECK_THRESHOLD"
     log_variable "IPCHECK_INTERVAL"
 
-    # connect
     if __protonvpn_connect; then
-        # if healthchecks are disabled do not verify IP
         if [[ $IPCHECK_INTERVAL != "0" ]]; then
             log_info "Verifying connection"
 
@@ -928,7 +901,6 @@ function protonvpn_looper_cmd() {
                     break
                 else
                     log_error "Retry ($verify_attemps/$max_verify_attemps) after 2 seconds"
-                    # allow signals to be handled while sleeping
                     sleep 2 &
                     wait $!
                 fi
@@ -940,11 +912,12 @@ function protonvpn_looper_cmd() {
                 return 1
             fi
         else
-            log_warning "Not verifying connection, healthchecks are disabled"
+            log_warning "Not verifying connection, as healthchecks are disabled"
         fi
     else
         log_error "Failed to connect to ${PROTONVPN_SERVER:-Fastest-Server}"
         if [[ -z $(ip link show protonwire0 type wireguard 2>/dev/null) ]]; then
+            log_debug "Wireguard interface for protonwire is not present."
             return 1
         fi
         __protonvpn_disconnect
@@ -955,7 +928,6 @@ function protonvpn_looper_cmd() {
     local watchdog_pings="false"
 
     # detect ping interval
-    # check if watchdog is enabled
     if [[ -n $IPCHECK_INTERVAL ]]; then
         if [[ $IPCHECK_INTERVAL == "0" ]] &&
             [[ ${WATCHDOG_USEC} =~ ^[1-9][0-9]+$ ]]; then
@@ -993,12 +965,11 @@ function protonvpn_looper_cmd() {
 
     if [[ $IPCHECK_INTERVAL == "0" ]]; then
         log_warning "Healthchecks are disabled"
-
-        log_info "Listening for signal events"
+        log_info "Listening for signals"
         __PROTONWIRE_HC_ERRORS=0
         while :; do
             if [[ $__PROTONWIRE_DISCONNECTING == "true" ]]; then
-                log_debug "Disconnecting because of signal"
+                log_debug "Disconnect handler is active, exiting loop"
                 break
             fi
 
@@ -1024,7 +995,7 @@ function protonvpn_looper_cmd() {
             fi
 
             if [[ $__PROTONWIRE_HC_ERRORS -ge ${PROTONVPN_CHECK_THRESHOLD:-3} ]]; then
-                log_error "Connection verification failed $__PROTONWIRE_CHECK_ERRS times"
+                log_error "Connection verification #{$__PROTONWIRE_CHECK_ERRS} failed"
                 break
             fi
 
@@ -1065,36 +1036,8 @@ function protonvpn_looper_cmd() {
     return 1
 }
 
-# commands
-# ----------------------------------------------------------------------------
-function protonvpn_refresh() {
-    commands=("curl" "jq" "stat")
-
-    # Check if all commands are available
-    declare -a missing_commands
-    for command in "${commands[@]}"; do
-        if ! has_command "$command"; then
-            ((++errs))
-            missing_commands+=("$command")
-        fi
-    done
-
-    if [[ ${#missing_commands[@]} -ne 0 ]]; then
-        log_error "Missing commands: ${missing_commands[*]}"
-        return 1
-    fi
-
-    __detect_paths
-
-    if protonvpn_fetch_metadata; then
-        return 0
-    fi
-    return 1
-}
-
 # Metadata cmdlet
 function protonvpn_fetch_metadata() {
-    # assume metadata is stale
     local metadata_stale="true"
     local force_refresh="${PROTONVPN_FORCE:-false}"
     local wrapped_invocation="false"
@@ -1147,11 +1090,10 @@ function protonvpn_fetch_metadata() {
         wait $!
         curl_rc="$?"
 
-        # we save to a backup file as download can fail or be corrupt
-        # we want to ensure we don't end up with corrupt json
+        # save to a backup file as download can fail or be corrupt
         if [[ $curl_rc == "0" ]]; then
             # ensure file is json formatted and valid
-            if jq -e '.LogicalServers[]' "${__PROTONWIRE_SRV_INFO}.bak" >/dev/null 2>&1; then
+            if jq -e '.Servers[]' "${__PROTONWIRE_SRV_INFO}.bak" >/dev/null 2>&1; then
                 if mv "${__PROTONWIRE_SRV_INFO}.bak" "${__PROTONWIRE_SRV_INFO}"; then
                     log_success "Refreshed ProtonVPN server metadata"
                     return 0
@@ -1225,10 +1167,6 @@ function protonvpn_healthcheck_status_file() {
         local hc_diff="-1"
         hc_diff=$((current_ts - hc_time))
 
-        # this is kind of a hack, because
-        # - leap seconds
-        # - clock drifts
-        # and this just adds buffer of 30 seconds
         if [[ $hc_diff -lt $((check_interval + 30)) ]]; then
             log_success "Healthcheck is up (via status file), last checked ${hc_diff}s ago"
             return 0
@@ -1243,7 +1181,7 @@ function protonvpn_healthcheck_status_file() {
     fi
 }
 
-# verify connected server via api.protonvpn.ch
+# verify connected server
 function __protonvpn_verify_server() {
     local wrapper="false"
 
@@ -1261,14 +1199,12 @@ function __protonvpn_verify_server() {
     # check if server info file exists
     if [[ ! -f ${__PROTONWIRE_SRV_INFO} ]]; then
         log_error "Server info file is missing - ${__PROTONWIRE_SRV_INFO}"
-        log_error "Please ensure that protonvpn client is running!"
         return 1
     fi
 
     # check if server info file is readable
     if [[ ! -s ${__PROTONWIRE_SRV_INFO} ]]; then
         log_error "Server info file is not readable or empty - ${__PROTONWIRE_SRV_INFO}"
-        log_error "Please ensure that protonvpn client is running!"
         return 1
     fi
 
@@ -1291,31 +1227,11 @@ function __protonvpn_verify_server() {
         log_error "WireGuard interface 'protonwire0' is connected to multiple peers(${#configured_endpoints[@]})"
         return 1
     elif [[ -z ${configured_endpoints[0]} ]]; then
-        log_error "WireGuard interface 'protonwire0' unknown error!"
+        log_error "WireGuard interface 'protonwire0' - unknown error!"
         return 1
     else
         log_debug "Connected peers - ${configured_endpoints[*]}"
     fi
-
-    log_debug "Lookup server name for peer - ${configured_endpoints[0]}"
-    declare -a connected_server_name
-    readarray -t connected_server_name < <(jq -r \
-        --arg PEER_KEY "${configured_endpoints[0]}" \
-        '[.LogicalServers[] | select(.Servers[].X25519PublicKey==$PEER_KEY)] | unique_by(.Name) | .[].Name' \
-        "${__PROTONWIRE_SRV_INFO}" 2>/dev/null)
-
-    if [[ ${#connected_server_name[@]} -eq 0 ]]; then
-        log_error "Unable to lookup server name for peer - ${configured_endpoints[0]}"
-        return 1
-    elif [[ ${#connected_server_name[@]} -gt 1 ]]; then
-        log_error "Multiple server names found for peer - ${configured_endpoints[0]}"
-        return 1
-    elif [[ -z ${connected_server_name[0]} ]]; then
-        log_debug "Unknown error fetching server name for peer - ${configured_endpoints[0]}"
-        return 1
-    fi
-
-    log_debug "Connected server name - ${connected_server_name[0]}"
 
     # Parse server info and get list of
     # ExitIPs and EntryIPs for server
@@ -1325,11 +1241,11 @@ function __protonvpn_verify_server() {
     log_debug "Parsing allowed ExitIPs from server metadata"
     readarray -t allowed_exit_ips < <(jq -r \
         --arg PEER_KEY "${configured_endpoints[0]}" \
-        '[ .LogicalServers[] | select(.Servers[].X25519PublicKey==$PEER_KEY) | .Servers[] ] | unique_by(.ExitIP) | .[].ExitIP' \
+        '[select(.Servers[].X25519PublicKey==$PEER_KEY) | .Servers[] ] | unique_by(.ExitIP) | .[].ExitIP' \
         "${__PROTONWIRE_SRV_INFO}" 2>/dev/null)
     readarray -t allowed_entry_ips < <(jq -r \
         --arg PEER_KEY "${configured_endpoints[0]}" \
-        '[ .LogicalServers[] | select(.Servers[].X25519PublicKey==$PEER_KEY) | .Servers[] ] | unique_by(.EntryIP) | .[].EntryIP' \
+        '[select(.Servers[].X25519PublicKey==$PEER_KEY) | .Servers[] ] | unique_by(.EntryIP) | .[].EntryIP' \
         "${__PROTONWIRE_SRV_INFO}" 2>/dev/null)
 
     log_debug "Allowed ExitIPs  - ${allowed_exit_ips[*]}"
@@ -1361,7 +1277,7 @@ function __protonvpn_verify_server() {
         --output "${__PROTONWIRE_HCR}" \
         --fail \
         --location \
-        --user-agent "protonvpn-docker" \
+        --user-agent "protonwire/v7" \
         "https://api.protonvpn.ch/vpn/location" 2>/dev/null &
     wait $!
     hc_response_rc="$?"
@@ -1392,7 +1308,6 @@ function __protonvpn_verify_server() {
         return 1
     fi
 
-    # strip newlines if any
     for exit_ip in "${allowed_client_public_ips[@]}"; do
         if [[ $exit_ip == "${client_ip}" ]]; then
             if __has_notify_socket; then
@@ -1496,7 +1411,6 @@ function __protonvpn_config_select_server() {
             if [[ $metadata_fetch_tries -lt $metadata_fetch_max_tries ]]; then
                 log_error "Retrying after $((2 ** metadata_fetch_tries)) seconds ($metadata_fetch_tries/$metadata_fetch_max_tries)"
                 sleep "$((2 ** metadata_fetch_tries))" &
-                # allow signals to be handled while sleeping
                 wait $!
             fi
         fi
@@ -1511,128 +1425,24 @@ function __protonvpn_config_select_server() {
             log_error "If you have killswitch enabled please disable it and try again!"
             return 1
         else
-            log_warning "Failed to fetch server metadata after 5 tries,using cached file (might be stale)"
+            log_warning "Failed to fetch server metadata after 5 tries, using cached file (might be stale)"
         fi
     fi
 
-    # https://github.com/ProtonVPN/protonvpn-nm-lib/blob/1df7462ff242388a4278f6505a0576808a00a6c0/protonvpn_nm_lib/enums.py#L43
-    # NORMAL - 0
-    # SECURE_CORE - 1
-    # TOR - 2
-    # P2P - 4
-    # STREAMING - 8
-    # IPv6 - 16
-
-    # jq processed server names which satisfy plan
-    declare -a server_pool=()
-
-    # default use fastest server available in your plan/tier
-    if [[ -z ${PROTONVPN_SERVER} ]]; then
-        log_warning "Server not specified, Selecting fastest server (Requires paid plan)"
-        readarray -t server_pool < <(jq -r \
-            '[ .LogicalServers[] | select( (.Tier==2) and (.Status==1) ) ] | sort_by(.Score) | .[].Name' \
-            "${__PROTONWIRE_SRV_INFO}" 2>/dev/null)
-    elif [[ ${PROTONVPN_SERVER^^} =~ ^([A-Z]{2})\$ ]]; then
-        log_info "Selecting fastest server in country ${BASH_REMATCH[1]} (Requires paid plan)"
-        readarray -t server_pool < <(jq -r \
-            --arg COUNTRY "${BASH_REMATCH[1]}" \
-            '[ .LogicalServers[] | select(( .ExitCountry==$COUNTRY) and (.Tier==2) and (.Status==1) ) ] | sort_by(.Score) | .[].Name' \
-            "${__PROTONWIRE_SRV_INFO}" 2>/dev/null)
-    # FREE
-    elif [[ ${PROTONVPN_SERVER^^} == "FREE" ]]; then
-        log_info "Selecting fastest free server (Might be sub-optimal for few tasks)"
-        readarray -t server_pool < <(jq -r \
-            '[ .LogicalServers[] | select( (.Tier==0) and (.Status==1) ) ] | sort_by(.Score) | .[].Name' \
-            "${__PROTONWIRE_SRV_INFO}" 2>/dev/null)
-    # [CC]-FREE
-    elif [[ ${PROTONVPN_SERVER^^} =~ ^([A-Z]{2})\-FREE$ ]]; then
-        log_info "Selecting fastest free server in country ${BASH_REMATCH[1]}"
-        readarray -t server_pool < <(jq -r \
-            --arg COUNTRY "${BASH_REMATCH[1]}" \
-            '[ .LogicalServers[] | select(( .ExitCountry==$COUNTRY) and (.Tier==0) and (.Status==1) ) ] | sort_by(.Score) | .[].Name' \
-            "${__PROTONWIRE_SRV_INFO}" 2>/dev/null)
-
-    # P2P(3) can be >=4<8, >=12<16, >=20
-    elif [[ ${PROTONVPN_SERVER^^} == "P2P" ]]; then
-        log_info "Selecting fastest P2P server"
-        readarray -t server_pool < <(jq -r \
-            '[ .LogicalServers[] | select( ((.Features>=4) and (.Features<8)) or ((.Features>=12) and (.Features<16)) or ((.Features>=20) and (.Features<32)) and (.Status==1)) | {Score: .Score, Name: .Name} ] | sort_by(.Score) | .[].Name' \
-            "${__PROTONWIRE_SRV_INFO}" 2>/dev/null)
-
-    # P2P(3) can be >=4<8, >=12<16, >=20
-    elif [[ ${PROTONVPN_SERVER^^} =~ ^([A-Z]{2})\-P2P$ ]]; then
-        log_info "Selecting fastest P2P server in country ${BASH_REMATCH[1]}"
-        readarray -t server_pool < <(jq -r \
-            --arg COUNTRY "${BASH_REMATCH[1]}" \
-            '[ .LogicalServers[] | select( ( ((.Features>=4) and (.Features<8)) or ((.Features>=12) and (.Features<16)) or ((.Features>=20) and (.Features<32)) ) and (.Status==1) and (.ExitCountry==$COUNTRY) ) ] | sort_by(.Score) | .[].Name' \
-            "${__PROTONWIRE_SRV_INFO}" 2>/dev/null)
-
-    # Tor(2) can be
-    # - 2(tor),
-    # - 3(SecureCore+Secure core),
-    # - 6(SecureCore+P2P),
-    # - 7(SecureCore+SecureCore+P2P),
-    # - 10(SecureCore+streaming)
-    # - 14(SecureCore+streaming+P2P)
-    # - 15(SecureCore+straming+P2P+SecureCore)
-    # - 18(Ipv6+tor)
-    # - 19(Ipv6+SecureCore+Secure core),
-    # - 22(Ipv6+SecureCore+P2P),
-    # - 23(Ipv6+SecureCore+SecureCore+P2P),
-    # - 16(Ipv6+SecureCore+streaming)
-    # - 30(Ipv6+SecureCore+streaming+P2P)
-    # - 31(Ipv6+SecureCore+straming+P2P+SecureCore)
-    elif [[ ${PROTONVPN_SERVER^^} == "TOR" ]]; then
-        log_info "Collecting available TOR servers"
-        readarray -t server_pool < <(jq -r \
-            '[ .LogicalServers[] | select( ( (.Features==2) or (.Features==3) or (.Features==6) or (.Features==7) or (.Features==10) or (.Features==14) or (.Features==15) or (.Features==18) or (.Features==19) or (.Features==22) or (.Features==23) or (.Features==26) or (.Features==30) or (.Features==31)) and (.Status==1) ) ] | sort_by(.Score) | .[].Name' \
-            "${__PROTONWIRE_SRV_INFO}" 2>/dev/null)
-
-    # SecureCore(1) can be odd
-    elif [[ ${PROTONVPN_SERVER^^} =~ ^SECURE[-_]?CORE$ ]]; then
-        log_info "Collecting available SECURE_CORE servers"
-        readarray -t server_pool < <(jq -r \
-            '[ .LogicalServers[] | select( ((.Features%2)==1) and (.Status==1) ) ] | sort_by(.Score) | .[].Name' \
-            "${__PROTONWIRE_SRV_INFO}" 2>/dev/null)
-
-    elif [[ ${PROTONVPN_SERVER^^} =~ ^([A-Z]{2})\-SECURE[-_]?CORE$ ]]; then
-        log_info "Collecting available SECURE_CORE servers in ${BASH_REMATCH[1]}"
-        readarray -t server_pool < <(jq -r \
-            --arg COUNTRY "${BASH_REMATCH[1]}" \
-            '[ .LogicalServers[] | select( ((.Features%2)==1) and (.Status==1) and (.ExitCountry==$COUNTRY) ) ] | sort_by(.Score) | .[].Name' \
-            "${__PROTONWIRE_SRV_INFO}" 2>/dev/null)
-
-    # direct servername like NL-FREE#30
+    # check if server is offline
+    local _server_online
+    _server_online="$(jq -r \
+        --arg SERVER_NAME "${PROTONVPN_SERVER^^}" \
+        '.Status' \
+        "${__PROTONWIRE_SRV_INFO}" 2>/dev/null)"
+    if [[ $_server_online != "1" ]]; then
+        log_error "Server ${PROTONVPN_SERVER^^} is offline"
+        return 1
     else
-        # check if server is in the list
-        local _server_name
-        log_info "Checking if $PROTONVPN_SERVER is valid server name"
-        _server_name="$(jq -r \
-            --arg SERVER_NAME "${PROTONVPN_SERVER^^}" \
-            '.LogicalServers[] | select(.Name==$SERVER_NAME) | .Name' \
-            "${__PROTONWIRE_SRV_INFO}" 2>/dev/null)"
-        if [[ -z $_server_name ]] || [[ $_server_name == "null" ]]; then
-            log_error "Unknown server name - ${PROTONVPN_SERVER^^}"
-            return 1
-        else
-            log_success "Server - ${_server_name} exits"
-        fi
-
-        # check if server is offline
-        local _server_online
-        _server_online="$(jq -r \
-            --arg SERVER_NAME "${PROTONVPN_SERVER^^}" \
-            '.LogicalServers[] | select(.Name==$SERVER_NAME) | .Status' \
-            "${__PROTONWIRE_SRV_INFO}" 2>/dev/null)"
-        if [[ $_server_online != "1" ]]; then
-            log_error "Server ${PROTONVPN_SERVER^^} is offline"
-            return 1
-        else
-            log_success "Server ${PROTONVPN_SERVER^^} is online"
-        fi
-        # Uppercase is used in server shortnames(normalize)
-        server_pool=("${PROTONVPN_SERVER^^}")
+        log_success "Server ${PROTONVPN_SERVER^^} is online"
     fi
+    # Uppercase is used in server shortnames(normalize)
+    server_pool=("${PROTONVPN_SERVER^^}")
 
     # check if we have atleast one server!
     if [[ ${#server_pool[@]} -lt 1 ]]; then
@@ -1643,7 +1453,6 @@ function __protonvpn_config_select_server() {
     # now check if we have an active wireguard interface
     if [[ -n $(ip link show protonwire0 type wireguard 2>/dev/null) ]]; then
         log_debug "Wireguard interface 'protonwire0' exists"
-        # check if connected to a server
         declare -a configured_endpoints
         readarray -t configured_endpoints < <(wg show protonwire0 peers 2>/dev/null)
         if [[ ${#configured_endpoints[@]} -eq 0 ]]; then
@@ -2433,16 +2242,11 @@ function __protonvpn_connect() {
 }
 
 function protonvpn_connect_cmd() {
-    # We collect all errors and display them together
-    # This helps to detect all errors at once.
-    local errs=0
-
     if ! __run_checks; then
         log_error "Please fix the errors and try again!"
         return 1
     fi
 
-    # define paths
     __detect_paths
     __detect_dns_updater
 
@@ -2453,16 +2257,10 @@ function protonvpn_connect_cmd() {
 }
 
 function protonvpn_disconnect_cmd() {
-    # We collect all errors and display them together
-    # This helps to detect all errors at once.
-    local errs=0
-
     if ! __run_checks; then
         log_error "Please fix the errors and try again!"
         return 1
     fi
-
-    # define paths
     __detect_paths
 
     if __protonvpn_disconnect; then
@@ -2560,15 +2358,6 @@ function __protonvpn_disconnect() {
     return 1
 }
 
-# debugging for server selection tests
-function select_server_cmd() {
-    __detect_paths
-    if __protonvpn_config_select_server; then
-        return 0
-    fi
-    return 1
-}
-
 function display_usage() {
     if __is_stdout_colorable; then
         local NC=$'\e[0m'
@@ -2591,14 +2380,12 @@ ${BOLD}ProtonVPN WireGuard Client${NC}
 ${BOLD}${YELLOW}Usage:${NC} protonwire [OPTIONS...]
 ${BOLD}${YELLOW}or:${NC} protonwire [OPTIONS...] c|connect [SERVER]
 ${BOLD}${YELLOW}or:${NC} protonwire [OPTIONS...] d|disconnect
-${BOLD}${YELLOW}or:${NC} protonwire [OPTIONS...] r|refresh-metadata
 ${BOLD}${YELLOW}or:${NC} protonwire [OPTIONS...] check
 ${BOLD}${YELLOW}or:${NC} protonwire [OPTIONS...] help
 
 ${BOLD}${CYAN}Options:${NC}
   -k, --private-key [FILE|KEY]  Wireguard private key or
                                 file containing private key.
-      --force                   Ignore cache and existing states.
       --container               Run as container entrypoint
                                 (Cannot be used with --systemd).
       --systemd                 Run as systemd service.
@@ -2653,7 +2440,7 @@ function main() {
         --version)
             cmd_mode="VERSION"
             ;;
-        --verbose | --debug | -v | -vv | -vvv | -vvvv)
+        --verbose | --debug | -v)
             LOG_LVL="0"
             ((++log_lvl_v_lock))
             ;;
@@ -2669,9 +2456,6 @@ function main() {
             shift
             LOG_FMT="${1}"
             ;;
-        --force | -f)
-            PROTONVPN_FORCE="true"
-            ;;
         --check-interval | --ipcheck-interval)
             ((++ip_check_lock))
             shift
@@ -2685,18 +2469,11 @@ function main() {
             WIREGUARD_PRIVATE_KEY="$1"
             ;;
         --container)
-            ((++cmd_lock))
             ((++looper_lock))
-            cmd_mode="LOOPER"
             __PROTONWIRE_LOOPER="container"
             ;;
-        --use-status-file)
-            hc_status_file="true"
-            ;;
         --systemd)
-            ((++cmd_lock))
             ((++looper_lock))
-            cmd_mode="LOOPER"
             __PROTONWIRE_LOOPER="systemd"
             ;;
         connect | c)
@@ -2711,14 +2488,10 @@ function main() {
             cmd_mode="HEALTHCHECK"
             ((++cmd_lock))
             ;;
-        update-metadata | refresh-metadata | refresh | r)
-            cmd_mode="METADATA_REFRESH"
-            ((++cmd_lock))
-            ;;
         # For DEBUGGING only
         # The folllowng cmmands ar not covered by API stability gurantees.
-        select-server)
-            cmd_mode="SELECT_SERVER"
+        update-metadata)
+            cmd_mode="METADATA_REFRESH"
             ((++cmd_lock))
             ;;
         *-)
@@ -2734,8 +2507,6 @@ function main() {
     done
 
     log_variable "PROTONVPN_SERVER"
-
-    # check cli coflicts
     local args_errors=0
 
     case ${color_mode,,} in
@@ -2754,7 +2525,7 @@ function main() {
 
     # check --debug conflicts with --quiet
     if [[ ${log_lvl_q_lock} -gt 0 ]] && [[ ${log_lvl_v_lock} -gt 0 ]]; then
-        log_error "Cannot use --debug/-v and --quiet/-v at the same time."
+        log_error "Cannot use --debug/-v and --quiet/-q at the same time."
         ((++args_errors))
     fi
 
@@ -2770,11 +2541,15 @@ function main() {
         ((++args_errors))
     fi
 
-    # special handling for --use-status-file check
-    # which uses hc file to avoid duplicate http requests
-    # we skip lot of checks which are not used in this mode
-    if [[ $cmd_mode == "HEALTHCHECK" ]] && [[ $hc_status_file == "true" ]]; then
+    if [[ $cmd_mode == "HEALTHCHECK" ]] && [[ $__PROTONWIRE_LOOPER == "container" ]]; then
         cmd_mode="HEALTHCHECK_CONTAINER"
+    fi
+
+    if [[ $cmd_mode == "CONNECT" ]]; then
+        if [[ $__PROTONWIRE_LOOPER == "container" ]] &&
+            [[ $__PROTONWIRE_LOOPER == "container" ]]; then
+            cmd_mode="LOOPER"
+        fi
     fi
 
     # check if IPCHECK_INTERVAL
@@ -2798,6 +2573,9 @@ function main() {
         exit 1
     fi
 
+    log_variable "cmd_mode"
+    exit 1
+
     # shellcheck disable=SC2119
     case "${cmd_mode^^}" in
     HEALTHCHECK)
@@ -2806,10 +2584,6 @@ function main() {
         ;;
     HEALTHCHECK_CONTAINER)
         protonvpn_healthcheck_status_file
-        exit $?
-        ;;
-    METADATA_REFRESH)
-        protonvpn_refresh --force
         exit $?
         ;;
     LOOPER)
@@ -2822,10 +2596,6 @@ function main() {
         ;;
     DISCONNECT)
         protonvpn_disconnect_cmd
-        exit $?
-        ;;
-    SELECT_SERVER)
-        select_server_cmd
         exit $?
         ;;
     HELP)

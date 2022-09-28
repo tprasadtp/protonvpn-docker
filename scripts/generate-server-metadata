@@ -8,6 +8,7 @@ Get ProtonVPN server metadata
 """
 
 import base64
+from doctest import debug
 import json
 import hashlib
 import logging
@@ -65,7 +66,7 @@ SRP_MODULUS_KEY_FINGERPRINT = "248097092b458509c508dac0350585c4e9518f26"
 
 class PMHash:
     """
-    Proton Hash's implementation for SRP
+    Proton's Hash implementation for SRP
     """
 
     # pylint: disable=locally-disabled, missing-function-docstring, invalid-name
@@ -177,9 +178,9 @@ class User:
         offset = (nbytes * 8) - 1
         return self.__get_random(nbytes) | (1 << offset)
 
-    def __custom_hash(self, *args):
+    def __custom_hash(self, *hash_args):
         h = PMHash()
-        for s in args:
+        for s in hash_args:
             if s is not None:
                 data = self.__long_to_bytes(s) if isinstance(s, int) else s
                 h.update(data)
@@ -248,7 +249,6 @@ class User:
         """SRP Challenge"""
         return self.__long_to_bytes(self.A)
 
-    # Returns M or None if SRP-6a safety check is violated
     def process_challenge(
         self, bytes_s, bytes_server_challenge, version=PM_VERSION
     ):
@@ -527,7 +527,11 @@ class EnvDefault(argparse.Action):
 
 
 def write_metadata(
-    api_url: str, username: str, password: str, metadata_dir: Path
+    api_url: str,
+    username: str,
+    password: str,
+    metadata_dir: Path,
+    verbose: bool = False,
 ):
     metadata_dir = Path(metadata_dir)
 
@@ -547,7 +551,9 @@ def write_metadata(
     metadata_dir_v1_srv = metadata_dir_v1 / Path("server")
     if metadata_dir_v1_srv.exists():
         if not metadata_dir_v1_srv.is_dir():
-            logging.error("{metadata_dir_v1_srv} exits, but is not a directory")
+            logging.error(
+                "{metadata_dir_v1_srv} exits, but is not a directory"
+            )
     else:
         metadata_dir_v1_srv.mkdir(parents=True)
 
@@ -573,32 +579,108 @@ def write_metadata(
         logging.info("Logging out")
         s.logout()
 
-    key_map = {}
     logging.info("Processing Data")
+    if verbose:
+        logging.warning("Saving logicals API output, please disable publishing this!")
+        logicals_resp_file = metadata_dir_v1 / Path("logicals.json")
+        with open(logicals_resp_file, "w", encoding="utf-8") as f:
+            json.dump(logicals, f, indent=2)
+
+    srv_count = 0
     for logical_server in logicals["LogicalServers"]:
         logical_server_name = logical_server["Name"]
         logical_server_domain = logical_server["Domain"]
-        servers = []
+        nodes = []
 
-        logging.info("Logical Server - %s", logical_server_name)
+        # Exit IP list
+        exit_ip_list = []
+
+        # node dns name list
+        node_list_by_dns = []
+
+        srv_count += 1
+        logging.debug("Logical Server - %s", logical_server_name)
         for server in logical_server["Servers"]:
-            server = {
-                "Domain": server["Domain"],
-                "X25519PublicKey": server["X25519PublicKey"],
-                "EntryIP": server["EntryIP"],
-                "ExitIP": server["ExitIP"],
-            }
-            servers.append(server)
+            nodes.append(
+                {
+                    "Endpoint": server["EntryIP"],
+                    "PublicKey": server["X25519PublicKey"],
+                    "Status": server["Status"],
+                }
+            )
 
-            if server["X25519PublicKey"] not in key_map:
-                key_map[server["X25519PublicKey"]] = logical_server_name
-            else:
-                logging.info("%s already present in keymap", server["X25519PublicKey"])
+            # keep a list of dns names of nodes inside logical server
+            # used for getting exit IPs outside logical server
+            # This is required due to Proton API quirks.
+            if server["Domain"] not in node_list_by_dns:
+                node_list_by_dns.append(server["Domain"])
+
+            logging.debug("Collecting Exit IPs")
+            if server["ExitIP"] not in exit_ip_list:
+                exit_ip_list.append(server["ExitIP"])
+
+            # ExitIp can be Entry IP as well (sigh!)
+            if server["EntryIP"] not in exit_ip_list:
+                exit_ip_list.append(server["EntryIP"])
+
+        logging.debug(
+            "Collecting Exit-IPs for same domains outside - %s",
+            logical_server_name,
+        )
+
+        for ipc_srv in logicals["LogicalServers"]:
+            if ipc_srv["Name"] != logical_server_name:
+                for ipc_node in logical_server["Servers"]:
+                    if ipc_node["Domain"] in node_list_by_dns:
+                        if ipc_node["ExitIP"] not in exit_ip_list:
+                            logging.warning(
+                                "Adding - %s to allowed list from=%s",
+                                ipc_node["ExitIP"],
+                                ipc_srv["Name"],
+                            )
+                            exit_ip_list.append(ipc_node["ExitIP"])
+
+        # Features
+        # class FeatureEnum(IntFlag):
+        #     NORMAL = 0            # 0
+        #     SECURE_CORE = 1 << 0  # 1
+        #     TOR = 1 << 1          # 2
+        #     P2P = 1 << 2          # 4
+        #     STREAMING = 1 << 3    # 8
+        #     IPv6 = 1 << 4         # 16
+        # feature_bits = f'{logical_server["Features"]:08b}'
+        # SecureCore = bool(feature_bits[1] == "1")
+        # Tor = bool(feature_bits[2] == "1")
+        # P2P = bool(feature_bits[3] == "1")
+        # Streaming = bool(feature_bits[4] == "1")
+        # IPv6 = bool(feature_bits[5] == "1")
+        # Features = {
+        # "SECURE_CORE": SecureCore,
+        # "TOR": Tor,
+        # "P2P": P2P,
+        # "STREAMING": Streaming,
+        # "IPV6": IPv6,
+        # }
+
+        # Nodes can have same entry IP and public key
+        # but different Exit IP. Because we decoupled Exit Ip
+        # from nodes de-duplication is necessary in some cases.
+        logging.debug("De-duplicate nodes for - %s", logical_server_name)
+        nodes_to_add = []
+
+        node_seen = set()
+        for node in nodes:
+            node_tuple = tuple(sorted(node.items()))
+            if node_tuple not in node_seen:
+                node_seen.add(node_tuple)
+                nodes_to_add.append(node)
 
         logical_server = {
             "Name": logical_server_name,
             "Domain": logical_server_domain,
-            "Servers": servers,
+            "AllowedIPs": exit_ip_list,
+            "Nodes": nodes_to_add,
+            "Status": logical_server["Status"],
         }
 
         logical_server_name_file = metadata_dir_v1_srv / Path(
@@ -613,47 +695,35 @@ def write_metadata(
         with open(logical_server_domain_file, "w", encoding="utf-8") as f:
             json.dump(logical_server, f, indent=2)
 
-    logging.info("Writing Keymap config")
-    keymap_file = metadata_dir_v1 / Path("keymap.json")
-    with open(keymap_file, "w", encoding="utf-8") as f:
-        json.dump(key_map, f, indent=2)
-
+    logging.info("Servers - %s", srv_count)
     logging.info("Writing Vercel config")
     vercel_config_file = metadata_dir / Path("vercel.json")
+    # yes, we use routes as rewrite/redirect cannot handle
+    # advanced stuff like status codes. also, order is important!
     vercel_config = {
         "github": {"silent": True},
-        "trailingSlash": False,
-        "cleanUrls": True,
-        "headers": [
-            {
-                "source": "/(.*)",
-                "headers": [
-                    {"key": "X-Content-Type-Options", "value": "nosniff"},
-                    {"key": "X-Frame-Options", "value": "DENY"},
-                    {"key": "X-XSS-Protection", "value": "1; mode=block"},
-                ],
-            }
-        ],
-        "redirects": [
-            {
-                "source": "/",
-                "destination": "https://github.com/tprasadtp/protonwire",
-                "permanent": False,
-            },
-            {
-                "source": "/index.html",
-                "destination": "https://github.com/tprasadtp/protonwire",
-                "permanent": False,
-            },
+        "routes": [
+            {"handle": "filesystem"},
+            {"src": "/", "status": 200, "dest": "/version.json"},
+            {"src": "/(.*)", "status": 404, "dest": "/404.json"},
         ],
     }
 
     with open(vercel_config_file, "w", encoding="utf-8") as f:
         json.dump(vercel_config, f, indent=2)
 
+    logging.info("Writing 404.json")
+    error_404_json_file = metadata_dir / Path("404.json")
+    error_404_data = {"error": "Not Found", "code": 404}
+    with open(error_404_json_file, "w", encoding="utf-8") as f:
+        json.dump(error_404_data, f, indent=2)
+
     logging.info("Writing metadata config")
     metadata_ts_file = metadata_dir / Path("version.json")
-    metadata_ts = {"timestamp": time.strftime("%d-%m-%Y %H:%M UTC")}
+    metadata_ts = {
+        "info": "Metadata API endpoint",
+        "timestamp": time.strftime("%d-%m-%Y %H:%M UTC"),
+    }
     with open(metadata_ts_file, "w", encoding="utf-8") as f:
         json.dump(metadata_ts, f, indent=2)
 
@@ -702,6 +772,16 @@ if __name__ == "__main__":
         help="Proton API endpoint.",
     )
 
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        required=False,
+        dest="verbose",
+        action="store_true",
+        default=False,
+        help="Enable debug/verbose Logging",
+    )
+
     args = parser.parse_args()
 
     write_metadata(
@@ -709,4 +789,5 @@ if __name__ == "__main__":
         username=args.username,
         password=args.password,
         metadata_dir=Path(args.output),
+        verbose=args.verbose,
     )
