@@ -38,11 +38,9 @@ jobs:
           python3-requests \
           python3-bcrypt \
           python3-coloredlogs
-
       - name: Cleanup stale data
         run: |
           rm -rf ./protonvpn-metadata/v1
-
       - name: Generate metadata
         run: |
           ./protonwire/scripts/generate-server-metadata \

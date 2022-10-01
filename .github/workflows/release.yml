@@ -1,10 +1,9 @@
-name: build
+name: release
 on:
   workflow_dispatch:
   push:
-    branches:
-      - "*"
-  pull_request:
+    tags:
+      - "v*"
 jobs:
   shellcheck:
     runs-on: ubuntu-latest
@@ -23,12 +22,13 @@ jobs:
         uses: docker/setup-qemu-action@8b122486cedac8393e77aa9734c3528886e4a1a8 # ratchet:docker/setup-qemu-action@v2
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@dc7b9719a96d48369863986a06765841d7ea23f6 # ratchet:docker/setup-buildx-action@v2
-      - name: Install GoReleaser
-        uses: goreleaser/goreleaser-action@ff11ca24a9b39f2d36796d1fbd7a4e39c182630a # ratchet:goreleaser/goreleaser-action@v3
-        with:
-          version: latest
-          install-only: true
       - name: Install help2man
         run: sudo apt-get install -y help2man
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@49ed152c8eca782a232dede0303416e8f356c37b # ratchet:docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - name: Run GoReleaser
         run: make release

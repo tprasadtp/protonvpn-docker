@@ -24,10 +24,9 @@
 This is caused by API changed on server side.
 To do that it requires authenticating via proton account username and password and we want to avoid that. Because fastest server selection depends on geo-location, it can no longer be supported.
 
-## Why do I see network calls for https://metadata.protonwire.prasadt.com/v1/
+## Why do I see network calls for https://api.protonwire.prasadt.com/v1/
 
-This is caused by API changes mentioned above. This is used to cache proton VPN metadata.
-like server public keys. Yes, it means you have to trust this domain to provide you with valid un-tampered metadata. But it can be easily verified by checking public keys via ProtonVPN dashboard.
+This is caused by API changes mentioned above. This is used to cache proton VPN metadata, like server public keys. Yes, it means you have to trust this domain to provide you with valid un-tampered metadata. But it can be easily verified by checking public keys via ProtonVPN dashboard.
 
 ## How to check if systemd-resolved is in use
 

@@ -273,7 +273,7 @@ function log_variable() {
 # Pipe output of your command to this function
 # This is EXPERIMENTAL FEATURE!!
 # If used without a pipe causes script to hang!
-# - Accepts two optional arguments.
+# - Accepts optional arguments.
 #  ARG 1 (str) - msg prefix, this will be prefixed with every line of output
 function log_tail() {
     local line prefix
@@ -390,6 +390,7 @@ function __is_ipv6_disabled() {
 
 # Runtime config checks
 # --------------------------------------------------
+
 # Check if DEBUG is set
 function __is_debug() {
     case "${DEBUG,,}" in
@@ -509,7 +510,7 @@ function __systemd_notify() {
     return 1
 }
 
-# systemd-resolved support default routes in >= 241
+# systemd-resolved support for default routes in >= 241
 function __check_systemd_version() {
     local systemd_version="0"
     if has_command systemctl; then
@@ -779,8 +780,8 @@ function __run_checks() {
 function __resolvctl_up_hook() {
 
     # Configure search/routing domains and the
-    # default-route boolean before configuring the DNS server
-    # as per systemd-resolved documentation recommendation
+    # default-route before configuring the DNS server
+    # as per systemd-resolved documentation recommendation.
 
     if resolvectl domain protonwire0 "~." 2>&1 | log_tail "resolvectl-domain"; then
         log_success "Set routing domain to ~."
@@ -820,7 +821,37 @@ function __resolvctl_down_hook() {
     fi
 }
 
-# Detect cache, runtime data and config paths
+
+# hook to enable openvpn
+function __resolvconf_up_hook() {
+    if has_command resolvconf; then
+        if printf "nameserver 10.2.0.1" | timeout 5s resolvconf -a protonwire0.wg 2>&1 | log_tail "resolvconf set"; then
+            log_debug "Successfully updated /etc/resolv.conf"
+            return 0
+        else
+            log_error "Failed to update /etc/resolv.conf!"
+        fi
+    else
+        log_error "resolvconf is not installed!"
+    fi
+
+    return 1
+}
+
+function __resolvconf_down_hook() {
+    if has_command resolvconf; then
+        if timeout 5s resolvconf -f -d protonwire0.wg 2>&1 | log_tail "resolvconf restore"; then
+            log_debug "Successfully restored /etc/resolv.conf"
+            return 0
+        else
+            log_error "Failed to restore /etc/resolv.conf"
+        fi
+    else
+        log_error "resolvconf is not installed!"
+    fi
+    return 1
+}
+
 function __detect_paths() {
     local runtime_dir
 
@@ -1086,7 +1117,7 @@ function protonvpn_fetch_metadata() {
             --show-error \
             --user-agent 'protonwire/v7' \
             --output "${__PROTONWIRE_SRV_INFO}.bak" \
-            "https://protonvpn-metadata.vercel.app/v1/${PROTONVPN_SERVER}.json" 2>&1 | log_tail "curl" & }
+            "https://protonvpn-metadata.vercel.app/v1/server/${PROTONVPN_SERVER}.json" 2>&1 | log_tail "curl" & }
         wait $!
         curl_rc="$?"
 
@@ -1526,35 +1557,6 @@ function __protonvpn_config_select_server() {
 
 }
 
-# hook to enable openvpn
-function __resolvconf_up_hook() {
-    if has_command resolvconf; then
-        if printf "nameserver 10.2.0.1" | timeout 5s resolvconf -a protonwire0.wg 2>&1 | log_tail "resolvconf set"; then
-            log_debug "Successfully updated /etc/resolv.conf"
-            return 0
-        else
-            log_error "Failed to update /etc/resolv.conf!"
-        fi
-    else
-        log_error "resolvconf is not installed!"
-    fi
-
-    return 1
-}
-
-function __resolvconf_down_hook() {
-    if has_command resolvconf; then
-        if timeout 5s resolvconf -f -d protonwire0.wg 2>&1 | log_tail "resolvconf restore"; then
-            log_debug "Successfully restored /etc/resolv.conf"
-            return 0
-        else
-            log_error "Failed to restore /etc/resolv.conf"
-        fi
-    else
-        log_error "resolvconf is not installed!"
-    fi
-    return 1
-}
 
 # Builds list of routable subnets
 function __build_subnets() {
@@ -2256,19 +2258,6 @@ function protonvpn_connect_cmd() {
     return 1
 }
 
-function protonvpn_disconnect_cmd() {
-    if ! __run_checks; then
-        log_error "Please fix the errors and try again!"
-        return 1
-    fi
-    __detect_paths
-
-    if __protonvpn_disconnect; then
-        return 0
-    fi
-    return 1
-}
-
 function __protonvpn_disconnect() {
     # Order in which we do ensures that we dont have
     # broken dns on the machine/container during disconnect.
@@ -2358,6 +2347,19 @@ function __protonvpn_disconnect() {
     return 1
 }
 
+function protonvpn_disconnect_cmd() {
+    if ! __run_checks; then
+        log_error "Please fix the errors and try again!"
+        return 1
+    fi
+    __detect_paths
+
+    if __protonvpn_disconnect; then
+        return 0
+    fi
+    return 1
+}
+
 function display_usage() {
     if __is_stdout_colorable; then
         local NC=$'\e[0m'
@@ -2386,12 +2388,13 @@ ${BOLD}${YELLOW}or:${NC} protonwire [OPTIONS...] help
 ${BOLD}${CYAN}Options:${NC}
   -k, --private-key [FILE|KEY]  Wireguard private key or
                                 file containing private key.
-      --container               Run as container entrypoint
+      --container               Run as container
                                 (Cannot be used with --systemd).
       --systemd                 Run as systemd service.
                                 (Cannot be used with --container).
-      --skip-dns                Skip configuring DNS
       --check-interval [INT]    IP Check interval in seconds.
+      --skip-dns                Skip configuring DNS
+      --skip-routes             Skip configuring Routes
   -q, --quiet                   Show only errors
   -v, --verbose,                Show debug logs
   -h, --help                    Display this help and exit

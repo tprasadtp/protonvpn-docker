@@ -1,7 +1,7 @@
 #syntax=docker/dockerfile:1.2
-FROM alpine:3.16.1 as upstream
+FROM alpine:3.16.2 as base
 
-FROM upstream as base
+FROM base
 
 ENV CREDENTIALS_DIRECTORY=/run/secrets
 
