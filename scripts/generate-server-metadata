@@ -704,8 +704,8 @@ def write_metadata(
         "routes": [
             {"handle": "filesystem"},
             {"src": "/", "status": 200, "dest": "/version.json"},
-            {"src": "/(.*)(?!\\.json)", "dest": "/$1.json"},
             {"src": "/(.*)", "status": 404, "dest": "/404.json"},
+            {"src": "/(.*)(?!\\.json)", "dest": "/$1.json"},
         ],
     }
 
@@ -721,7 +721,9 @@ def write_metadata(
     logging.info("Writing metadata config")
     metadata_ts_file = metadata_dir / Path("version.json")
     metadata_ts = {
-        "info": "Metadata API endpoint",
+        "code": 200,
+        "info": "Protonwire - Metadata API",
+        "repo": "https://github.com/tprasadtp/protonwire",
         "timestamp": time.strftime("%d-%m-%Y %H:%M UTC"),
     }
     with open(metadata_ts_file, "w", encoding="utf-8") as f:
