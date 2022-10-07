@@ -700,13 +700,8 @@ def write_metadata(
     vercel_config = {
         "github": {"silent": True},
         "routes": [
-            # Has highest priority
-            {"src": "/v1/logicals(\\.json)?", "status": 403, "dest": "/403.json"},
-            {"src": "/(.*)(?!\\.json)", "dest": "/$1.json"},
             {"handle": "filesystem"},
             {"src": "/", "status": 200, "dest": "/version.json"},
-            # This routes must be before appending JSON fo avoiding
-            # non json 404 responses.
             {"src": "/(.*)", "status": 404, "dest": "/404.json"},
         ],
     }
@@ -717,20 +712,21 @@ def write_metadata(
     logging.info("Writing 404.json")
     error_404_json_file = metadata_dir / Path("404.json")
     error_404_data = {
-        "message": "Not Found. Please check specified server name.",
+        "message": "Not Found.",
         "code": 404,
     }
     with open(error_404_json_file, "w", encoding="utf-8") as f:
         json.dump(error_404_data, f, indent=2)
 
-    logging.info("Writing 403.json")
-    error_403_json_file = metadata_dir / Path("403.json")
-    error_403_data = {
-        "message": "Forbidden. API does not allow listing all logical servers.",
-        "code": 403,
+    logging.info("Writing 404.json (v1/server)")
+    error_404_server_json_file = metadata_dir_v1_srv / Path("404.json")
+    error_404_server_json_data = {
+        "message": "Not Found. Please verify that server domain name/Server name is correct.",
+        "code": 404,
     }
-    with open(error_403_json_file, "w", encoding="utf-8") as f:
-        json.dump(error_403_data, f, indent=2)
+    with open(error_404_server_json_file, "w", encoding="utf-8") as f:
+        json.dump(error_404_server_json_data, f, indent=2)
+
 
     logging.info("Writing metadata config")
     metadata_ts_file = metadata_dir / Path("version.json")
