@@ -580,7 +580,9 @@ def write_metadata(
 
     logging.info("Processing Data")
     if verbose:
-        logging.warning("Saving logicals API output, please disable publishing this!")
+        logging.warning(
+            "Saving logicals API output, please disable publishing this!"
+        )
         logicals_resp_file = metadata_dir_v1 / Path("logicals.json")
         with open(logicals_resp_file, "w", encoding="utf-8") as f:
             json.dump(logicals, f, indent=2)
@@ -704,6 +706,9 @@ def write_metadata(
         "routes": [
             {"handle": "filesystem"},
             {"src": "/", "status": 200, "dest": "/version.json"},
+            # This routes must be before appending JSON fo avoiding
+            # non json responses from 404.
+            {"src": "/v1/logicals", "status": 403, "dest": "/403.json"},
             {"src": "/(.*)", "status": 404, "dest": "/404.json"},
             {"src": "/(.*)(?!\\.json)", "dest": "/$1.json"},
         ],
@@ -714,9 +719,21 @@ def write_metadata(
 
     logging.info("Writing 404.json")
     error_404_json_file = metadata_dir / Path("404.json")
-    error_404_data = {"error": "Not Found", "code": 404}
+    error_404_data = {
+        "message": "Not Found. Please check specified server name.",
+        "code": 404,
+    }
     with open(error_404_json_file, "w", encoding="utf-8") as f:
         json.dump(error_404_data, f, indent=2)
+
+    logging.info("Writing 403.json")
+    error_403_json_file = metadata_dir / Path("403.json")
+    error_403_data = {
+        "message": "Forbidden. API does not allow listing all logical servers.",
+        "code": 403,
+    }
+    with open(error_403_json_file, "w", encoding="utf-8") as f:
+        json.dump(error_403_data, f, indent=2)
 
     logging.info("Writing metadata config")
     metadata_ts_file = metadata_dir / Path("version.json")
