@@ -579,13 +579,9 @@ def write_metadata(
         s.logout()
 
     logging.info("Processing Data")
-    if verbose:
-        logging.warning(
-            "Saving logicals API output, please disable publishing this!"
-        )
-        logicals_resp_file = metadata_dir_v1 / Path("logicals.json")
-        with open(logicals_resp_file, "w", encoding="utf-8") as f:
-            json.dump(logicals, f, indent=2)
+    logicals_resp_file = metadata_dir_v1 / Path("logicals.json")
+    with open(logicals_resp_file, "w", encoding="utf-8") as f:
+        json.dump(logicals, f, indent=2)
 
     srv_count = 0
     for logical_server in logicals["LogicalServers"]:
