@@ -526,11 +526,7 @@ class EnvDefault(argparse.Action):
 
 
 def write_metadata(
-    api_url: str,
-    username: str,
-    password: str,
-    metadata_dir: Path,
-    verbose: bool = False,
+    api_url: str, username: str, password: str, metadata_dir: Path
 ):
     metadata_dir = Path(metadata_dir)
 
@@ -553,8 +549,7 @@ def write_metadata(
             logging.error(
                 "{metadata_dir_v1_srv} exits, but is not a directory"
             )
-    else:
-        metadata_dir_v1_srv.mkdir(parents=True)
+            sys.exit(1)
 
     logging.info("Creating Session")
     try:
@@ -692,22 +687,7 @@ def write_metadata(
         with open(logical_server_domain_file, "w", encoding="utf-8") as f:
             json.dump(logical_server, f, indent=2)
 
-    logging.info("Servers - %s", srv_count)
-    logging.info("Writing Vercel config")
-    vercel_config_file = metadata_dir / Path("vercel.json")
-    # yes, we use routes as rewrite/redirect cannot handle
-    # advanced stuff like status codes. also, order is important!
-    vercel_config = {
-        "github": {"silent": True},
-        "routes": [
-            {"handle": "filesystem"},
-            {"src": "/", "status": 200, "dest": "/version.json"},
-            {"src": "/(.*)", "status": 404, "dest": "/404.json"},
-        ],
-    }
-
-    with open(vercel_config_file, "w", encoding="utf-8") as f:
-        json.dump(vercel_config, f, indent=2)
+    logging.info("Server count - %s", srv_count)
 
     logging.info("Writing 404.json")
     error_404_json_file = metadata_dir / Path("404.json")
@@ -721,12 +701,11 @@ def write_metadata(
     logging.info("Writing 404.json (v1/server)")
     error_404_server_json_file = metadata_dir_v1_srv / Path("404.json")
     error_404_server_json_data = {
-        "message": "Not Found. Please verify that server domain name/Server name is correct.",
+        "message": "Not Found. Verify that server domain name/Server name is correct.",
         "code": 404,
     }
     with open(error_404_server_json_file, "w", encoding="utf-8") as f:
         json.dump(error_404_server_json_data, f, indent=2)
-
 
     logging.info("Writing metadata config")
     metadata_ts_file = metadata_dir / Path("version.json")
@@ -738,6 +717,22 @@ def write_metadata(
     }
     with open(metadata_ts_file, "w", encoding="utf-8") as f:
         json.dump(metadata_ts, f, indent=2)
+
+    logging.info("Writing Vercel config")
+    vercel_config_file = metadata_dir / Path("vercel.json")
+    # yes, we use routes as rewrite/redirect cannot handle
+    # advanced stuff like status codes. also, order is important!
+    vercel_config = {
+        "github": {"silent": True},
+        "routes": [
+            # {"handle": "filesystem"},
+            {"src": "/", "status": 200, "dest": "/version.json"},
+            {"src": "/(.*)", "status": 404, "dest": "/404.json"},
+        ],
+    }
+
+    with open(vercel_config_file, "w", encoding="utf-8") as f:
+        json.dump(vercel_config, f, indent=2)
 
 
 if __name__ == "__main__":
@@ -801,5 +796,4 @@ if __name__ == "__main__":
         username=args.username,
         password=args.password,
         metadata_dir=Path(args.output),
-        verbose=args.verbose,
     )
