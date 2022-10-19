@@ -651,23 +651,14 @@ def write_metadata(
         }
     logging.info("Server count - %s", srv_count)
 
-    logging.info("Writing 404.json")
-    error_404_json_file = metadata_dir / Path("404.json")
+    logging.info("Writing 404.html")
+    error_404_file = metadata_dir / Path("404.html")
     error_404_data = {
         "message": "Not Found.",
         "code": 404,
     }
-    with open(error_404_json_file, "w", encoding="utf-8") as f:
+    with open(error_404_file, "w", encoding="utf-8") as f:
         json.dump(error_404_data, f, indent=2)
-
-    logging.info("Writing 404.json (v1/server)")
-    error_404_server_json_file = metadata_dir_v1_srv / Path("404.json")
-    error_404_server_json_data = {
-        "message": "Not Found. Verify that server domain name/Server name is correct.",
-        "code": 404,
-    }
-    with open(error_404_server_json_file, "w", encoding="utf-8") as f:
-        json.dump(error_404_server_json_data, f, indent=2)
 
     logging.info("Writing metadata config")
     metadata_ts_file = metadata_dir / Path("version.json")
@@ -686,11 +677,17 @@ def write_metadata(
     # advanced stuff like status codes. also, order is important!
     vercel_config = {
         "github": {"silent": True},
-        "routes": [
-            {"handle": "filesystem"},
-            {"src": "/", "status": 200, "dest": "/version.json"},
-            {"src": "/(.*)", "status": 404, "dest": "/404.json"},
-            {"src": "/(.*)(?!\\.json)", "dest": "/$1.json"},
+        "rewrites": [
+            {"source": "/", "destination": "/version.json"},
+            {"source": "/(.*)(?!\\.json)", "destination": "/version.json"},
+        ],
+        "headers": [
+            {
+                "source": "/(.*)",
+                "headers": [
+                    {"key": "content-type", "value": "application/json"}
+                ],
+            },
         ],
     }
 
