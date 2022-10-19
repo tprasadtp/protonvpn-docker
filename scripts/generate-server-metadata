@@ -645,17 +645,18 @@ def write_metadata(
             "Nodes": nodes_to_add,
             "Status": logical_server["Status"],
         }
-        logical_server_name_file = metadata_dir_v1_srv / Path(
-            logical_server_name.replace("#", "-") + ".json"
-        )
-        logical_server_domain_file = metadata_dir_v1_srv / Path(
-            f"{logical_server_domain}.json"
-        )
-        with open(logical_server_name_file, "w", encoding="utf-8") as f:
-            json.dump(logical_server, f, indent=2)
 
-        with open(logical_server_domain_file, "w", encoding="utf-8") as f:
-            json.dump(logical_server, f, indent=2)
+        server_files = [
+            metadata_dir_v1_srv / Path(logical_server_name),
+            metadata_dir_v1_srv / Path(f"{logical_server_name}.json"),
+            metadata_dir_v1_srv / Path(logical_server_name.replace("#", "-") + ".json"),
+            metadata_dir_v1_srv / Path(f"{logical_server_domain}"),
+            metadata_dir_v1_srv / Path(f"{logical_server_domain}.json")
+        ]
+        for server_file in server_files:
+            logging.debug("Writing - %s", server_file)
+            with open(server_file, "w", encoding="utf-8") as f:
+                json.dump(logical_server, f, indent=2)
 
     logging.info("Server count - %s", srv_count)
 
@@ -685,9 +686,6 @@ def write_metadata(
     # advanced stuff like status codes. also, order is important!
     vercel_config = {
         "github": {"silent": True},
-        "rewrites": [
-            {"source": "/(.*)(?!\\.json)", "destination": "/$1.json"},
-        ],
         "headers": [
             {
                 "source": "/(.*)",
