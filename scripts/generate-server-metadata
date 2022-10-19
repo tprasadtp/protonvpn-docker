@@ -18,13 +18,6 @@ import time
 from pathlib import Path
 
 try:
-    import coloredlogs
-
-    coloredlogs.install(logging.INFO)
-except ImportError:
-    logging.basicConfig(level=logging.INFO)
-
-try:
     import bcrypt
 except ImportError:
     logging.critical(
@@ -540,6 +533,8 @@ def write_metadata(
     if metadata_dir_v1.exists():
         if not metadata_dir_v1.is_dir():
             logging.error("{metadata_dir_v1} exits, but is not a directory")
+            sys.exit(1)
+
     else:
         metadata_dir_v1.mkdir(parents=True)
 
@@ -550,6 +545,8 @@ def write_metadata(
                 "{metadata_dir_v1_srv} exits, but is not a directory"
             )
             sys.exit(1)
+    else:
+        metadata_dir_v1_srv.mkdir(parents=True)
 
     logging.info("Creating Session")
     try:
@@ -632,28 +629,6 @@ def write_metadata(
                             )
                             exit_ip_list.append(ipc_node["ExitIP"])
 
-        # Features
-        # class FeatureEnum(IntFlag):
-        #     NORMAL = 0            # 0
-        #     SECURE_CORE = 1 << 0  # 1
-        #     TOR = 1 << 1          # 2
-        #     P2P = 1 << 2          # 4
-        #     STREAMING = 1 << 3    # 8
-        #     IPv6 = 1 << 4         # 16
-        # feature_bits = f'{logical_server["Features"]:08b}'
-        # SecureCore = bool(feature_bits[1] == "1")
-        # Tor = bool(feature_bits[2] == "1")
-        # P2P = bool(feature_bits[3] == "1")
-        # Streaming = bool(feature_bits[4] == "1")
-        # IPv6 = bool(feature_bits[5] == "1")
-        # Features = {
-        # "SECURE_CORE": SecureCore,
-        # "TOR": Tor,
-        # "P2P": P2P,
-        # "STREAMING": Streaming,
-        # "IPV6": IPv6,
-        # }
-
         # Nodes can have same entry IP and public key
         # but different Exit IP. Because we decoupled Exit Ip
         # from nodes de-duplication is necessary in some cases.
@@ -688,6 +663,15 @@ def write_metadata(
             json.dump(logical_server, f, indent=2)
 
     logging.info("Server count - %s", srv_count)
+
+    logging.info("Writing 403.json")
+    error_403_json_file = metadata_dir / Path("403.json")
+    error_403_data = {
+        "message": "Forbidden",
+        "code": 403,
+    }
+    with open(error_403_json_file, "w", encoding="utf-8") as f:
+        json.dump(error_403_data, f, indent=2)
 
     logging.info("Writing 404.json")
     error_404_json_file = metadata_dir / Path("404.json")
@@ -726,6 +710,12 @@ def write_metadata(
         "github": {"silent": True},
         "routes": [
             # {"handle": "filesystem"},
+            {
+                "src": "/v1/logicals(\\.json)?",
+                "status": 403,
+                "dest": "/403.json",
+            },
+            {"src": "/(.*)(?!\\.json)", "dest": "/$1.json"},
             {"src": "/", "status": 200, "dest": "/version.json"},
             {"src": "/(.*)", "status": 404, "dest": "/404.json"},
         ],
@@ -790,6 +780,17 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
+    log_lvl = logging.INFO
+
+    if args.verbose:
+        log_lvl = logging.DEBUG
+
+    try:
+        import coloredlogs
+
+        coloredlogs.install(level=log_lvl)
+    except ImportError:
+        logging.basicConfig(level=log_lvl)
 
     write_metadata(
         api_url=args.api_url,
