@@ -649,29 +649,7 @@ def write_metadata(
             "Nodes": nodes_to_add,
             "Status": logical_server["Status"],
         }
-
-        logical_server_name_file = metadata_dir_v1_srv / Path(
-            logical_server_name.replace("#", "-") + ".json"
-        )
-        logical_server_domain_file = metadata_dir_v1_srv / Path(
-            f"{logical_server_domain}.json"
-        )
-        with open(logical_server_name_file, "w", encoding="utf-8") as f:
-            json.dump(logical_server, f, indent=2)
-
-        with open(logical_server_domain_file, "w", encoding="utf-8") as f:
-            json.dump(logical_server, f, indent=2)
-
     logging.info("Server count - %s", srv_count)
-
-    logging.info("Writing 403.json")
-    error_403_json_file = metadata_dir / Path("403.json")
-    error_403_data = {
-        "message": "Forbidden",
-        "code": 403,
-    }
-    with open(error_403_json_file, "w", encoding="utf-8") as f:
-        json.dump(error_403_data, f, indent=2)
 
     logging.info("Writing 404.json")
     error_404_json_file = metadata_dir / Path("404.json")
@@ -709,15 +687,15 @@ def write_metadata(
     vercel_config = {
         "github": {"silent": True},
         "routes": [
-            {
-                "src": "/v1/logicals(\\.json)?",
-                "status": 403,
-                "dest": "/403.json",
-            },
-            {"src": "/(.*)(?!\\.json)", "dest": "/$1.json"},
-            {"src": "/", "status": 200, "dest": "/version.json"},
-            {"src": "/(.*)", "status": 404, "dest": "/404.json"},
             {"handle": "filesystem"},
+            {"src": "/", "status": 200, "dest": "/version.json"},
+            {
+                "src": "/v1/server/(.*)",
+                "status": 404,
+                "dest": "/v1/server/404.json",
+            },
+            {"src": "/(.*)", "status": 404, "dest": "/404.json"},
+            {"src": "/(.*)(?!\\.json)", "dest": "/$1.json"},
         ],
     }
 
