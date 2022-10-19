@@ -687,10 +687,10 @@ def write_metadata(
     vercel_config = {
         "github": {"silent": True},
         "routes": [
-            {"src": "/(.*)(?!\\.json)", "dest": "/$1.json"},
             {"handle": "filesystem"},
             {"src": "/", "status": 200, "dest": "/version.json"},
             {"src": "/(.*)", "status": 404, "dest": "/404.json"},
+            {"src": "/(.*)(?!\\.json)", "dest": "/$1.json"},
         ],
     }
 
