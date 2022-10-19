@@ -571,10 +571,6 @@ def write_metadata(
         s.logout()
 
     logging.info("Processing Data")
-    logicals_resp_file = metadata_dir_v1 / Path("logicals.json")
-    with open(logicals_resp_file, "w", encoding="utf-8") as f:
-        json.dump(logicals, f, indent=2)
-
     srv_count = 0
     for logical_server in logicals["LogicalServers"]:
         logical_server_name = logical_server["Name"]
@@ -649,6 +645,18 @@ def write_metadata(
             "Nodes": nodes_to_add,
             "Status": logical_server["Status"],
         }
+        logical_server_name_file = metadata_dir_v1_srv / Path(
+            logical_server_name.replace("#", "-") + ".json"
+        )
+        logical_server_domain_file = metadata_dir_v1_srv / Path(
+            f"{logical_server_domain}.json"
+        )
+        with open(logical_server_name_file, "w", encoding="utf-8") as f:
+            json.dump(logical_server, f, indent=2)
+
+        with open(logical_server_domain_file, "w", encoding="utf-8") as f:
+            json.dump(logical_server, f, indent=2)
+
     logging.info("Server count - %s", srv_count)
 
     logging.info("Writing 404.html")
@@ -660,8 +668,8 @@ def write_metadata(
     with open(error_404_file, "w", encoding="utf-8") as f:
         json.dump(error_404_data, f, indent=2)
 
-    logging.info("Writing metadata config")
-    metadata_ts_file = metadata_dir / Path("version.json")
+    logging.info("Writing metadata")
+    metadata_ts_file = metadata_dir / Path("index.html")
     metadata_ts = {
         "code": 200,
         "info": "Protonwire - Metadata API",
@@ -678,8 +686,7 @@ def write_metadata(
     vercel_config = {
         "github": {"silent": True},
         "rewrites": [
-            {"source": "/", "destination": "/version.json"},
-            {"source": "/(.*)(?!\\.json)", "destination": "/version.json"},
+            {"source": "/(.*)(?!\\.json)", "destination": "/$1.json"},
         ],
         "headers": [
             {
