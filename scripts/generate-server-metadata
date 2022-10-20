@@ -647,10 +647,8 @@ def write_metadata(
         }
 
         server_files = [
-            metadata_dir_v1_srv / Path(logical_server_name),
             metadata_dir_v1_srv / Path(f"{logical_server_name}.json"),
             metadata_dir_v1_srv / Path(logical_server_name.replace("#", "-") + ".json"),
-            metadata_dir_v1_srv / Path(f"{logical_server_domain}"),
             metadata_dir_v1_srv / Path(f"{logical_server_domain}.json")
         ]
         for server_file in server_files:
@@ -660,8 +658,8 @@ def write_metadata(
 
     logging.info("Server count - %s", srv_count)
 
-    logging.info("Writing 404.html")
-    error_404_file = metadata_dir / Path("404.html")
+    logging.info("Writing 404.json")
+    error_404_file = metadata_dir / Path("404.json")
     error_404_data = {
         "message": "Not Found.",
         "code": 404,
@@ -670,7 +668,7 @@ def write_metadata(
         json.dump(error_404_data, f, indent=2)
 
     logging.info("Writing metadata")
-    metadata_ts_file = metadata_dir / Path("index.html")
+    metadata_ts_file = metadata_dir / Path("version.json")
     metadata_ts = {
         "code": 200,
         "info": "Protonwire - Metadata API",

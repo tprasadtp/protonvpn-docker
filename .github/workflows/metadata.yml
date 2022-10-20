@@ -42,6 +42,9 @@ jobs:
       - name: Cleanup stale data
         run: |
           rm -rf ./protonvpn-metadata/v1
+          rm -rf ./protonvpn-metadata/*.json
+          rm -rf ./protonvpn-metadata/*.html
+
       - name: Generate metadata
         run: |
           ./protonwire/scripts/generate-server-metadata \
