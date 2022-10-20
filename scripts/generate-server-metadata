@@ -648,8 +648,7 @@ def write_metadata(
 
         server_files = [
             metadata_dir_v1_srv / Path(f"{logical_server_name}.json"),
-            metadata_dir_v1_srv / Path(logical_server_name.replace("#", "-") + ".json"),
-            metadata_dir_v1_srv / Path(f"{logical_server_domain}.json")
+            metadata_dir_v1_srv / Path(f"{logical_server_domain}.json"),
         ]
         for server_file in server_files:
             logging.debug("Writing - %s", server_file)
@@ -658,8 +657,8 @@ def write_metadata(
 
     logging.info("Server count - %s", srv_count)
 
-    logging.info("Writing 404.json")
-    error_404_file = metadata_dir / Path("404.json")
+    logging.info("Writing 404.html")
+    error_404_file = metadata_dir / Path("404.html")
     error_404_data = {
         "message": "Not Found.",
         "code": 404,
@@ -668,7 +667,7 @@ def write_metadata(
         json.dump(error_404_data, f, indent=2)
 
     logging.info("Writing metadata")
-    metadata_ts_file = metadata_dir / Path("version.json")
+    metadata_ts_file = metadata_dir / Path("metadata.json")
     metadata_ts = {
         "code": 200,
         "info": "Protonwire - Metadata API",
@@ -680,10 +679,16 @@ def write_metadata(
 
     logging.info("Writing Vercel config")
     vercel_config_file = metadata_dir / Path("vercel.json")
-    # yes, we use routes as rewrite/redirect cannot handle
-    # advanced stuff like status codes. also, order is important!
     vercel_config = {
         "github": {"silent": True},
+        "rewrites": [
+            {"source": "/", "destination": "/metadata.json"},
+            {"source": "/version.json", "destination": "/metadata.json"},
+            {
+                "source": "/v1/server/(.*)((?!\\.json))",
+                "destination": "/v1/server/$1.json",
+            },
+        ],
         "headers": [
             {
                 "source": "/(.*)",
