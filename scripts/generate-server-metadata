@@ -519,13 +519,15 @@ class EnvDefault(argparse.Action):
 
 
 def write_metadata(
-    api_url: str, username: str, password: str, metadata_dir: Path
+    api_url: str, username: str, password: str, metadata_dir: Path,
+    verbose: bool = False,
 ):
     metadata_dir = Path(metadata_dir)
 
     if metadata_dir.exists():
         if not metadata_dir.is_dir():
             logging.error("{metadata_dir} exits, but is not a directory")
+            sys.exit(1)
     else:
         metadata_dir.mkdir(parents=True)
 
@@ -534,7 +536,6 @@ def write_metadata(
         if not metadata_dir_v1.is_dir():
             logging.error("{metadata_dir_v1} exits, but is not a directory")
             sys.exit(1)
-
     else:
         metadata_dir_v1.mkdir(parents=True)
 
@@ -548,7 +549,7 @@ def write_metadata(
     else:
         metadata_dir_v1_srv.mkdir(parents=True)
 
-    logging.info("Creating Session")
+    logging.info("Creating a API Session")
     try:
         s = Session(api_url=api_url)
         logging.info("Logging in to Proton API")
@@ -570,11 +571,21 @@ def write_metadata(
         logging.info("Logging out")
         s.logout()
 
+    if verbose:
+        logicals_json_file = metadata_dir / Path("logicals.json")
+        try:
+            with open(logicals_json_file, "w", encoding="utf-8") as f:
+                json.dump(logicals["LogicalServers"], f, indent=2)
+        except (IOError, FileExistsError, PermissionError, OSError):
+            logging.error("Failed to write - %s", logicals_json_file)
+
     logging.info("Processing Data")
     srv_count = 0
     for logical_server in logicals["LogicalServers"]:
         logical_server_name = logical_server["Name"]
         logical_server_domain = logical_server["Domain"]
+        logging.debug("server=%s", logical_server_name)
+
         nodes = []
 
         # Exit IP list
@@ -584,8 +595,8 @@ def write_metadata(
         node_list_by_dns = []
 
         srv_count += 1
-        logging.debug("Logical Server - %s", logical_server_name)
         for server in logical_server["Servers"]:
+            logging.debug("node=%s server=%s", server["EntryIP"], logical_server_name)
             nodes.append(
                 {
                     "Endpoint": server["EntryIP"],
@@ -600,30 +611,12 @@ def write_metadata(
             if server["Domain"] not in node_list_by_dns:
                 node_list_by_dns.append(server["Domain"])
 
-            logging.debug("Collecting Exit IPs")
             if server["ExitIP"] not in exit_ip_list:
                 exit_ip_list.append(server["ExitIP"])
 
-            # ExitIp can be Entry IP as well (sigh!)
+            # ExitIp can be Entry IP as well (sigh! who designed this api??)
             if server["EntryIP"] not in exit_ip_list:
                 exit_ip_list.append(server["EntryIP"])
-
-        logging.debug(
-            "Collecting Exit-IPs for same domains outside - %s",
-            logical_server_name,
-        )
-
-        for ipc_srv in logicals["LogicalServers"]:
-            if ipc_srv["Name"] != logical_server_name:
-                for ipc_node in logical_server["Servers"]:
-                    if ipc_node["Domain"] in node_list_by_dns:
-                        if ipc_node["ExitIP"] not in exit_ip_list:
-                            logging.warning(
-                                "Adding - %s to allowed list from=%s",
-                                ipc_node["ExitIP"],
-                                ipc_srv["Name"],
-                            )
-                            exit_ip_list.append(ipc_node["ExitIP"])
 
         # Nodes can have same entry IP and public key
         # but different Exit IP. Because we decoupled Exit Ip
@@ -647,7 +640,8 @@ def write_metadata(
         }
 
         server_files = [
-            metadata_dir_v1_srv / Path(f"{logical_server_name}.json"),
+            metadata_dir_v1_srv
+            / Path(logical_server_name.replace("#", "-") + ".json"),
             metadata_dir_v1_srv / Path(f"{logical_server_domain}.json"),
         ]
         for server_file in server_files:
@@ -681,9 +675,9 @@ def write_metadata(
     vercel_config_file = metadata_dir / Path("vercel.json")
     vercel_config = {
         "github": {"silent": True},
-        "rewrites": [
+        "redirects": [
             {"source": "/", "destination": "/metadata.json"},
-            {"source": "/version.json", "destination": "/metadata.json"},
+            {"source": "/version(.\\json)?", "destination": "/metadata.json"},
             {
                 "source": "/v1/server/(.*)((?!\\.json))",
                 "destination": "/v1/server/$1.json",
@@ -775,4 +769,5 @@ if __name__ == "__main__":
         username=args.username,
         password=args.password,
         metadata_dir=Path(args.output),
+        verbose=args.verbose,
     )
