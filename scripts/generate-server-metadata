@@ -680,7 +680,7 @@ def write_metadata(
     vercel_config_file = metadata_dir / Path("vercel.json")
     vercel_config = {
         "github": {"silent": True},
-        "redirects": [
+        "rewrites": [
             {"source": "/", "destination": "/metadata.json"},
             {"source": "/version(.\\json)?", "destination": "/metadata.json"},
         ],
