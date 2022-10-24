@@ -5,9 +5,7 @@ on:
     branches:
       - "*"
   schedule:
-    # '*'' is a special character in YAML so
-    # you have to quote this string
-    - cron: "0 */6 * * *"
+    - cron: "15 * * * *"
 jobs:
   update:
     runs-on: ubuntu-latest

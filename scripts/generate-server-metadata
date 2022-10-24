@@ -519,7 +519,10 @@ class EnvDefault(argparse.Action):
 
 
 def write_metadata(
-    api_url: str, username: str, password: str, metadata_dir: Path,
+    api_url: str,
+    username: str,
+    password: str,
+    metadata_dir: Path,
     verbose: bool = False,
 ):
     metadata_dir = Path(metadata_dir)
@@ -596,7 +599,9 @@ def write_metadata(
 
         srv_count += 1
         for server in logical_server["Servers"]:
-            logging.debug("node=%s server=%s", server["EntryIP"], logical_server_name)
+            logging.debug(
+                "node=%s server=%s", server["EntryIP"], logical_server_name
+            )
             nodes.append(
                 {
                     "Endpoint": server["EntryIP"],
@@ -641,8 +646,8 @@ def write_metadata(
 
         server_files = [
             metadata_dir_v1_srv
-            / Path(logical_server_name.replace("#", "-") + ".json"),
-            metadata_dir_v1_srv / Path(f"{logical_server_domain}.json"),
+            / Path(logical_server_name.replace("#", "-")),
+            metadata_dir_v1_srv / Path(logical_server_domain),
         ]
         for server_file in server_files:
             logging.debug("Writing - %s", server_file)
@@ -678,10 +683,6 @@ def write_metadata(
         "redirects": [
             {"source": "/", "destination": "/metadata.json"},
             {"source": "/version(.\\json)?", "destination": "/metadata.json"},
-            {
-                "source": "/v1/server/(.*)((?!\\.json))",
-                "destination": "/v1/server/$1.json",
-            },
         ],
         "headers": [
             {
