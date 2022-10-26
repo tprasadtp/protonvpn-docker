@@ -6,6 +6,7 @@ import (
 	"net/http"
 )
 
+// Display Client's IP via Headers
 func Ip(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		w.Header().Set("Cache-Control", "no-cache")
