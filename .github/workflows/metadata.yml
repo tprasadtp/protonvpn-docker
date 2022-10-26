@@ -10,7 +10,7 @@ jobs:
   update:
     runs-on: ubuntu-latest
     steps:
-      - name: Generate Bot Token
+      - name: Generate bot token
         id: bot
         uses: tibdex/github-app-token@f717b5ecd4534d3c4df4ce9b5c1c2214f0f7cd06 # ratchet:tibdex/github-app-token@v1.7.0
         with:
@@ -18,14 +18,14 @@ jobs:
           app_id: 241646
           installation_id: ${{ secrets.APP_INSTALLATION_ID }}
           private_key: ${{ secrets.APP_PRIVATE_KEY }}
-      - name: Checkout Metadata Repo
+      - name: Checkout metadata repo to protonwire-api-deploy
         uses: actions/checkout@v3 # ratchet:exclude
         with:
           repository: tprasadtp/protonwire-api-deploy
           path: protonwire-api-deploy
           token: ${{ steps.bot.outputs.token }}
           persist-credentials: true
-      - name: Checkout Project Repo
+      - name: Checkout project repo
         uses: actions/checkout@v3 # ratchet:exclude
         with:
           persist-credentials: false
@@ -40,7 +40,7 @@ jobs:
       - name: Sync metadata
         run: tree metadata/
       - name: Generate metadata
-        run: ./protonwire/scripts/generate-server-metadata --output ./metadata
+        run: ./scripts/generate-server-metadata --output ./metadata
         env:
           PROTON_USERNAME: ${{ secrets.PROTON_USERNAME }}
           PROTON_PASSWORD: ${{ secrets.PROTON_PASSWORD }}
