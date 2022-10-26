@@ -15,7 +15,7 @@ jobs:
         uses: tibdex/github-app-token@f717b5ecd4534d3c4df4ce9b5c1c2214f0f7cd06 # ratchet:tibdex/github-app-token@v1.7.0
         with:
           repository: tprasadtp/protonwire-api-deploy
-          app_id: "241646"
+          app_id: 241646
           installation_id: ${{ secrets.APP_INSTALLATION_ID }}
           private_key: ${{ secrets.APP_PRIVATE_KEY }}
       - name: Checkout Metadata Repo
@@ -44,10 +44,14 @@ jobs:
           PROTON_PASSWORD: ${{ secrets.PROTON_PASSWORD }}
       - name: Sync metadata
         run: |
-          rsync -avh \
+          rsync \
+            --archive \
+            --delete \
+            --human-readable \
+            --verbose \
+            --exclude .git \
             metadata/ \
-            "${GITHUB_WORKSPACE:-.}"/protonwire-api-deploy/ \
-            --delete
+            "${GITHUB_WORKSPACE%/}"/protonwire-api-deploy/ \
       - name: Push Metadata
         working-directory: protonwire-api-deploy
         run: |
