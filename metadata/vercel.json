@@ -9,36 +9,7 @@
     },
     {
       "source": "/v1/client/:path",
-      "destination": "/c0dc7f20-d126-474e-9e67-25b0864163f6.json",
-      "has": [
-        {
-          "type": "header",
-          "key": "x-api-token",
-          "value": "^(?!552125ae-e367-4f53-a6d0-2f2895782404).*$"
-        }
-      ]
-    },
-    {
-      "source": "/v1/client/:path",
-      "destination": "/api/v1/client/:path",
-      "has": [
-        {
-          "type": "header",
-          "key": "x-api-token",
-          "value": "552125ae-e367-4f53-a6d0-2f2895782404"
-        }
-      ]
-    },
-    {
-      "source": "/v1/client/ip",
-      "destination": "/api/v1/client/ip",
-      "has": [
-        {
-          "type": "header",
-          "key": "x-api-token",
-          "value": "552125ae-e367-4f53-a6d0-2f2895782404"
-        }
-      ]
+      "destination": "/api/v1/client/:path"
     }
   ],
   "functions": {
