@@ -9,7 +9,7 @@
     }
   ],
   "functions": {
-    "v1/client/*.go": {
+    "api/v1/client/*.go": {
       "memory": 128,
       "maxDuration": 1
     }
