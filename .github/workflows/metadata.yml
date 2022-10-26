@@ -46,7 +46,7 @@ jobs:
         run: |
           rsync -avh \
             metadata/ \
-            "${GITHUB_WORKSPACE:-.}/protonwire-api-deploy/ \
+            "${GITHUB_WORKSPACE:-.}"/protonwire-api-deploy/ \
             --delete
       - name: Push Metadata
         working-directory: protonwire-api-deploy
