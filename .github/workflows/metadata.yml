@@ -50,13 +50,12 @@ jobs:
             --verbose \
             --exclude .git \
             ./metadata/ \
-            ${GITHUB_WORKSPACE}/protonwire-api-deploy/ \
-            --delete
+            ${GITHUB_WORKSPACE}/protonwire-api-deploy/
       - name: Push Metadata
         working-directory: protonwire-api-deploy
         run: |
           git config user.name protonwire-api-deploy[bot]
-          git config user.email 74794488+protonwire-api-deploy[bot]@users.noreply.github.com
+          git config user.email 114404808+protonwire-api-deploy[bot]@users.noreply.github.com
           git add --all
           git commit -m "Updated at - $(date)"
           git push -u origin master
