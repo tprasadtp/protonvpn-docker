@@ -47,9 +47,9 @@ function __sigabrt_handler() {
 }
 
 function __print_version() {
-    local GORELEASER_DYN_VERSION="dev"
-    local GORELEASER_DYN_COMMMIT="HEAD"
-    printf "protonwire version %s(%s)\n" "$GORELEASER_DYN_VERSION" "$GORELEASER_DYN_COMMMIT"
+    local PROTONWIRE_VERSION="dev"
+    local PROTONWIRE_COMMIT="HEAD"
+    printf "protonwire version %s(%s)\n" "$PROTONWIRE_VERSION" "$PROTONWIRE_COMMIT"
 }
 
 #diana::snippet:bashlib-logger:begin#
@@ -378,6 +378,14 @@ function __is_valid_ipv6() {
     return 1
 }
 
+function __is_valid_IPCHECK_URL() {
+    return 1
+}
+
+function __is_valid_metadata_endpoint() {
+    return 1
+}
+
 # checks if IPv6 is enabled on the system
 function __is_ipv6_disabled() {
     if [[ $(sysctl -n net.ipv6.conf.all.disable_ipv6) == "1" ]]; then
@@ -387,9 +395,6 @@ function __is_ipv6_disabled() {
     fi
     return 1
 }
-
-# Runtime config checks
-# --------------------------------------------------
 
 # Check if DEBUG is set
 function __is_debug() {
@@ -401,7 +406,7 @@ function __is_debug() {
     return 1
 }
 
-# Check if DNS leak protection disbaled
+# Check if DNS configuration is disbaled
 function __is_skip_cfg_dns() {
 
     if [[ ${__PROTONWIRE_DNS_UPDATER,,} == "none" ]]; then
@@ -478,6 +483,7 @@ function __systemd_notify() {
                 status="$1"
             else
                 log_error "sd-notify - Invalid status type/message ${1}"
+                return 1
             fi
             ;;
         esac
@@ -533,7 +539,7 @@ function __check_systemd_version() {
             return 1
         fi
     else
-        log_error "systemd is not installed"
+        log_error "systemd is not available"
         return 1
     fi
 
@@ -562,14 +568,19 @@ function __detect_dns_updater() {
         if has_command systemctl; then
             log_debug "Checking if systemd-resolved is enabled"
             if systemctl is-active --quiet systemd-resolved; then
-                log_info "Using systemd-resolved for DNS"
-                __PROTONWIRE_DNS_UPDATER="systemd-resolved"
+                if [[ -L /etc/resolv.conf ]]; then
+                    log_info "Using systemd-resolved for DNS"
+                    __PROTONWIRE_DNS_UPDATER="systemd-resolved"
+                else
+                    log_error "/etc/resolv.conf is not a symlink, using resolvconf(8) for DNS"
+                    __PROTONWIRE_DNS_UPDATER="resolvconf"
+                fi
             else
                 log_info "systemd-resolved is not running, using resolvconf(8) for DNS"
                 __PROTONWIRE_DNS_UPDATER="resolvconf"
             fi
         else
-            log_info "Systemd is not installed, using resolvconf(8) for DNS"
+            log_info "systemd is not available, using resolvconf(8) for DNS"
             __PROTONWIRE_DNS_UPDATER="resolvconf"
         fi
     else
@@ -821,8 +832,7 @@ function __resolvctl_down_hook() {
     fi
 }
 
-
-# hook to enable openvpn
+# resolvconf hook
 function __resolvconf_up_hook() {
     if has_command resolvconf; then
         if printf "nameserver 10.2.0.1" | timeout 5s resolvconf -a protonwire0.wg 2>&1 | log_tail "resolvconf set"; then
@@ -890,7 +900,6 @@ function __detect_paths() {
 
     log_variable "__PROTONWIRE_SRV_INFO"
     log_variable "__PROTONWIRE_HCR"
-
 }
 
 function protonvpn_looper_cmd() {
@@ -1556,7 +1565,6 @@ function __protonvpn_config_select_server() {
     fi
 
 }
-
 
 # Builds list of routable subnets
 function __build_subnets() {
@@ -2387,12 +2395,14 @@ ${BOLD}${YELLOW}or:${NC} protonwire [OPTIONS...] help
 
 ${BOLD}${CYAN}Options:${NC}
   -k, --private-key [FILE|KEY]  Wireguard private key or
-                                file containing private key.
+                                file containing private key
       --container               Run as container
-                                (Cannot be used with --systemd).
-      --systemd                 Run as systemd service.
-                                (Cannot be used with --container).
-      --check-interval [INT]    IP Check interval in seconds.
+                                (Cannot be used with --systemd)
+      --systemd                 Run as systemd service
+                                (Cannot be used with --container)
+      --metadata-endpoint [URL] Server metadata endpoint URL
+      --check-interval [INT]    IP check interval in seconds
+      --check-endpoint [URL]    IP check endpoint URL
       --skip-dns                Skip configuring DNS
       --skip-routes             Skip configuring Routes
   -q, --quiet                   Show only errors
@@ -2455,6 +2465,10 @@ function main() {
             shift
             mode="${1}"
             ;;
+        --metadata-url | --metadata-endpoint)
+            shift
+            PROTONWIRE_METADATA_URL="$1"
+            ;;
         --logfmt | --logformat | --log-fmt | --log-format)
             shift
             LOG_FMT="${1}"
@@ -2463,6 +2477,10 @@ function main() {
             ((++ip_check_lock))
             shift
             IPCHECK_INTERVAL="${1}"
+            ;;
+        --check-url | --check-endpoint | --ipcheck-url | --ipcheck-endpoint)
+            shift
+            IPCHECK_URL="${1}"
             ;;
         --skip-dns)
             SKIP_DNS="false"
@@ -2491,12 +2509,6 @@ function main() {
             cmd_mode="HEALTHCHECK"
             ((++cmd_lock))
             ;;
-        # For DEBUGGING only
-        # The folllowng cmmands ar not covered by API stability gurantees.
-        update-metadata)
-            cmd_mode="METADATA_REFRESH"
-            ((++cmd_lock))
-            ;;
         *-)
             log_error "Invalid argument - $1. See usage below."
             display_usage
@@ -2509,7 +2521,6 @@ function main() {
         shift
     done
 
-    log_variable "PROTONVPN_SERVER"
     local args_errors=0
 
     case ${color_mode,,} in
@@ -2571,13 +2582,29 @@ function main() {
         fi
     fi
 
+    # API endpoints
+    if [[ -n ${IPCHECK_URL} ]]; then
+        IPCHECK_URL="https://protonwire-api.vercel.app/v1/client/ip"
+        log_variable "IPCHECK_URL"
+    else
+        if ! __is_valid_IPCHECK_URL; then
+            ((++args_errors))
+        fi
+    fi
+
+    if [[ -n ${PROTONWIRE_METADATA_URL} ]]; then
+        PROTONWIRE_METADATA_URL="https://protonwire-api.vercel.app/v1/server"
+        log_variable "PROTONWIRE_METADATA_URL"
+    else
+        if ! __is_valid_metadata_endpoint; then
+            ((++args_errors))
+        fi
+    fi
+
     if [[ $args_errors -gt 0 ]]; then
         log_error "See protonwire(1) or protonwire --help for more information."
         exit 1
     fi
-
-    log_variable "cmd_mode"
-    exit 1
 
     # shellcheck disable=SC2119
     case "${cmd_mode^^}" in

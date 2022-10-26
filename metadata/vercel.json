@@ -1,0 +1,46 @@
+{
+  "github": {
+    "silent": true
+  },
+  "rewrites": [
+    {
+      "source": "/",
+      "destination": "/metadata.json"
+    }
+  ],
+  "functions": {
+    "v1/client/*.go": {
+      "memory": 128,
+      "maxDuration": 1
+    }
+  },
+  "headers": [
+    {
+      "source": "/(404|index)\\.html",
+      "headers": [
+        {
+          "key": "content-type",
+          "value": "application/json"
+        }
+      ]
+    },
+    {
+      "source": "/(metadata|version)\\.json",
+      "headers": [
+        {
+          "key": "content-type",
+          "value": "application/json"
+        }
+      ]
+    },
+    {
+      "source": "/v1/server/(.*)",
+      "headers": [
+        {
+          "key": "content-type",
+          "value": "application/json"
+        }
+      ]
+    }
+  ]
+}

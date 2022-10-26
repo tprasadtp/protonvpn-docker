@@ -20,7 +20,7 @@
     <img src="https://img.shields.io/github/v/tag/tprasadtp/protonvpn-docker?label=version&sort=semver&logo=semver&color=7f50a6&labelColor=3a3a3a" height="24" alt="badge-release">
   </a>
   <a href="https://github.com/tprasadtp/protonwire/actions/workflows/metadata.yml" target="_blank" rel="noreferrer">
-    <img src="https://img.shields.io/badge/dynamic/json?label=&query=timestamp&url=https%3A%2F%2Fprotonvpn-metadata.vercel.app&logo=protonvpn&labelColor=3a3a3a&logoColor=white&color=7f50a6" height="24" alt="badge-metadata">
+    <img src="https://img.shields.io/badge/dynamic/json?label=&query=timestamp&url=https%3A%2F%2Fprotonwire-api.vercel.app&logo=protonvpn&labelColor=3a3a3a&logoColor=white&color=7f50a6" height="24" alt="badge-metadata">
   </a>
   <a href="https://github.com/tprasadtp/protonwire/blob/master/LICENSE" target="_blank" rel="noreferrer">
     <img src="https://img.shields.io/github/license/tprasadtp/protonvpn-docker?logo=github&labelColor=3A3A3A" height="24" alt="badge-license">
@@ -31,8 +31,7 @@
 
 - Connects to a server in ~5 seconds
 - LAN/private networks remain accessible and are not routed over VPN, no special configuration required!
-- Supports split horizon DNS **automatically** if `systemd-resolved` is in use (non-container use only)
-(aka your lan/corporate host-names resolve perfectly fine when ProtonVPN is active)
+- Supports split horizon DNS **automatically** if `systemd-resolved` is in use (non-container use only).
 - Supports running as systemd unit (natively and as podman container)
 - Supports roaming clients
 
@@ -40,7 +39,7 @@
 
 Images are published at [ghcr.io/tprasadtp/protonwire][ghcr].
 
-> [Docker Rootless](https://docs.docker.com/engine/security/rootless/), [gVisor](https://gvisor.dev), [Podman Rootless](https://github.com/containers/podman/blob/main/rootless.md) or any other container runtimes using **user mode networking** are **NOT** supported!
+> [Docker Rootless](https://docs.docker.com/engine/security/rootless/), [gVisor](https://gvisor.dev), [Podman Rootless](https://github.com/containers/podman/blob/main/rootless.md) or any other container runtime using **user mode networking** is **NOT** supported!
 
 ## Linux Kernel Requirements
 
@@ -54,7 +53,7 @@ Images are published at [ghcr.io/tprasadtp/protonwire][ghcr].
 
 ## Generating WireGuard Private Key
 
--  Log in to https://account.protonvpn.com and go to **Downloads** → **WireGuard configuration**.
+-  Log in to ProtonVPN and go to **Downloads** → **WireGuard configuration**.
 - Enter a name for the key, and select features to enable like NetShield and VPN Accelerator & click create.
 - Generated config might look something like below,
     ```ini
@@ -84,21 +83,21 @@ Images are published at [ghcr.io/tprasadtp/protonwire][ghcr].
 
 | Name | Default | Description
 |---|---|---
-| `WIREGUARD_PRIVATE_KEY` | None  | Wireguard Private key
-| `PROTONVPN_SERVER` | `FREE` | (String) ProtonVPN server to connect to.
+| `PROTONVPN_SERVER` | REQUIRED | (String) ProtonVPN server to connect to.
+| `WIREGUARD_PRIVATE_KEY` | REQUIRED  | (String) Wireguard Private key
 | `IPCHECK_INTERVAL` | `60` | (Integer) Interval between internal health-checks in seconds. Set this to `0` to disable IP checks.
 | `SKIP_DNS`       | false | (Boolean) Set this to `1` or `true` to skip configuring DNS.
 | `KILLSWITCH`     | false | (Boolean) Enable Killswitch
 
-> Environment variables starting with `PROTONVPN_INTERNAL_` are reserved for internal use.
+> Environment variables starting with `__PROTONWIRE` are reserved for internal use.
 
 ## PROTONVPN_SERVER
 
-This should server name like `NL-FREE#1` or domain name like,
+This should server name like `NL-FREE#1`(or `NL-FREE-1`) or domain name like,
 `nl-free-01.protonvpn.net`.
 
 > Script cannot validate if specified server is available under your plan. Its user's responsibility to ensure that server specified is available under your subscription
-and supports required features!
+and supports required features (like P2P, Streaming etc.)
 
 ## Dependencies
 
@@ -175,19 +174,21 @@ Following dependencies are **in addition** to WireGuard support in Kernel. See h
 
 ## Installation
 
-You can simply drop the script in to any location in your `$PATH`.
 
-- Download the script
-    ```bash
-    sudo curl -sSfL -o /usr/local/bin/protonwire https://github.com/tprasadtp/protonwire/releases/latest/download/protonwire
-    ```
+- You can install DEB or RPM packages from releases.
 
-- Ensure that script is executable
-    ```bash
-    sudo chmod 755 /usr/local/bin/protonwire
-    ```
+- Alternatively, You can simply drop the script in to any location in your `$PATH`.
 
-- Alternatively, you can install DEB or RPM packages from releases.
+    - Download the script
+        ```bash
+        sudo curl -sSfL -o /usr/local/bin/protonwire https://github.com/tprasadtp/protonwire/releases/latest/download/protonwire
+        ```
+
+    - Ensure that script is executable
+        ```bash
+        sudo chmod 755 /usr/local/bin/protonwire
+        ```
+
 - Alternatively, you can clone this repository and run `sudo make install`
 
 ## Usage
@@ -206,6 +207,13 @@ You can simply drop the script in to any location in your `$PATH`.
     ```
 
 > Add `--debug` flag to see debug logs.
+
+## Health-checks
+
+- Script supports `healthcheck` command. By default, service will keep checking every `IPCHECK_INTERVAL` _(default=60)_ seconds using the same api endpoint. If you wish to disable healthchecks entirely set `IPCHECK_INTERVAL` to `0`
+- Containers images do not have healthchecks by default. This is because OCI specs do not include healthcheck. `HEALTHCHECK` directive on Dockerfile is specific to docker.
+- You can use `protonwire healthcheck --silent --use-status-file` as your healthcheck command. Same can be used as liveness probe and readiness probe for Kubernetes.
+
 
 ## Docker
 
@@ -235,7 +243,7 @@ You can simply drop the script in to any location in your `$PATH`.
     --mount type=bind,src="$(pwd)"/wg-private-key,dst=/etc/protonwire/private-key,readonly \
     ghcr.io/tprasadtp/protonwire:latest
     ```
-    > If you wish to publish additional ports from other containers using this VPN, you will need to do it here on the `protonwire` container!
+    > If you wish to publish additional ports from other containers using this VPN, you **MUST** do it here on the `protonwire` container!
 
     > `--sysctl` and `--cap-add` flags are important! without these, container cannot create or manage WireGuard interfaces or routing.
 
@@ -258,13 +266,6 @@ For example, we can run caddy to proxy `https://api.ipify.org/` via VPN. Visitin
     > Note that there are no port mappings done here! It should be done on the VPN container!
 
 ## Docker Compose
-
-  <p align="center">
-    <a href="https://github.com/docker/compose" target="_blank" rel="noreferrer">
-      <img src="https://github.com/compose-spec/website/raw/c6d3e3d52fd15b25c680d4829459aef1bad09e84/website/images/compose_logo.png" height="48" alt="docker">
-    </a>
-  </p>
-
 
 - If you have your entire stack in a single compose file, then `network_mode: service:protonwire` on the services which should be routed via VPN. If your VPN stack is **NOT** in same compose file use `network_mode: container:<protonwire-container-name>`.
 

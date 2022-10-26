@@ -668,34 +668,13 @@ def write_metadata(
     logging.info("Writing metadata")
     metadata_ts_file = metadata_dir / Path("metadata.json")
     metadata_ts = {
-        "code": 200,
         "info": "Protonwire - Metadata API",
         "repo": "https://github.com/tprasadtp/protonwire",
-        "timestamp": time.strftime("%d-%m-%Y %H:%M UTC"),
+        "timestamp": time.strftime("%b %d %H:%M UTC"),
+        "server_count": srv_count
     }
     with open(metadata_ts_file, "w", encoding="utf-8") as f:
         json.dump(metadata_ts, f, indent=2)
-
-    logging.info("Writing Vercel config")
-    vercel_config_file = metadata_dir / Path("vercel.json")
-    vercel_config = {
-        "github": {"silent": True},
-        "rewrites": [
-            {"source": "/", "destination": "/metadata.json"},
-            {"source": "/version(.\\json)?", "destination": "/metadata.json"},
-        ],
-        "headers": [
-            {
-                "source": "/(.*)",
-                "headers": [
-                    {"key": "content-type", "value": "application/json"}
-                ],
-            },
-        ],
-    }
-
-    with open(vercel_config_file, "w", encoding="utf-8") as f:
-        json.dump(vercel_config, f, indent=2)
 
 
 if __name__ == "__main__":

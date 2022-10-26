@@ -1,10 +1,5 @@
 ## FAQ
 
-## Health-checks
-
-- Script supports `healthcheck` command. It will use `https://api.protonvpn.ch/vpn/location` to verify the IP address belongs to connected server. By default, service will keep checking every `IPCHECK_INTERVAL` _(default=60)_ seconds using the same api endpoint. If you wish to disable healthchecks entirely set `IPCHECK_INTERVAL` to `0`
-- Containers images do not have healthchecks by default. This is because OCI specs do not include healthcheck. `HEALTHCHECK` directive on Dockerfile is specific to docker.
-- You can use `protonwire healthcheck --silent --use-status-file` as your healthcheck command. Same can be used as liveness probe and readiness probe for Kubernetes.
 
 ## Run container as systemd unit
 
@@ -24,16 +19,12 @@
 This is caused by API changed on server side.
 To do that it requires authenticating via proton account username and password and we want to avoid that. Because fastest server selection depends on geo-location, it can no longer be supported.
 
-## Why do I see network calls for https://api.protonwire.prasadt.com/v1/
-
-This is caused by API changes mentioned above. This is used to cache proton VPN metadata, like server public keys. Yes, it means you have to trust this domain to provide you with valid un-tampered metadata. But it can be easily verified by checking public keys via ProtonVPN dashboard.
-
 ## How to check if systemd-resolved is in use
 
 - If you are using Ubuntu/Fedora with defaults you are most likely using systemd-resolved for local DNS.
 - Run `resolvectl status --no-pager`. If it has `resolv.conf mode: stub`.  you are using `systemd-resolved`.
 
-## Route table 51820
+## What with route table 51820
 
 - We keep WireGuard route table separate (`51820`).
 - By default we _include_ following subnets to be routed over VPN
@@ -154,5 +145,5 @@ Also these addresses cannot belong to machine running protonwire.
 
 You can use any of the following services for verification as they return your _public_ IP address.
   * https://icanhazip.com/
-  * https://checkip.amazonaws.com/
   * https://api.ipify.org/
+  * https://checkip.amazonaws.com/

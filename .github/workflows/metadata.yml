@@ -5,7 +5,7 @@ on:
     branches:
       - "*"
   schedule:
-    - cron: "15 * * * *"
+    - cron: "30 * * * *"
 jobs:
   update:
     runs-on: ubuntu-latest
@@ -14,15 +14,15 @@ jobs:
         id: metadata
         uses: tibdex/github-app-token@f717b5ecd4534d3c4df4ce9b5c1c2214f0f7cd06 # ratchet:tibdex/github-app-token@v1.7.0
         with:
-          repository: ${{ secrets.METADATA_REPO }}
-          app_id: ${{ secrets.APP_ID }}
+          repository: tprasadtp/protonwire-api-deploy
+          app_id: "241646"
           installation_id: ${{ secrets.APP_INSTALLATION_ID }}
           private_key: ${{ secrets.APP_PRIVATE_KEY }}
       - name: Checkout Metadata Repo
         uses: actions/checkout@v3 # ratchet:exclude
         with:
-          repository: ${{ secrets.METADATA_REPO }}
-          path: protonvpn-metadata
+          repository: tprasadtp/protonwire-api-deploy
+          path: protonwire-api-deploy
           token: ${{ steps.metadata.outputs.token }}
           persist-credentials: true
       - name: Checkout Project Repo
@@ -37,24 +37,22 @@ jobs:
           python3-requests \
           python3-bcrypt \
           python3-coloredlogs
-      - name: Cleanup stale data
-        run: |
-          rm -rf ./protonvpn-metadata/v1
-          rm -rf ./protonvpn-metadata/*.json
-          rm -rf ./protonvpn-metadata/*.html
-
       - name: Generate metadata
-        run: |
-          ./protonwire/scripts/generate-server-metadata \
-          --output ./protonvpn-metadata
+        run: ./protonwire/scripts/generate-server-metadata --output ./metadata
         env:
           PROTON_USERNAME: ${{ secrets.PROTON_USERNAME }}
           PROTON_PASSWORD: ${{ secrets.PROTON_PASSWORD }}
-      - name: Push Metadata
-        working-directory: protonvpn-metadata
+      - name: Sync metadata
         run: |
-          git config user.name ${{ secrets.GIT_USER_NAME }}
-          git config user.email ${{ secrets.GIT_USER_EMAIL }}
+          rsync -avh \
+            metadata/ \
+            "${GITHUB_WORKSPACE:-.}/protonwire-api-deploy/ \
+            --delete
+      - name: Push Metadata
+        working-directory: protonwire-api-deploy
+        run: |
+          git config user.name protonwire-api-deploy[bot]
+          git config user.email 74794488+protonwire-api-deploy[bot]@users.noreply.github.com
           git add --all
-          git commit --allow-empty -m "Updated at - $(date)"
+          git commit -m "Updated at - $(date)"
           git push -u origin master
