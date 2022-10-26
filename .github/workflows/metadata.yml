@@ -36,7 +36,8 @@ jobs:
           python3-gnupg \
           python3-requests \
           python3-bcrypt \
-          python3-coloredlogs
+          python3-coloredlogs \
+          tree
       - name: Generate metadata
         run: ./protonwire/scripts/generate-server-metadata --output ./metadata
         env:
@@ -44,13 +45,14 @@ jobs:
           PROTON_PASSWORD: ${{ secrets.PROTON_PASSWORD }}
       - name: Sync metadata
         run: |
+          tree ./metadata/
           rsync \
             --archive \
             --human-readable \
             --verbose \
-            --exclude .git \
             ./metadata/ \
             ${GITHUB_WORKSPACE}/protonwire-api-deploy/
+          tree ${GITHUB_WORKSPACE}/protonwire-api-deploy/
       - name: Push Metadata
         working-directory: protonwire-api-deploy
         run: |
