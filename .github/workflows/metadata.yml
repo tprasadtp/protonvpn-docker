@@ -43,7 +43,6 @@ jobs:
           PROTON_USERNAME: ${{ secrets.PROTON_USERNAME }}
           PROTON_PASSWORD: ${{ secrets.PROTON_PASSWORD }}
       - name: Sync metadata
-        working-directory: protonwire
         run: |
           rsync \
             --archive \
@@ -51,7 +50,7 @@ jobs:
             --verbose \
             --exclude .git \
             ./metadata/ \
-            ../protonwire-api-deploy/ \
+            ${GITHUB_WORKSPACE}/protonwire-api-deploy/ \
             --delete
       - name: Push Metadata
         working-directory: protonwire-api-deploy
