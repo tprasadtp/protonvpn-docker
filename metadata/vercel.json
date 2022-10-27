@@ -9,7 +9,7 @@
     },
     {
       "source": "/v1/client/ip",
-      "destination": "/api/v1/client/"
+      "destination": "/api/v1/client/ip"
     }
   ],
   "redirects": [
