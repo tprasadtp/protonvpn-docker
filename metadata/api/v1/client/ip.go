@@ -12,7 +12,7 @@ func Ip(w http.ResponseWriter, r *http.Request) {
 		log.Printf("response=%d client=%s method=%s url=%s userAgent=%s", http.StatusNotImplemented, r.RemoteAddr, r.Method, r.RequestURI, r.UserAgent())
 		w.WriteHeader(http.StatusNotImplemented)
 	} else {
-		w.Header().Set("Content-Type", "text/html")
+		w.Header().Set("Content-Type", "text/plain")
 		w.Header().Set("Cache-Control", "no-cache")
 
 		if r.Header.Get("X-Forwarded-For") != "" {

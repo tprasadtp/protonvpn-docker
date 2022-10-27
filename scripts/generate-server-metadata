@@ -636,23 +636,34 @@ def write_metadata(
                 node_seen.add(node_tuple)
                 nodes_to_add.append(node)
 
-        logical_server = {
-            "Name": logical_server_name,
-            "Domain": logical_server_domain,
+        logical_server_by_name = {
+            "Name": logical_server_name.replace("#", "-"),
             "AllowedIPs": exit_ip_list,
             "Nodes": nodes_to_add,
             "Status": logical_server["Status"],
         }
 
-        server_files = [
-            metadata_dir_v1_srv
-            / Path(logical_server_name.replace("#", "-")),
-            metadata_dir_v1_srv / Path(logical_server_domain),
-        ]
-        for server_file in server_files:
-            logging.debug("Writing - %s", server_file)
-            with open(server_file, "w", encoding="utf-8") as f:
-                json.dump(logical_server, f, indent=2)
+        logical_server_by_domain = {
+            "Name": logical_server_domain,
+            "AllowedIPs": exit_ip_list,
+            "Nodes": nodes_to_add,
+            "Status": logical_server["Status"],
+        }
+
+        server_by_name_file = metadata_dir_v1_srv / Path(
+            logical_server_name.replace("#", "-")
+        )
+        server_by_domain_file = metadata_dir_v1_srv / Path(
+            logical_server_domain
+        )
+
+        logging.debug("Writing - %s", server_by_name_file)
+        with open(server_by_name_file, "w", encoding="utf-8") as f:
+            json.dump(logical_server_by_name, f, indent=2)
+
+        logging.debug("Writing - %s", server_by_domain_file)
+        with open(server_by_domain_file, "w", encoding="utf-8") as f:
+            json.dump(logical_server_by_domain, f, indent=2)
 
     logging.info("Server count - %s", srv_count)
 
@@ -671,7 +682,7 @@ def write_metadata(
         "info": "Protonwire - Metadata API",
         "repo": "https://github.com/tprasadtp/protonwire",
         "timestamp": time.strftime("%b %d %H:%M UTC"),
-        "server_count": srv_count
+        "server_count": srv_count,
     }
     with open(metadata_ts_file, "w", encoding="utf-8") as f:
         json.dump(metadata_ts, f, indent=2)

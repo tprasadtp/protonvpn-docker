@@ -8,14 +8,38 @@
       "destination": "/metadata.json"
     },
     {
-      "source": "/v1/client/:path",
-      "destination": "/api/v1/client/:path"
+      "source": "/v1/client/ip",
+      "destination": "/api/v1/client/",
+      "has": [
+        {
+          "type": "query",
+          "key": "client",
+          "value": "cli"
+        }
+      ]
+    }
+  ],
+  "redirects": [
+    {
+      "source": "(/api)?/v1/client/ip",
+      "destination": "https://edge-functions-geolocation.vercel.sh/",
+      "has": [
+        {
+          "type": "query",
+          "key": "client",
+          "value": "^(?!cli).*$"
+        }
+      ]
+    },
+    {
+      "source": "/api/v2/client/ip",
+      "destination": "https://icanhazip.com/"
     }
   ],
   "functions": {
     "api/v1/client/*.go": {
       "memory": 128,
-      "maxDuration": 1
+      "maxDuration": 2
     }
   },
   "headers": [

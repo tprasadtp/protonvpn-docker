@@ -265,7 +265,13 @@ function log_critical() {
 function log_variable() {
     local var="$1"
     local __msg_string
-    printf -v __msg_string "%-${4:-22}s : %s" "${var}" "${!var}"
+    printf -v __msg_string "%-${4:-25}s : %s" "${var}" "${!var:-NA}"
+    __logger_core_event_handler "debug" "${__msg_string}"
+}
+
+function log_kv_pair() {
+    local __msg_string
+    printf -v __msg_string "%-${4:-25}s : %s" "${1:-NA}" "${2:-NA}"
     __logger_core_event_handler "debug" "${__msg_string}"
 }
 
@@ -378,12 +384,69 @@ function __is_valid_ipv6() {
     return 1
 }
 
-function __is_valid_IPCHECK_URL() {
+function __is_valid_ipcheck_url() {
+    log_info "Verifying IPCHECK_URL - ${IPCHECK_URL}"
+
+    if [[ -e ${__PROTONWIRE_HCR} ]]; then
+        if ! rm -f "${__PROTONWIRE_HCR}" 2>&1 | log_tail "rm ipcheck-response"; then
+            log_error "Failed to remove existing IP chck response file - ${__PROTONWIRE_HCR}"
+            return 1
+        fi
+    fi
+
+    case ${IPCHECK_URL} in
+    https://*)
+        local curl_rc="-1"
+        {
+            curl \
+                --fail \
+                --location \
+                --max-time 30 \
+                --connect-timeout 30 \
+                --silent \
+                --show-error \
+                --user-agent 'protonwire/v7' \
+                --output "${__PROTONWIRE_HCR}" \
+                "${IPCHECK_URL}" 2>&1 | log_tail "curl-ipcheck-url" &
+        }
+        wait $!
+        curl_rc="$?"
+
+        if [[ $curl_rc == "0" ]]; then
+            declare -a ip_check_response
+            readarray -t ip_check_response < "${__PROTONWIRE_HCR}"
+
+            if __is_valid_ipv4 "${ip_check_response[0]}"; then
+                log_debug "IP Check endpoint returned ${ip_check_response[0]}(IPv4)"
+                return 0
+            elif __is_valid_ipv6 "${ip_check_response[0]}"; then
+                log_debug "IP Check endpoint returned ${ip_check_response[0]}(IPv6)"
+                return 0
+            else
+                log_error "IP Check endpoint returned invalid IP address(${entry_ips[0]})"
+                return 1
+            fi
+        elif [[ $curl_rc == 6 ]]; then
+            log_error "Failed to validate ipcheck endpoint ${IPCHECK_URL} (dns error)"
+            return 1
+        elif [[ $curl_rc == 28 ]]; then
+            log_error "Failed to validate ipcheck endpoint ${IPCHECK_URL} (timeout)"
+            return 1
+        else
+            log_error "Failed to validate ipcheck endpoint ${IPCHECK_URL} (curl exit code: ${curl_rc})"
+            return 1
+        fi
+        ;;
+    *)
+        log_error "Invalid IPCHECK_URL - $IPCHECK_URL"
+        return 1
+        ;;
+    esac
     return 1
 }
 
 function __is_valid_metadata_endpoint() {
-    return 1
+    return 0
 }
 
 # checks if IPv6 is enabled on the system
@@ -526,7 +589,6 @@ function __check_systemd_version() {
         # +PAM +AUDIT +SELINUX ..... <snip>
         # So we need to extract the version number in first line
         readarray -t systemctl_version_output < <(systemctl --version 2>/dev/null)
-        log_debug "systemctl --version output: ${systemctl_version_output[0]}"
         if [[ ${#systemctl_version_output[@]} -gt 0 ]]; then
             if [[ ${systemctl_version_output[0]} =~ ^systemd[[:space:]]+([0-9]+)[[:space:]]+\(.*\)$ ]]; then
                 systemd_version="${BASH_REMATCH[1]}"
@@ -558,36 +620,32 @@ function __check_systemd_version() {
 
 # detect dns update handler
 function __detect_dns_updater() {
-    log_variable "__PROTONWIRE_DNS_UPDATER"
     if [[ -n $__PROTONWIRE_DNS_UPDATER ]]; then
         return 0
     fi
 
     if ! __is_skip_cfg_dns; then
-        log_debug "Detecting DNS server"
         if has_command systemctl; then
-            log_debug "Checking if systemd-resolved is enabled"
             if systemctl is-active --quiet systemd-resolved; then
                 if [[ -L /etc/resolv.conf ]]; then
                     log_info "Using systemd-resolved for DNS"
                     __PROTONWIRE_DNS_UPDATER="systemd-resolved"
                 else
-                    log_error "/etc/resolv.conf is not a symlink, using resolvconf(8) for DNS"
+                    log_info "Using resolvconf(8) for DNS (/etc/resolv.conf is not a symlink)"
                     __PROTONWIRE_DNS_UPDATER="resolvconf"
                 fi
             else
-                log_info "systemd-resolved is not running, using resolvconf(8) for DNS"
+                log_info "Using resolvconf(8) for DNS (systemd-resolved is not running)"
                 __PROTONWIRE_DNS_UPDATER="resolvconf"
             fi
         else
-            log_info "systemd is not available, using resolvconf(8) for DNS"
+            log_info "Using resolvconf(8) for DNS (systemd is not available)"
             __PROTONWIRE_DNS_UPDATER="resolvconf"
         fi
     else
         log_debug "Skipping DNS configuration"
         __PROTONWIRE_DNS_UPDATER="none"
     fi
-    log_variable "__PROTONWIRE_DNS_UPDATER"
 }
 
 # sd-notify and watchdog checks
@@ -644,6 +702,8 @@ function __check_caps() {
 function __run_checks() {
     local errs=0
 
+    __detect_paths
+
     log_debug "Checking requirements"
 
     declare -a commands=(
@@ -674,8 +734,6 @@ function __run_checks() {
         if [[ ! -w /etc/resolv.conf ]]; then
             log_error "Cannot update DNS, /etc/resolv.conf is not writable"
             ((++errs))
-        else
-            log_debug "/etc/resolv.conf is writable"
         fi
         ;;
     none) ;;
@@ -720,8 +778,6 @@ function __run_checks() {
         [[ $__PROTONWIRE_DNS_UPDATER == "systemd-resolved" ]]; then
         if ! __check_systemd_version; then
             return 1
-        else
-            log_debug "Systemd version is OK"
         fi
     fi
 
@@ -766,7 +822,10 @@ function __run_checks() {
         done
     fi
 
-    log_debug "Checking capabilities"
+    if ! __is_valid_ipcheck_url; then
+        ((++errs))
+    fi
+
     if ! __check_caps; then
         log_error "Run as root and/or add CAP_NET_ADMIN capability"
         ((++errs))
@@ -922,7 +981,6 @@ function protonvpn_looper_cmd() {
     fi
 
     # define paths and dns updater
-    __detect_paths
     __detect_dns_updater
 
     log_variable "PROTONVPN_CHECK_THRESHOLD"
@@ -1126,7 +1184,7 @@ function protonvpn_fetch_metadata() {
             --show-error \
             --user-agent 'protonwire/v7' \
             --output "${__PROTONWIRE_SRV_INFO}.bak" \
-            "https://protonvpn-metadata.vercel.app/v1/server/${PROTONVPN_SERVER}.json" 2>&1 | log_tail "curl" & }
+            "https://protonvpn-metadata.vercel.app/v1/server/${PROTONVPN_SERVER}" 2>&1 | log_tail "curl" & }
         wait $!
         curl_rc="$?"
 
@@ -2258,6 +2316,7 @@ function protonvpn_connect_cmd() {
     fi
 
     __detect_paths
+
     __detect_dns_updater
 
     if __protonvpn_connect; then
@@ -2582,23 +2641,14 @@ function main() {
         fi
     fi
 
-    # API endpoints
-    if [[ -n ${IPCHECK_URL} ]]; then
+    if [[ -z ${IPCHECK_URL} ]]; then
         IPCHECK_URL="https://protonwire-api.vercel.app/v1/client/ip"
         log_variable "IPCHECK_URL"
-    else
-        if ! __is_valid_IPCHECK_URL; then
-            ((++args_errors))
-        fi
     fi
 
-    if [[ -n ${PROTONWIRE_METADATA_URL} ]]; then
-        PROTONWIRE_METADATA_URL="https://protonwire-api.vercel.app/v1/server"
-        log_variable "PROTONWIRE_METADATA_URL"
-    else
-        if ! __is_valid_metadata_endpoint; then
-            ((++args_errors))
-        fi
+    if [[ -n ${SERVER_METADATA_URL} ]]; then
+        SERVER_METADATA_URL="https://protonwire-api.vercel.app/v1/server"
+        log_variable "SERVER_METADATA_URL"
     fi
 
     if [[ $args_errors -gt 0 ]]; then

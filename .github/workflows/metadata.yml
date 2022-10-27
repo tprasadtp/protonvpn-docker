@@ -20,10 +20,7 @@ jobs:
           python3-gnupg \
           python3-requests \
           python3-bcrypt \
-          python3-coloredlogs \
-          tree
-      - name: Sync metadata
-        run: tree metadata/
+          python3-coloredlogs
       - name: Generate metadata
         run: ./scripts/generate-server-metadata --output ./metadata
         env:
@@ -52,7 +49,6 @@ jobs:
             --verbose \
             ./metadata/ \
             ${GITHUB_WORKSPACE}/protonwire-api-deploy/
-          tree ${GITHUB_WORKSPACE}/protonwire-api-deploy/
       - name: Push Metadata
         working-directory: protonwire-api-deploy
         run: |
