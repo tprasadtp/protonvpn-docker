@@ -4,7 +4,7 @@
 [Unit]
 Description=ProtonVPN Wireguard Client
 Documentation=man:protonwire(1)
-Documentation=https://tprasadtp.github.io/protonwire
+Documentation=https://protonwire.github.io
 
 # Wait for Network dependency (networking)
 Wants=network-online.target
@@ -15,12 +15,11 @@ After=systemd-resolved.service
 # Service Type
 # ----------------------------------------
 Type=notify
-NotifyAccess=all
 
 # Service Identity
 # ----------------------------------------
 User=protonwire
-Group=systemd-network
+Group=protonwire
 
 # Service Settings and Environment
 # ----------------------------------------
@@ -64,7 +63,7 @@ RestrictSUIDSGID=true
 # Sandboxing (Filesystem)
 # ----------------------------------------
 ProtectSystem=full
-ProtectHome=yes
+ProtectHome=tmpfs
 PrivateTmp=yes
 
 # Create cache directory for metadata cache
@@ -82,7 +81,7 @@ TasksAccounting = true
 
 # Service commands
 # ----------------------------------------
-ExecStart=protonwire --systemd
+ExecStart=protonwire connect --systemd
 
 # Service lifecycle
 # ----------------------------------------

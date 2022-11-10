@@ -14,7 +14,7 @@
   ],
   "redirects": [
     {
-      "source": "/v2/client/ip",
+      "source": "/v1/client/icanhazip",
       "destination": "https://icanhazip.com/"
     }
   ],

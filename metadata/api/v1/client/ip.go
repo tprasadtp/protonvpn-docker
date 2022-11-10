@@ -22,11 +22,11 @@ func Ip(w http.ResponseWriter, r *http.Request) {
 				w.Write([]byte(clientIp.String()))
 			} else {
 				log.Printf("response=%d client=%s method=%s url=%s userAgent=%s", http.StatusServiceUnavailable, r.RemoteAddr, r.Method, r.RequestURI, r.UserAgent())
-				w.WriteHeader(http.StatusServiceUnavailable)
+				w.WriteHeader(http.StatusInternalServerError)
 			}
 		} else {
 			log.Printf("response=%d client=%s method=%s url=%s userAgent=%s", http.StatusServiceUnavailable, r.RemoteAddr, r.Method, r.RequestURI, r.UserAgent())
-			w.WriteHeader(http.StatusServiceUnavailable)
+			w.WriteHeader(http.StatusBadGateway)
 		}
 	}
 }

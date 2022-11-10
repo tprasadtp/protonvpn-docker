@@ -9,7 +9,7 @@ ResultAny=yes
 ResultInactive=yes
 ResultActive=yes
 
-[Allow protonwire to change Routing Domains]
+[Allow protonwire to change routing domains]
 Identity=unix-user:protonwire
 Action=org.freedesktop.resolve1.set-domains
 ResultAny=yes
@@ -25,8 +25,7 @@ ResultActive=yes
 
 # This is strictly not necessary as protonwire will
 # remove the link once it down.
-# But it is here for completeness.
-[Allow protonwire to reset Link]
+[Allow protonwire to reset links]
 Identity=unix-user:protonwire
 Action=org.freedesktop.resolve1.revert
 ResultAny=yes

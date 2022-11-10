@@ -141,3 +141,5 @@ release-notes.md
 __pycache__/
 metadata/metadata.json
 metadata/v1/server/
+logicals.json
+.mypy_cache/

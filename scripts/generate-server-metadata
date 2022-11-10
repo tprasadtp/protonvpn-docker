@@ -16,6 +16,7 @@ import argparse
 import sys
 import time
 from pathlib import Path
+from typing import List, Union
 
 try:
     import bcrypt
@@ -501,6 +502,44 @@ class Session:
         return self._session_data.get("Scope", [])
 
 
+class ServerNode:
+    """
+    Server node is physical server node.
+    """
+
+    def __init__(self, Endpoint: str, PublicKey: str, Status: int = 1):
+        self.Endpoint = Endpoint
+        self.PublicKey = PublicKey
+        self.Status = Status
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, ServerNode):
+            if (
+                self.Endpoint == other.Endpoint
+                and self.PublicKey == other.PublicKey
+            ):
+                return True
+        return False
+
+    def __str__(self) -> str:
+        return f"Endpoint={self.Endpoint} PublicKey={self.PublicKey}"
+
+
+class LogicalNode:
+    """
+    Server node is logical server node containing
+    one or more ServerNodes.
+    """
+
+    def __init__(
+        self, Name: str, Nodes: List[ServerNode], ExitIPs: List[str], Status: int = 1
+    ) -> None:
+        self.Name = Name
+        self.Nodes = Nodes
+        self.Status = Status
+        self.ExitIPs = ExitIPs
+
+
 class EnvDefault(argparse.Action):
     """ENV Default"""
 
@@ -573,6 +612,7 @@ def write_metadata(
     finally:
         logging.info("Logging out")
         s.logout()
+        del s
 
     if verbose:
         logicals_json_file = metadata_dir / Path("logicals.json")
@@ -583,87 +623,126 @@ def write_metadata(
             logging.error("Failed to write - %s", logicals_json_file)
 
     logging.info("Processing Data")
+
     srv_count = 0
     for logical_server in logicals["LogicalServers"]:
+        srv_count += 1
         logical_server_name = logical_server["Name"]
         logical_server_domain = logical_server["Domain"]
-        logging.debug("server=%s", logical_server_name)
+        logging.info("Processing - %s", logical_server_name)
 
-        nodes = []
+        servers: List[ServerNode] = []
+        exit_ips: List[str] = []
 
-        # Exit IP list
-        exit_ip_list = []
-
-        # node dns name list
-        node_list_by_dns = []
-
-        srv_count += 1
         for server in logical_server["Servers"]:
-            logging.debug(
-                "node=%s server=%s", server["EntryIP"], logical_server_name
+            srv = ServerNode(
+                Endpoint=server["EntryIP"],
+                PublicKey=server["X25519PublicKey"],
+                Status=server["Status"],
             )
-            nodes.append(
-                {
-                    "Endpoint": server["EntryIP"],
-                    "PublicKey": server["X25519PublicKey"],
-                    "Status": server["Status"],
-                }
+            if srv not in servers:
+                logging.debug(
+                    "%s - add(Endpoint) (%s)",
+                    logical_server_name,
+                    srv.Endpoint,
+                )
+                servers.append(srv)
+            else:
+                logging.debug(
+                    "%s - duplicate(Endpoint) (%s)",
+                    logical_server_name,
+                    srv.Endpoint,
+                )
+
+            if srv.Endpoint not in exit_ips:
+                logging.debug(
+                    "%s - add(ExitIP via endpoint) (%s)",
+                    logical_server_name,
+                    srv.Endpoint,
+                )
+                exit_ips.append(srv.Endpoint)
+
+            for __lsrv in logicals["LogicalServers"]:
+                for __srv in __lsrv["Servers"]:
+                    if __srv["Domain"] == logical_server_domain:
+                        if __srv["ExitIP"] not in exit_ips:
+                            logging.debug(
+                                "%s - add(ExitIP via Node DNS) (%s)",
+                                logical_server_name,
+                                __srv["ExitIP"],
+                            )
+                            exit_ips.append(__srv["ExitIP"])
+
+                    if __lsrv["Domain"] == logical_server_domain:
+                        if __srv["ExitIP"] not in exit_ips:
+                            logging.debug(
+                                "%s - add(ExitIP via Logical Server DNS) (%s)",
+                                logical_server_name,
+                                __srv["ExitIP"],
+                            )
+                            exit_ips.append(__srv["ExitIP"])
+
+                    if __srv["X25519PublicKey"] == server["X25519PublicKey"]:
+                        if __srv["ExitIP"] not in exit_ips:
+                            logging.debug(
+                                "%s - add(ExitIP via pubkey) (%s)",
+                                logical_server_name,
+                                __srv["ExitIP"],
+                            )
+                            exit_ips.append(__srv["ExitIP"])
+
+        logical_node_by_name = LogicalNode(
+            Name=logical_server_name.replace("#", "-"),
+            Nodes=servers,
+            ExitIPs=exit_ips,
+            Status=logical_server["Status"],
+        )
+
+        logical_node_by_dns = LogicalNode(
+            Name=logical_server_domain,
+            Nodes=servers,
+            ExitIPs=exit_ips,
+            Status=logical_server["Status"],
+        )
+
+        try:
+            logging.debug("Writing - %s", logical_node_by_name.Name)
+            logical_srv_file = metadata_dir_v1_srv / Path(
+                logical_node_by_name.Name
             )
+            with open(logical_srv_file, "w", encoding="utf-8") as f:
+                f.writelines(
+                    (
+                        json.dumps(
+                            obj=logical_node_by_name, indent=2, default=vars
+                        )
+                    )
+                )
+        except Exception:
+            logging.critical(
+                "Failed to write JSON - %s", logical_node_by_name.Name
+            )
+            sys.exit(1)
 
-            # keep a list of dns names of nodes inside logical server
-            # used for getting exit IPs outside logical server
-            # This is required due to Proton API quirks.
-            if server["Domain"] not in node_list_by_dns:
-                node_list_by_dns.append(server["Domain"])
+        try:
+            logging.debug("Writing - %s", logical_node_by_dns.Name)
+            logical_srv_file = metadata_dir_v1_srv / Path(
+                logical_node_by_dns.Name
+            )
+            with open(logical_srv_file, "w", encoding="utf-8") as f:
+                f.writelines(
+                    (
+                        json.dumps(
+                            obj=logical_node_by_dns, indent=2, default=vars
+                        )
+                    )
+                )
 
-            if server["ExitIP"] not in exit_ip_list:
-                exit_ip_list.append(server["ExitIP"])
-
-            # ExitIp can be Entry IP as well (sigh! who designed this api??)
-            if server["EntryIP"] not in exit_ip_list:
-                exit_ip_list.append(server["EntryIP"])
-
-        # Nodes can have same entry IP and public key
-        # but different Exit IP. Because we decoupled Exit Ip
-        # from nodes de-duplication is necessary in some cases.
-        logging.debug("De-duplicate nodes for - %s", logical_server_name)
-        nodes_to_add = []
-
-        node_seen = set()
-        for node in nodes:
-            node_tuple = tuple(sorted(node.items()))
-            if node_tuple not in node_seen:
-                node_seen.add(node_tuple)
-                nodes_to_add.append(node)
-
-        logical_server_by_name = {
-            "Name": logical_server_name.replace("#", "-"),
-            "AllowedIPs": exit_ip_list,
-            "Nodes": nodes_to_add,
-            "Status": logical_server["Status"],
-        }
-
-        logical_server_by_domain = {
-            "Name": logical_server_domain,
-            "AllowedIPs": exit_ip_list,
-            "Nodes": nodes_to_add,
-            "Status": logical_server["Status"],
-        }
-
-        server_by_name_file = metadata_dir_v1_srv / Path(
-            logical_server_name.replace("#", "-")
-        )
-        server_by_domain_file = metadata_dir_v1_srv / Path(
-            logical_server_domain
-        )
-
-        logging.debug("Writing - %s", server_by_name_file)
-        with open(server_by_name_file, "w", encoding="utf-8") as f:
-            json.dump(logical_server_by_name, f, indent=2)
-
-        logging.debug("Writing - %s", server_by_domain_file)
-        with open(server_by_domain_file, "w", encoding="utf-8") as f:
-            json.dump(logical_server_by_domain, f, indent=2)
+        except Exception:
+            logging.critical(
+                "Failed to write JSON - %s", logical_node_by_dns.Name
+            )
+            sys.exit(1)
 
     logging.info("Server count - %s", srv_count)
 
@@ -676,7 +755,7 @@ def write_metadata(
     with open(error_404_file, "w", encoding="utf-8") as f:
         json.dump(error_404_data, f, indent=2)
 
-    logging.info("Writing metadata")
+    logging.info("Writing metadata.json")
     metadata_ts_file = metadata_dir / Path("metadata.json")
     metadata_ts = {
         "info": "Protonwire - Metadata API",
