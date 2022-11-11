@@ -14,10 +14,50 @@
     ```
     > See [podman-generate-systemd][] for more info.
 
-## Why can't you auto-magically select a server
+## Why can't you auto-magically select a server like from older versions
 
-This is caused by API changed on server side.
-To do that it requires authenticating via proton account username and password and we want to avoid that. Because fastest server selection depends on geo-location, it can no longer be supported.
+- This is caused by API changed on server side.
+- To do that it requires authenticating via proton account username and password and we want to avoid that(there are no scoped tokens and minted access tokens have full access to proton API including payments and Email!!).
+- Because fastest server selection depends on geo-location, it can no longer be supported.
+
+## Can I have a sample API response JSON
+
+Below is **sample** data for endpoint `/v1/server/{name}`.
+ExitIPs are calculated to account for proton's internal routing.
+Exit IPs of Nodes with same DNS and public key are pooled together to build the list.
+It might not be accurate because sometimes ProtonAPI will give you a public IP address
+which does not show up in the API responses altogether.
+
+
+```json
+{
+  "Name": "NL#1",
+  "DNS": "node-nl-01.protonvpn.net",
+  "Tier": 2,
+  "Nodes": [
+    {
+      "Endpoint": "62.112.x.1xx",
+      "PublicKey": "127jo9F8kpNz/SQfhY2o5I8HB7X0VLMJVSaMGGuJowQ=",
+      "Status": 1
+    }
+  ],
+  "ExitIPs": [
+    "62.112.x.1xx",
+    "62.112.x.1xx",
+    "62.112.x.1xx",
+    "62.112.x.2xx",
+    "62.112.x.2xx"
+  ],
+  "Features": [
+    "P2P",
+    "STREAMING",
+    "SECURE_CORE",
+    "TOR"
+  ],
+  "Status": 1
+}
+```
+
 
 ## How to check if systemd-resolved is in use
 

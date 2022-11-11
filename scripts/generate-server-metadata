@@ -9,6 +9,7 @@ Get ProtonVPN server metadata
 
 import argparse
 import base64
+from dataclasses import dataclass
 import hashlib
 import json
 import logging
@@ -513,7 +514,12 @@ class ServerNode:
     Server node is physical server node.
     """
 
-    def __init__(self, Endpoint: str, PublicKey: str, Status: int = 1):
+    def __init__(
+        self,
+        Endpoint: str,
+        PublicKey: str,
+        Status: int = 1,
+    ):
         self.Endpoint = Endpoint
         self.PublicKey = PublicKey
         self.Status = Status
@@ -531,25 +537,20 @@ class ServerNode:
         return f"Endpoint={self.Endpoint} PublicKey={self.PublicKey}"
 
 
+@dataclass
 class LogicalNode:
     """
     Server node is logical server node containing
-    one or more ServerNodes.
+    one or more physical ServerNodes.
     """
 
-    def __init__(
-        self,
-        Name: str,
-        DNS: str,
-        Nodes: List[ServerNode],
-        ExitIPs: List[str],
-        Status: int = 1,
-    ) -> None:
-        self.Name = Name
-        self.DNS = DNS
-        self.Nodes = Nodes
-        self.Status = Status
-        self.ExitIPs = ExitIPs
+    Name: str
+    DNS: str
+    Tier: int
+    Nodes: List[ServerNode]
+    ExitIPs: List[str]
+    Features: List[str]
+    Status: int = 1
 
 
 class EnvDefault(argparse.Action):
@@ -637,14 +638,56 @@ def write_metadata(
     logging.info("Processing Data")
 
     srv_count = 0
+
+    logical_node_list: List[LogicalNode] = []
+
     for logical_server in logicals["LogicalServers"]:
         srv_count += 1
         logical_server_name = logical_server["Name"]
         logical_server_domain = logical_server["Domain"]
-        logging.info("Processing - %s", logical_server_name)
 
         servers: List[ServerNode] = []
         exit_ips: List[str] = []
+
+        # server features builder
+        try:
+            feature_bits = list(bin(logical_server["Features"])[2:].zfill(8))
+            feature_bits.reverse()
+            logging.debug(
+                "Server=%s feature_bits=%s(%d)",
+                logical_server_name,
+                feature_bits,
+                logical_server["Features"],
+            )
+            # SECURE_CORE = 1 << 0  # 1
+            # TOR = 1 << 1          # 2
+            # P2P = 1 << 2          # 4
+            # STREAMING = 1 << 3    # 8
+            # IPv6 = 1 << 4         # 16
+            features = []
+
+            if feature_bits[0] == "1":
+                features.append("SECURE_CORE")
+            if feature_bits[1] == "1":
+                features.append("TOR")
+            if feature_bits[2] == "1":
+                features.append("P2P")
+            if feature_bits[3] == "1":
+                features.append("STREAMING")
+            if feature_bits[4] == "1":
+                features.append("IPV6")
+
+            logging.info("Server=%s features=%s", logical_server_name, features)
+
+        except (IndexError, ValueError, TypeError) as e:
+            logging.error(
+                "Failed to convert %d to bitstream with error %s",
+                logical_server["Features"],
+                e,
+            )
+            sys.exit(1)
+
+        logging.debug("")
 
         for server in logical_server["Servers"]:
             srv = ServerNode(
@@ -709,10 +752,14 @@ def write_metadata(
         logical_node = LogicalNode(
             Name=logical_server_name,
             DNS=logical_server_domain,
+            Tier=logical_server["Tier"],
+            Features=features,
             Nodes=servers,
             ExitIPs=sorted(exit_ips),
             Status=logical_server["Status"],
         )
+
+        logical_node_list.append(logical_node)
 
         try:
             logging.debug("Writing - %s", logical_node.Name)
@@ -721,15 +768,12 @@ def write_metadata(
             )
             with open(logical_node_file, "w", encoding="utf-8") as f:
                 f.writelines(
-                    (
-                        json.dumps(
-                            obj=logical_node, indent=2, default=vars
-                        )
-                    )
+                    (json.dumps(obj=logical_node, indent=2, default=vars))
                 )
         except Exception:
             logging.critical(
-                "Failed to write JSON - %s", logical_node.Name.replace("#", "-")
+                "Failed to write JSON - %s",
+                logical_node.Name.replace("#", "-"),
             )
             sys.exit(1)
 
@@ -740,18 +784,22 @@ def write_metadata(
             )
             with open(logical_node_file_dns, "w", encoding="utf-8") as f:
                 f.writelines(
-                    (
-                        json.dumps(
-                            obj=logical_node, indent=2, default=vars
-                        )
-                    )
+                    (json.dumps(obj=logical_node, indent=2, default=vars))
                 )
-
         except Exception:
-            logging.critical(
-                "Failed to write JSON - %s", logical_node_by_dns.Name
-            )
+            logging.critical("Failed to write JSON - %s", logical_node.DNS)
             sys.exit(1)
+
+    logical_node_list_file = metadata_dir_v1 / Path("server-list")
+    try:
+        logging.info("Writing - %s", logical_node_list_file)
+        with open(logical_node_list_file, "w", encoding="utf-8") as f:
+            f.writelines(
+                (json.dumps(obj=logical_node_list, indent=2, default=vars))
+            )
+    except Exception:
+        logging.critical("Failed to write JSON - %s", logical_node_list_file)
+        sys.exit(1)
 
     logging.info("Server count - %s", srv_count)
 
@@ -839,7 +887,9 @@ if __name__ == "__main__":
     try:
         import coloredlogs
 
-        coloredlogs.install(level=log_lvl)
+        coloredlogs.install(
+            level=log_lvl, fmt="%(asctime)s [%(levelname)8s] %(message)s"
+        )
     except ImportError:
         logging.basicConfig(level=log_lvl)
 
