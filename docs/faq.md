@@ -109,7 +109,7 @@ WireGuard is not a chatty protocol. However for _most_ if not all use cases, end
 
 - This is only possible with `systemd-resolved`. After connecting to VPN (`protonwire connect`) You can verify split dns configuration via `resolvectl query <domain>` and check the interface being used to resolve it.
 Please ensure to use stub resolver mode as many statically built programs (Especially go/rust programs) do not use `nss-resolve` and directly read `/etc/resolv.conf`.
-- Please ensure that your DHCP server/Router or VPN gateway advertises search domains. They will be automatically picked up if using NetworkManager(most desktops) or `systemd-networkd` (most servers) or `ifupdown`.
+- Please ensure that your DHCP server/router or VPN gateway advertises search domains. They will be automatically picked up if using NetworkManager(most desktops) or `systemd-networkd` (most servers) or `ifupdown`.
 
 ## Running systemd unit as non-root user
 

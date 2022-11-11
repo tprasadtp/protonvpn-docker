@@ -7,16 +7,16 @@
 Get ProtonVPN server metadata
 """
 
+import argparse
 import base64
-import json
 import hashlib
+import json
 import logging
 import os
-import argparse
 import sys
 import time
 from pathlib import Path
-from typing import List, Union
+from typing import List
 
 try:
     import bcrypt
@@ -31,12 +31,18 @@ try:
     import gnupg
 except ImportError:
     logging.critical(
-        "Failed to import gpg package, install via package manager - python3-gpg"
+        "Failed to import gnupg package, install via package manager - python3-gnupg"
     )
     sys.exit(1)
 
-import gnupg
-import requests
+try:
+    import requests
+except ImportError:
+    logging.critical(
+        "Failed to import requests package, install via package manager - "
+        "python3-requests"
+    )
+    sys.exit(1)
 
 PM_VERSION = 4
 DEFAULT_TIMEOUT = (10, 30)
@@ -532,9 +538,15 @@ class LogicalNode:
     """
 
     def __init__(
-        self, Name: str, Nodes: List[ServerNode], ExitIPs: List[str], Status: int = 1
+        self,
+        Name: str,
+        DNS: str,
+        Nodes: List[ServerNode],
+        ExitIPs: List[str],
+        Status: int = 1,
     ) -> None:
         self.Name = Name
+        self.DNS = DNS
         self.Nodes = Nodes
         self.Status = Status
         self.ExitIPs = ExitIPs
@@ -663,16 +675,18 @@ def write_metadata(
                 exit_ips.append(srv.Endpoint)
 
             for __lsrv in logicals["LogicalServers"]:
+                # collect exit IP from servers with same logical domain
                 for __srv in __lsrv["Servers"]:
                     if __srv["Domain"] == logical_server_domain:
                         if __srv["ExitIP"] not in exit_ips:
                             logging.debug(
-                                "%s - add(ExitIP via Node DNS) (%s)",
+                                "%s - add(ExitIP via Server DNS) (%s)",
                                 logical_server_name,
                                 __srv["ExitIP"],
                             )
                             exit_ips.append(__srv["ExitIP"])
 
+                    # collect exit IP from servers with same node domain
                     if __lsrv["Domain"] == logical_server_domain:
                         if __srv["ExitIP"] not in exit_ips:
                             logging.debug(
@@ -682,6 +696,7 @@ def write_metadata(
                             )
                             exit_ips.append(__srv["ExitIP"])
 
+                    # collect exit IP from servers with same public key
                     if __srv["X25519PublicKey"] == server["X25519PublicKey"]:
                         if __srv["ExitIP"] not in exit_ips:
                             logging.debug(
@@ -691,49 +706,43 @@ def write_metadata(
                             )
                             exit_ips.append(__srv["ExitIP"])
 
-        logical_node_by_name = LogicalNode(
-            Name=logical_server_name.replace("#", "-"),
+        logical_node = LogicalNode(
+            Name=logical_server_name,
+            DNS=logical_server_domain,
             Nodes=servers,
-            ExitIPs=exit_ips,
-            Status=logical_server["Status"],
-        )
-
-        logical_node_by_dns = LogicalNode(
-            Name=logical_server_domain,
-            Nodes=servers,
-            ExitIPs=exit_ips,
+            ExitIPs=sorted(exit_ips),
             Status=logical_server["Status"],
         )
 
         try:
-            logging.debug("Writing - %s", logical_node_by_name.Name)
-            logical_srv_file = metadata_dir_v1_srv / Path(
-                logical_node_by_name.Name
+            logging.debug("Writing - %s", logical_node.Name)
+            logical_node_file = metadata_dir_v1_srv / Path(
+                logical_node.Name.replace("#", "-")
             )
-            with open(logical_srv_file, "w", encoding="utf-8") as f:
+            with open(logical_node_file, "w", encoding="utf-8") as f:
                 f.writelines(
                     (
                         json.dumps(
-                            obj=logical_node_by_name, indent=2, default=vars
+                            obj=logical_node, indent=2, default=vars
                         )
                     )
                 )
         except Exception:
             logging.critical(
-                "Failed to write JSON - %s", logical_node_by_name.Name
+                "Failed to write JSON - %s", logical_node.Name.replace("#", "-")
             )
             sys.exit(1)
 
         try:
-            logging.debug("Writing - %s", logical_node_by_dns.Name)
-            logical_srv_file = metadata_dir_v1_srv / Path(
-                logical_node_by_dns.Name
+            logging.debug("Writing - %s", logical_node.Name)
+            logical_node_file_dns = metadata_dir_v1_srv / Path(
+                logical_node.DNS
             )
-            with open(logical_srv_file, "w", encoding="utf-8") as f:
+            with open(logical_node_file_dns, "w", encoding="utf-8") as f:
                 f.writelines(
                     (
                         json.dumps(
-                            obj=logical_node_by_dns, indent=2, default=vars
+                            obj=logical_node, indent=2, default=vars
                         )
                     )
                 )
