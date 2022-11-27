@@ -26,10 +26,6 @@ function main() {
         shift
     done
 
-    if [[ -z $PROTONVPN_SERVER ]]; then
-        export PROTONVPN_SERVER="NL-FREE"
-    fi
-
     if [[ -S ./notify.sock ]]; then
         extra_args+=(
             "-e" "NOTIFY_SOCKET=/tmp/notify.sock"

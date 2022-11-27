@@ -64,7 +64,7 @@ Images are published at [ghcr.io/tprasadtp/protonwire][ghcr].
 - Generated config might look something like below,
     ```ini
     [Interface]
-    # Key for SPECIFIED_KEY_NAME
+    # Key for MyDeviceName
     # VPN Accelerator = on
     PrivateKey = KLjfIMiuxPskM4+DaSUDmL2uSIYKJ9Wap+CHvs0Lfkw=
     Address = 10.2.0.2/32
@@ -133,7 +133,7 @@ Following dependencies are **in addition** to WireGuard support in Kernel. See h
 
 - If running on  CentOS-Stream, Fedora 34+, Amazon Linux 2022, RHEL 9, Rocky Linux 9, Alma Linux 9
 
-    - If using `systemd-resolved`,
+    - If using `systemd-resolved`  (default),
         ```console
         sudo dnf install curl jq procps-ng libcap iproute wireguard-tools
         ```
@@ -143,9 +143,9 @@ Following dependencies are **in addition** to WireGuard support in Kernel. See h
         sudo dnf install curl jq procps-ng libcap iproute wireguard-tools openresolv
         ```
 
-- If running on  CentOS 8, Fedora 34+, Amazon Linux 2022, RHEL 9, Rocky Linux, Alma Linux 9
+- If running on  CentOS 8, Fedora 34+, Amazon Linux 2022, RHEL 9, Rocky Linux, Alma Linux 8
 
-    - If using `systemd-resolved` (default),
+    - If using `systemd-resolved` (NOT default),
         ```console
         sudo dnf install curl jq procps-ng libcap iproute wireguard-tools
         ```
@@ -180,9 +180,8 @@ Following dependencies are **in addition** to WireGuard support in Kernel. See h
 
 ## Installation
 
-
 - You can install DEB or RPM packages from releases.
-
+- Alternatively, you can clone this repository and run `sudo make install`
 - Alternatively, You can simply drop the script in to any location in your `$PATH`.
 
     - Download the script
@@ -194,8 +193,6 @@ Following dependencies are **in addition** to WireGuard support in Kernel. See h
         ```bash
         sudo chmod 755 /usr/local/bin/protonwire
         ```
-
-- Alternatively, you can clone this repository and run `sudo make install`
 
 ## Usage
 
@@ -216,7 +213,7 @@ Following dependencies are **in addition** to WireGuard support in Kernel. See h
 
 ## Health-checks
 
-- Script supports `healthcheck` command. By default, service will keep checking every `IPCHECK_INTERVAL` _(default=60)_ seconds using the same api endpoint. If you wish to disable healthchecks entirely set `IPCHECK_INTERVAL` to `0`
+- Script supports `healthcheck` command. By default, when running as a service script will keep checking every `IPCHECK_INTERVAL` _(default=60)_ seconds using the same api endpoint. If you wish to disable healthchecks entirely set `IPCHECK_INTERVAL` to `0`
 - Containers images do not have healthchecks by default. This is because OCI specs do not include healthcheck. `HEALTHCHECK` directive on Dockerfile is specific to docker.
 - You can use `protonwire healthcheck --silent --use-status-file` as your healthcheck command. Same can be used as liveness probe and readiness probe for Kubernetes.
 
@@ -246,7 +243,7 @@ Following dependencies are **in addition** to WireGuard support in Kernel. See h
     --sysctl net.ipv4.conf.all.rp_filter=2 \
     --sysctl net.ipv6.conf.all.disable_ipv6=0 \
     --mount type=tmpfs,dst=/tmp \
-    --mount type=bind,src="$(pwd)"/wg-private-key,dst=/etc/protonwire/private-key,readonly \
+    --mount type=bind,src=<absolute-path-to-key-file>,dst=/etc/protonwire/private-key,readonly \
     ghcr.io/tprasadtp/protonwire:latest
     ```
     > If you wish to publish additional ports from other containers using this VPN, you **MUST** do it here on the `protonwire` container!
@@ -370,14 +367,14 @@ Provides rich systemd integration. Connected server and last verification time i
         ```bash
         sudo chmod 640 /etc/protonwire/private-key
         ```
-    > Service will refuse to use key file, if its is readable by others.
+    > Script will refuse to use key file, if its is readable by others.
 
     > If running as non-root user(default), ensure unit's user has access to the key file. Using `SupplimentaryGroup=systemd-network` and giving `systemd-network` group read access to key file.
 
 - For non sensitive settings, you can use environment files(`.env`) in `/etc/protonwire/` They are loaded automatically be the default unit.
     ```bash
     # /etc/protonwire/settings.env
-    PROTONVPN_SERVER="SECURE-CORE"
+    PROTONVPN_SERVER="NL-FREE#1"
     ```
 
 - If you installed or modified unit files, You must reload systemd via
@@ -472,9 +469,13 @@ If your system package already provides a systemd unit file, you can use [drop-i
 
 See [Troubleshooting][Troubleshooting] and [FAQ][]
 
-## Build
+## Building
 
-Building requires `go` toolchain, `goreleaser`(v1.9+), and `docker` with `buildx` plugin.
+Building requires `goreleaser`(v1.9+), and `docker` with `buildx` plugin.
+
+```
+make docker
+```
 
 [drop-in]: https://wiki.archlinux.org/title/systemd#Drop-in_files
 [nss-resolve]: https://www.freedesktop.org/software/systemd/man/nss-resolve.html

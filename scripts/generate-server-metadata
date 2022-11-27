@@ -4,7 +4,7 @@
 # licensed under GPLv3.
 
 """
-Get ProtonVPN server metadata
+Get ProtonVPN server metadata and convert it
 """
 
 import argparse
@@ -628,7 +628,7 @@ def write_metadata(
         del s
 
     if verbose:
-        logicals_json_file = metadata_dir / Path("logicals.json")
+        logicals_json_file = metadata_dir / Path("upstream.json")
         try:
             with open(logicals_json_file, "w", encoding="utf-8") as f:
                 json.dump(logicals["LogicalServers"], f, indent=2)
@@ -790,16 +790,17 @@ def write_metadata(
             logging.critical("Failed to write JSON - %s", logical_node.DNS)
             sys.exit(1)
 
-    logical_node_list_file = metadata_dir_v1 / Path("server-list")
-    try:
-        logging.info("Writing - %s", logical_node_list_file)
-        with open(logical_node_list_file, "w", encoding="utf-8") as f:
-            f.writelines(
-                (json.dumps(obj=logical_node_list, indent=2, default=vars))
-            )
-    except Exception:
-        logging.critical("Failed to write JSON - %s", logical_node_list_file)
-        sys.exit(1)
+    if verbose:
+        logical_node_list_file = metadata_dir_v1 / Path("list")
+        try:
+            logging.info("Writing - %s", logical_node_list_file)
+            with open(logical_node_list_file, "w", encoding="utf-8") as f:
+                f.writelines(
+                    (json.dumps(obj=logical_node_list, indent=2, default=vars))
+                )
+        except Exception:
+            logging.critical("Failed to write JSON - %s", logical_node_list_file)
+            sys.exit(1)
 
     logging.info("Server count - %s", srv_count)
 

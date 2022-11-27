@@ -90,4 +90,5 @@ uninstall: ## Uninstall protonwire
 
 .PHONY: clean
 clean: ## clean
-	rm -rf dist/
+	rm -rf $(REPO_ROOT)/dist/
+	rm -rf $(REPO_ROOT)/metadata/

@@ -414,7 +414,7 @@ function __is_valid_ipcheck_url() {
 
         if [[ $curl_rc == "0" ]]; then
             declare -a ip_check_response
-            readarray -t ip_check_response < "${__PROTONWIRE_HCR}"
+            readarray -t ip_check_response <"${__PROTONWIRE_HCR}"
 
             if __is_valid_ipv4 "${ip_check_response[0]}"; then
                 log_debug "IP Check endpoint returned ${ip_check_response[0]}(IPv4)"
@@ -445,9 +445,6 @@ function __is_valid_ipcheck_url() {
     return 1
 }
 
-function __is_valid_metadata_endpoint() {
-    return 0
-}
 
 # checks if IPv6 is enabled on the system
 function __is_ipv6_disabled() {
@@ -1167,12 +1164,14 @@ function protonvpn_fetch_metadata() {
             log_debug "Server info is stale - ${__PROTONWIRE_SRV_INFO}"
         fi
     else
-        log_debug "Server info is missing - ${__PROTONWIRE_SRV_INFO}"
+        log_debug "Server info file is missing - ${__PROTONWIRE_SRV_INFO}"
     fi
 
     # Fetch if file is stale or forced
     if [[ $metadata_stale != "false" ]] || [[ $force_refresh == "true" ]]; then
-        log_info "Refresing ProtonVPN server metadata"
+        log_info "Refresing ProtonVPN server metadata (for $PROTONVPN_SERVER)"
+        local api_call="${SERVER_METADATA_URL}/${PROTONVPN_SERVER//\#/-}"
+        log_debug "API - ${api_call}"
         local curl_rc="-1"
         # we use wait to ensure the term signals can be handled properly
         { curl \
@@ -1184,14 +1183,14 @@ function protonvpn_fetch_metadata() {
             --show-error \
             --user-agent 'protonwire/v7' \
             --output "${__PROTONWIRE_SRV_INFO}.bak" \
-            "https://protonvpn-metadata.vercel.app/v1/server/${PROTONVPN_SERVER}" 2>&1 | log_tail "curl" & }
+            "${api_call}" 2>&1 | log_tail "curl" & }
         wait $!
         curl_rc="$?"
 
-        # save to a backup file as download can fail or be corrupt
+        # save to a backup file as download can fail or be corrupted
         if [[ $curl_rc == "0" ]]; then
             # ensure file is json formatted and valid
-            if jq -e '.Servers[]' "${__PROTONWIRE_SRV_INFO}.bak" >/dev/null 2>&1; then
+            if jq -e '.Nodes[]' "${__PROTONWIRE_SRV_INFO}.bak" >/dev/null 2>&1; then
                 if mv "${__PROTONWIRE_SRV_INFO}.bak" "${__PROTONWIRE_SRV_INFO}"; then
                     log_success "Refreshed ProtonVPN server metadata"
                     return 0
@@ -1204,7 +1203,7 @@ function protonvpn_fetch_metadata() {
                 return 1
             fi
         elif [[ $hc_response_rc == 6 ]]; then
-            log_error "Failed to refresh ProtonVPN server metadata (failed to resolved api.protonvpn.ch)"
+            log_error "Failed to refresh ProtonVPN server metadata (failed to resolve domain)"
             return 1
         elif [[ $hc_response_rc == 28 ]]; then
             log_error "Failed to refresh ProtonVPN server metadata (timeout)"
@@ -2614,6 +2613,15 @@ function main() {
         ((++args_errors))
     fi
 
+    if [[ ${cmd_mode} == "CONNECT" ]]; then
+        if [[ -z $PROTONVPN_SERVER ]]; then
+            log_error "PROTONVPN_SERVER is not defined!"
+            ((++args_errors))
+        else
+            log_variable "PROTONVPN_SERVER"
+        fi
+    fi
+
     if [[ $cmd_mode == "HEALTHCHECK" ]] && [[ $__PROTONWIRE_LOOPER == "container" ]]; then
         cmd_mode="HEALTHCHECK_CONTAINER"
     fi
@@ -2646,7 +2654,7 @@ function main() {
         log_variable "IPCHECK_URL"
     fi
 
-    if [[ -n ${SERVER_METADATA_URL} ]]; then
+    if [[ -z ${SERVER_METADATA_URL} ]]; then
         SERVER_METADATA_URL="https://protonwire-api.vercel.app/v1/server"
         log_variable "SERVER_METADATA_URL"
     fi

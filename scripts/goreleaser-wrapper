@@ -8,7 +8,7 @@ log() {
 
 if [[ $1 == "version" ]]; then
     # goreleaser insists on checking go version
-    # even if using a custom go binary
+    # even when using a custom go binary
     printf "goreleaser-wrapper version tip linux/amd64"
     exit 0
 
