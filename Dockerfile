@@ -34,6 +34,7 @@ RUN --mount=type=tmpfs,target=/downloads/ \
     --mount=type=cache,sharing=private,target=/var/cache/apt \
     apt-get update \
     && apt-get install --no-install-recommends --yes \
+    iputils-ping \
     curl \
     procps \
     iptables \

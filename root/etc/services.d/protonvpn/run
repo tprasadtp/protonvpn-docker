@@ -71,6 +71,23 @@ function connect_vpn() {
       log_notice "Using fastest available P2P server"
       PVPN_DEBUG="${DEBUG:-0}" protonvpn connect --p2p
     fi
+  elif [[ ${PROTONVPN_SERVER} == "SECURE_CORE" ]]; then
+    if [[ ${PROTONVPN_TIER} -lt 2 ]]; then
+      log_error "Using Secure Core requires basic plan or above!"
+      exit 4
+    else
+      log_notice "Using fastest available Secure Core server"
+      PVPN_DEBUG="${DEBUG:-0}" protonvpn connect --sc
+    fi
+  elif [[ ${PROTONVPN_SERVER} == "TOR" ]]; then
+    if [[ ${PROTONVPN_TIER} -lt 2 ]]; then
+      log_error "Using TOR requires basic plan or above!"
+      exit 4
+    else
+      log_notice "Using fastest available TOR server"
+      PVPN_DEBUG="${DEBUG:-0}" protonvpn connect --tor
+    fi
+
 
   else
     log_notice "Connecting to server: ${PROTONVPN_SERVER}"

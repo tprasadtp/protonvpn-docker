@@ -6,6 +6,7 @@ import os
 import sys
 from pathlib import Path
 import urllib.request
+import random
 
 if os.getenv("DEBUG", "0") == "1":
     logging.basicConfig(
@@ -64,7 +65,20 @@ logging.debug(f"Allowed IPs are - {connected_server_ips}")
 ip_endpoint = os.getenv("PROTONVPN_IPCHECK_ENDPOINT", "https://icanhazip.com/")
 hciv = os.getenv("PROTONVPN_CHECK_INTERVAL", "0")
 version = os.getenv("VERSION", "v0.0.0")
-user_agent = f"protonvpn-docker/{version}"
+
+
+# Randomize user agents
+# Code from https://github.com/DavidWittman/requests-random-user-agent
+# Might help with rate limiting?
+
+if os.getenv("RANDOMIZE_USER_AGENTS", "1") == "1":
+    USER_AGENTS_FILE = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'useragents.txt')
+    with open(USER_AGENTS_FILE) as fh:
+        USER_AGENTS = fh.read().splitlines()
+    user_agent = random.choice(USER_AGENTS)
+else:
+    user_agent = f"protonvpn-docker/{version}"
+
 
 logging.debug(f"Fetch Public IP from {ip_endpoint}")
 logging.debug(f"Using User-Agent - {user_agent}")
@@ -81,6 +95,20 @@ try:
 except Exception as err:
     logging.error(f"Failed to get IP from - {ip_endpoint}, {str(err)}")
     sys.exit(1)
+
+if os.getenv("PROTONVPN_SERVER", "") == "SECURE_CORE":
+    logging.debug(
+        f"You are running secure core SKIPPING IP Check "
+        f"server {connected_server}"
+    )
+    sys.exit(0)
+if os.getenv("PROTONVPN_SERVER", "") == "TOR":
+    logging.debug(
+        f"You are running via TOR SKIPPING IP Check "
+        f"server {connected_server}"
+    )
+    sys.exit(0)
+
 
 ip_match = False
 for ip in connected_server_ips:
