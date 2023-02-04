@@ -33,7 +33,7 @@ jobs:
           GH_EVENT_NAME: ${{ github.event_name }}
           GH_INPUT_DRY_RUN: ${{ github.event.inputs.dry_run }}
 
-      - uses: actions/stale@v4
+      - uses: actions/stale@v7
         with:
           # Dry run
           debug-only: ${{ steps.check_debug.outputs.result }}
