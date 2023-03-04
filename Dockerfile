@@ -1,6 +1,6 @@
 #syntax=docker/dockerfile:1.2
 
-FROM ubuntu:focal-20230126 as upstream
+FROM ubuntu:focal-20230301 as upstream
 FROM upstream as base
 
 ARG VERSION="v0.0.0"
