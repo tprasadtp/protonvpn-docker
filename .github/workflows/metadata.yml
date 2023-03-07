@@ -40,6 +40,12 @@ jobs:
           path: protonwire-api-deploy
           token: ${{ steps.bot-token.outputs.token }}
           persist-credentials: true
+      - name: Configure git and Remove stale data
+        working-directory: protonwire-api-deploy
+        run: |
+          git config user.name ${{ vars.METADATA_BOT_GIT_USERNAME }}
+          git config user.email ${{ vars.METADATA_BOT_GIT_EMAIL }}
+          rm -rf ./v1/
       - name: Sync metadata
         run: |
           rsync \
@@ -51,8 +57,6 @@ jobs:
       - name: Push Metadata
         working-directory: protonwire-api-deploy
         run: |
-          git config user.name ${{ vars.METADATA_BOT_GIT_USERNAME }}
-          git config user.email ${{ vars.METADATA_BOT_GIT_EMAIL }}
           git add --all
           git commit -m "Updated at - $(date)"
           git push -u origin master
