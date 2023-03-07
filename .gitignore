@@ -139,7 +139,6 @@ release-notes.md
 *.rpm
 *.apk
 __pycache__/
-metadata/metadata.json
-metadata/v1/server/
+metadata/*
 logicals.json
 .mypy_cache/

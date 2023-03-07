@@ -187,3 +187,10 @@ You can use any of the following services for verification as they return your _
   * https://icanhazip.com/
   * https://api.ipify.org/
   * https://checkip.amazonaws.com/
+
+## Metadata updates
+
+Metadata updates includes updating server IPs and their public keys.
+Usually it should be automatic. But Proton API and libraries are in constant state of chaos
+and documentation is virtually non-existent or incorrect. So stuff might break.
+PRs welcome! This is not a rant!, but just take a look at [library here](https://github.com/ProtonMail/proton-python-client/tree/5d9dfa77fdaccb0c800134dab08dc3d5d8147363) and try to **use** it.

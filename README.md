@@ -35,7 +35,6 @@
 
 ## Features
 
-- Connects to a server in ~5 seconds
 - LAN/private networks remain accessible and are not routed over VPN, no special configuration required!
 - Supports split horizon DNS **automatically** if `systemd-resolved` is in use (non-container use only).
 - Supports running as systemd unit (natively and as podman container)
@@ -45,7 +44,7 @@
 
 Images are published at [ghcr.io/tprasadtp/protonwire][ghcr].
 
-> [Docker Rootless](https://docs.docker.com/engine/security/rootless/), [gVisor](https://gvisor.dev), [Podman Rootless](https://github.com/containers/podman/blob/main/rootless.md) or any other container runtime using **user mode networking** is **NOT** supported!
+> [Docker Rootless](https://docs.docker.com/engine/security/rootless/), [gVisor](https://gvisor.dev), [Podman Rootless](https://github.com/containers/podman/blob/main/rootless.md) or any other container runtime using **user mode networking** are **NOT** supported!
 
 ## Linux Kernel Requirements
 
@@ -476,6 +475,7 @@ Building requires `goreleaser`(v1.9+), and `docker` with `buildx` plugin.
 ```
 make docker
 ```
+
 
 [drop-in]: https://wiki.archlinux.org/title/systemd#Drop-in_files
 [nss-resolve]: https://www.freedesktop.org/software/systemd/man/nss-resolve.html

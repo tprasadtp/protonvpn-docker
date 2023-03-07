@@ -17,7 +17,7 @@ import os
 import sys
 import time
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 try:
     import bcrypt
@@ -320,7 +320,7 @@ class Session:
         self,
         api_url,
         appversion="Other",
-        user_agent="None",
+        user_agent="LinuxVPN_3.14.0",
         client_secret=None,
         timeout=DEFAULT_TIMEOUT,
     ):
@@ -329,6 +329,7 @@ class Session:
         self.__user_agent = user_agent
         self.__clientsecret = client_secret
         self.__timeout = timeout
+        self.__captcha_token = None
 
         # Verify modulus
         self.__gnupg = gnupg.GPG()
@@ -340,49 +341,47 @@ class Session:
         self.s.headers["x-pm-appversion"] = appversion
         self.s.headers["User-Agent"] = user_agent
 
+    @property
+    def captcha_url(self):
+        return f"{self.__api_url}/core/v4/captcha?Token={self.__captcha_token}"
+
     def api_request(
         self, endpoint, data=None, additional_headers=None, method=None
     ):
-        fct = self.s.post
         if method is None:
             if data is None:
-                fct = self.s.get
+                session_make_request = self.s.get
             else:
-                fct = self.s.post
+                session_make_request = self.s.post
+        elif method == "DELETE":
+            session_make_request = self.s.delete
         else:
-            fct = {
-                "get": self.s.get,
-                "post": self.s.post,
-                "put": self.s.put,
-                "delete": self.s.delete,
-                "patch": self.s.patch,
-            }.get(method.lower())
-
-        if fct is None:
             raise ValueError(f"Unknown method: {method}")
 
-        ret = fct(
+        resp = session_make_request(
             self.__api_url + endpoint,
             headers=additional_headers,
             json=data,
             timeout=self.__timeout,
         )
 
+        logging.debug("Session StatusCode=%d", resp.status_code)
         try:
-            ret = ret.json()
+            responseData = resp.json()
+            logging.debug("Session Response=%s", responseData)
         except json.decoder.JSONDecodeError as err:
             raise ProtonError(
                 {
-                    "Code": ret.status_code,
-                    "Error": ret.reason,
-                    "Headers": ret.headers,
+                    "Code": resp.status_code,
+                    "Error": resp.reason,
+                    "Headers": resp.headers,
                 }
             ) from err
 
-        if ret["Code"] != 1000:
-            raise ProtonError(ret)
+        if responseData["Code"] != 1000:
+            raise ProtonError(responseData)
 
-        return ret
+        return responseData
 
     @property
     def _base_headers(self):
@@ -480,8 +479,8 @@ class Session:
 
     def refresh(self):
         refresh_response = self.api_request(
-            "/auth/refresh",
-            {
+            endpoint="/auth/refresh",
+            data={
                 "ResponseType": "token",
                 "GrantType": "refresh_token",
                 "RefreshToken": self.RefreshToken,
@@ -575,6 +574,7 @@ def write_metadata(
     username: str,
     password: str,
     metadata_dir: Path,
+    client_secret: Optional[str] = None,
     verbose: bool = False,
 ):
     metadata_dir = Path(metadata_dir)
@@ -606,14 +606,14 @@ def write_metadata(
 
     logging.info("Creating a API Session")
     try:
-        s = Session(api_url=api_url)
+        s = Session(api_url=api_url, client_secret=client_secret)
         logging.info("Logging in to Proton API")
         s.authenticate(
             username=username,
             password=password,
         )
     except (ValueError, ProtonError):
-        logging.error("Failed to Login!")
+        logging.exception(exc_info=True, stack_info=True, msg="Failed to Login!")
         sys.exit(1)
 
     try:
@@ -848,6 +848,17 @@ if __name__ == "__main__":
         default=None,
         required=True,
         help="Proton Account Password",
+    )
+
+    parser.add_argument(
+        "--client-secret",
+        dest="client_secret",
+        action=EnvDefault,
+        envvar="PROTON_CLIENT_SECRET",
+        type=str,
+        default=None,
+        required=False,
+        help="Proton Client Secret",
     )
 
     parser.add_argument(

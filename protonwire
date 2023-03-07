@@ -1161,7 +1161,7 @@ function protonvpn_fetch_metadata() {
         if [[ $((current_ts - metadata_ts)) -lt 7200 ]]; then
             metadata_stale="false"
         else
-            log_debug "Server info is stale - ${__PROTONWIRE_SRV_INFO}"
+            log_warning "Server info is stale - ${__PROTONWIRE_SRV_INFO}"
         fi
     else
         log_debug "Server info file is missing - ${__PROTONWIRE_SRV_INFO}"
@@ -1517,7 +1517,7 @@ function __protonvpn_config_select_server() {
     # this is most likely due to a network issue
     if [[ $metadata_fetch_tries -gt $metadata_fetch_max_tries ]]; then
         if [[ ! -f ${__PROTONWIRE_SRV_INFO} ]]; then
-            log_error "Failed to fetch server metadata after 5 tries"
+            log_error "Failed to fetch server metadata after $metadata_fetch_max_tries tries"
             log_error "Please check your internet connection and try again!"
             log_error "If you have killswitch enabled please disable it and try again!"
             return 1
@@ -1528,23 +1528,12 @@ function __protonvpn_config_select_server() {
 
     # check if server is offline
     local _server_online
-    _server_online="$(jq -r \
-        --arg SERVER_NAME "${PROTONVPN_SERVER^^}" \
-        '.Status' \
-        "${__PROTONWIRE_SRV_INFO}" 2>/dev/null)"
+    _server_online="$(jq -r '.Status' "${__PROTONWIRE_SRV_INFO}" 2>/dev/null)"
     if [[ $_server_online != "1" ]]; then
         log_error "Server ${PROTONVPN_SERVER^^} is offline"
         return 1
     else
         log_success "Server ${PROTONVPN_SERVER^^} is online"
-    fi
-    # Uppercase is used in server shortnames(normalize)
-    server_pool=("${PROTONVPN_SERVER^^}")
-
-    # check if we have atleast one server!
-    if [[ ${#server_pool[@]} -lt 1 ]]; then
-        log_error "No servers found for - PROTONVPN_SERVER=${PROTONVPN_SERVER}"
-        return 1
     fi
 
     # now check if we have an active wireguard interface
@@ -1561,7 +1550,7 @@ function __protonvpn_config_select_server() {
             return 1
         else
             log_debug "Connected peers - ${configured_endpoints[*]}"
-            # if we have a peer check its name in server metadata
+            # if we have a peer check its key is in list of keys for the server
             if [[ -n ${configured_endpoints[0]} ]]; then
                 log_debug "Lookup server name for peer - ${configured_endpoints[0]}"
                 declare -a connected_server_name
