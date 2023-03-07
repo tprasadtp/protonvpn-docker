@@ -42,6 +42,7 @@ RUN --mount=type=tmpfs,target=/downloads/ \
     dialog \
     python3-pip \
     cron \
+    natpmpc \
     && ARCH="$(uname -m)" \
     && export ARCH \
     && if [ "$ARCH" = "x86_64" ]; then \
