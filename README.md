@@ -26,7 +26,7 @@
     <img src="https://github.com/tprasadtp/protonvpn-docker/actions/workflows/metadata.yml/badge.svg" height="24" alt="metadata-build">
   </a>
   <a href="https://github.com/tprasadtp/protonwire/actions/workflows/metadata.yml" target="_blank" rel="noreferrer">
-    <img src="https://img.shields.io/badge/dynamic/json?label=update&query=timestamp&url=https%3A%2F%2Fprotonwire-api.vercel.app&logo=protonvpn&labelColor=3a3a3a&logoColor=white&color=7f50a6" height="24" alt="badge-metadata">
+    <img src="https://img.shields.io/badge/dynamic/json?label=metadata-update&query=timestamp&url=https%3A%2F%2Fprotonwire-api.vercel.app&logo=protonvpn&labelColor=3a3a3a&logoColor=white&color=7f50a6" height="24" alt="badge-metadata">
   </a>
   <a href="https://github.com/tprasadtp/protonwire/actions/workflows/metadata.yml" target="_blank" rel="noreferrer">
     <img src="https://img.shields.io/badge/dynamic/json?label=servers&query=server_count&url=https%3A%2F%2Fprotonwire-api.vercel.app&logo=protonvpn&labelColor=3a3a3a&logoColor=white&color=7f50a6" height="24" alt="badge-server-count">
@@ -39,6 +39,9 @@
 - Supports split horizon DNS **automatically** if `systemd-resolved` is in use (non-container use only).
 - Supports running as systemd unit (natively and as podman container)
 - Supports roaming clients
+
+> If you are looking documentation for old OpenVPN based container,
+> See [here](https://github.com/tprasadtp/protonvpn-docker/tree/20f73fc7a74c1968c2ebf27d2044e928fc772ec4).
 
 ## Container Images
 
@@ -119,7 +122,7 @@ Following dependencies are **in addition** to WireGuard support in Kernel. See h
         sudo apt-get install curl jq procps iproute2 libcap2-bin wireguard-tools openresolv
         ```
 
-- If running on Debian, Rasbperry Pi OS, and other **Debian** based derivatives etc
+- If running on Debian, Raspberry Pi OS, and other **Debian** based derivatives etc
 
     - If using `systemd-resolved` (**NOT** default),
         ```console

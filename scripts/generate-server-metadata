@@ -9,7 +9,7 @@ Get ProtonVPN server metadata and convert it
 
 import argparse
 import base64
-from dataclasses import dataclass
+from enum import Enum, unique
 import hashlib
 import json
 import logging
@@ -368,7 +368,7 @@ class Session:
         logging.debug("Session StatusCode=%d", resp.status_code)
         try:
             responseData = resp.json()
-            logging.debug("Session Response=%s", responseData)
+            logging.debug("Response Code =%s", responseData["Code"])
         except json.decoder.JSONDecodeError as err:
             raise ProtonError(
                 {
@@ -517,7 +517,7 @@ class ServerNode:
         self,
         Endpoint: str,
         PublicKey: str,
-        Status: int = 1,
+        Status: str = "UNKNOWN",
     ):
         self.Endpoint = Endpoint
         self.PublicKey = PublicKey
@@ -536,20 +536,60 @@ class ServerNode:
         return f"Endpoint={self.Endpoint} PublicKey={self.PublicKey}"
 
 
-@dataclass
 class LogicalNode:
     """
     Server node is logical server node containing
     one or more physical ServerNodes.
     """
 
-    Name: str
-    DNS: str
-    Tier: int
-    Nodes: List[ServerNode]
-    ExitIPs: List[str]
-    Features: List[str]
-    Status: int = 1
+    def __init__(
+        self,
+        name: str,
+        dns_name: str,
+        exit_country: str,
+        tier: int,
+        nodes: List[ServerNode],
+        exit_ips: List[str],
+        features: List[str],
+        server_status: str = "UNKNOWN",
+    ) -> None:
+        self.Name: str = name
+        self.DNS: str = dns_name
+        self.ExitCountry: str = exit_country
+        self.Tier: int = tier
+        self.Nodes: List[ServerNode] = nodes
+
+        self.ExitIPs: List[str] = exit_ips
+        self.Features: List[str] = features
+        self.Status: str = server_status
+
+    def dump_csv_name(self) -> List[str]:
+        """
+        Dumps as CSV with Name.
+        """
+        csv: List[str] = []
+        for node in self.Nodes:
+            features = "|".join(self.Features)
+            exit_ip = "|".join(self.ExitIPs)
+            csv.append(
+                f"{self.Name},{self.Status},{self.Tier},{self.ExitCountry},"
+                f"{features},{node.Endpoint},{node.PublicKey},{exit_ip}"
+            )
+        return csv
+
+    def dump_csv_dns(self) -> List[str]:
+        """
+        Dumps as CSV with DNS Name.
+        """
+        csv: List[str] = []
+        for node in self.Nodes:
+            features = "|".join(self.Features)
+            exit_ip = "|".join(self.ExitIPs)
+            csv.append(
+                f"{self.DNS},{self.Status},{self.Tier},{self.ExitCountry},"
+                f"{features},{node.Endpoint},{node.PublicKey},{exit_ip}"
+            )
+        return csv
 
 
 class EnvDefault(argparse.Action):
@@ -576,6 +616,8 @@ def write_metadata(
     metadata_dir: Path,
     client_secret: Optional[str] = None,
     verbose: bool = False,
+    generate_list: bool = False,
+    save_api_resp: bool = False,
 ):
     metadata_dir = Path(metadata_dir)
 
@@ -586,23 +628,42 @@ def write_metadata(
     else:
         metadata_dir.mkdir(parents=True)
 
-    metadata_dir_v1 = metadata_dir / Path("v1")
-    if metadata_dir_v1.exists():
-        if not metadata_dir_v1.is_dir():
+    metadata_dir_json_v1 = metadata_dir / Path("v1") / Path("json")
+    if metadata_dir_json_v1.exists():
+        if not metadata_dir_json_v1.is_dir():
             logging.error("{metadata_dir_v1} exits, but is not a directory")
             sys.exit(1)
     else:
-        metadata_dir_v1.mkdir(parents=True)
+        metadata_dir_json_v1.mkdir(parents=True)
 
-    metadata_dir_v1_srv = metadata_dir_v1 / Path("server")
-    if metadata_dir_v1_srv.exists():
-        if not metadata_dir_v1_srv.is_dir():
+    metadata_dir_json_v1_srv = metadata_dir_json_v1 / Path("server")
+    if metadata_dir_json_v1_srv.exists():
+        if not metadata_dir_json_v1_srv.is_dir():
             logging.error(
                 "{metadata_dir_v1_srv} exits, but is not a directory"
             )
             sys.exit(1)
     else:
-        metadata_dir_v1_srv.mkdir(parents=True)
+        metadata_dir_json_v1_srv.mkdir(parents=True)
+
+    # CSV metadata
+    metadata_dir_csv_v1 = metadata_dir / Path("v1") / Path("csv")
+    if metadata_dir_csv_v1.exists():
+        if not metadata_dir_csv_v1.is_dir():
+            logging.error("{metadata_dir_v1} exits, but is not a directory")
+            sys.exit(1)
+    else:
+        metadata_dir_csv_v1.mkdir(parents=True)
+
+    metadata_dir_csv_v1_srv = metadata_dir_csv_v1 / Path("server")
+    if metadata_dir_csv_v1_srv.exists():
+        if not metadata_dir_csv_v1_srv.is_dir():
+            logging.error(
+                "{metadata_dir_v1_srv} exits, but is not a directory"
+            )
+            sys.exit(1)
+    else:
+        metadata_dir_csv_v1_srv.mkdir(parents=True)
 
     logging.info("Creating a API Session")
     try:
@@ -613,7 +674,9 @@ def write_metadata(
             password=password,
         )
     except (ValueError, ProtonError):
-        logging.exception(exc_info=True, stack_info=True, msg="Failed to Login!")
+        logging.exception(
+            exc_info=True, stack_info=True, msg="Failed to Login!"
+        )
         sys.exit(1)
 
     try:
@@ -627,7 +690,7 @@ def write_metadata(
         s.logout()
         del s
 
-    if verbose:
+    if save_api_resp:
         logicals_json_file = metadata_dir / Path("upstream.json")
         try:
             with open(logicals_json_file, "w", encoding="utf-8") as f:
@@ -648,6 +711,12 @@ def write_metadata(
 
         servers: List[ServerNode] = []
         exit_ips: List[str] = []
+
+        logical_server_status: str = "UNKNOWN"
+        if logical_server["Status"] == 0:
+            logical_server_status = "OFFLINE"
+        elif logical_server["Status"] == 1:
+            logical_server_status = "ONLINE"
 
         # server features builder
         try:
@@ -677,23 +746,30 @@ def write_metadata(
             if feature_bits[4] == "1":
                 features.append("IPV6")
 
-            logging.info("Server=%s features=%s", logical_server_name, features)
+            logging.info(
+                "%-15s Status=%s Features=%s",
+                logical_server_name, logical_server_status, features
+            )
 
         except (IndexError, ValueError, TypeError) as e:
             logging.error(
-                "Failed to convert %d to bitstream with error %s",
+                "Failed to convert %d to bit stream with error %s",
                 logical_server["Features"],
                 e,
             )
             sys.exit(1)
 
-        logging.debug("")
-
         for server in logical_server["Servers"]:
+            node_status: str = "UNKNOWN"
+            if server["Status"] == 0:
+                node_status = "OFFLINE"
+            elif server["Status"] == 1:
+                node_status = "ONLINE"
+
             srv = ServerNode(
                 Endpoint=server["EntryIP"],
                 PublicKey=server["X25519PublicKey"],
-                Status=server["Status"],
+                Status=node_status,
             )
             if srv not in servers:
                 logging.debug(
@@ -750,20 +826,21 @@ def write_metadata(
                             exit_ips.append(__srv["ExitIP"])
 
         logical_node = LogicalNode(
-            Name=logical_server_name,
-            DNS=logical_server_domain,
-            Tier=logical_server["Tier"],
-            Features=features,
-            Nodes=servers,
-            ExitIPs=sorted(exit_ips),
-            Status=logical_server["Status"],
+            name=logical_server_name,
+            dns_name=logical_server_domain,
+            exit_country=logical_server["ExitCountry"],
+            tier=logical_server["Tier"],
+            features=features,
+            nodes=servers,
+            exit_ips=sorted(exit_ips),
+            server_status=logical_server_status,
         )
 
         logical_node_list.append(logical_node)
 
         try:
-            logging.debug("Writing - %s", logical_node.Name)
-            logical_node_file = metadata_dir_v1_srv / Path(
+            logging.debug("Writing(JSON) - %s", logical_node.Name)
+            logical_node_file = metadata_dir_json_v1_srv / Path(
                 logical_node.Name.replace("#", "-")
             )
             with open(logical_node_file, "w", encoding="utf-8") as f:
@@ -771,15 +848,15 @@ def write_metadata(
                     (json.dumps(obj=logical_node, indent=2, default=vars))
                 )
         except Exception:
-            logging.critical(
+            logging.exception(
                 "Failed to write JSON - %s",
                 logical_node.Name.replace("#", "-"),
             )
             sys.exit(1)
 
         try:
-            logging.debug("Writing - %s", logical_node.Name)
-            logical_node_file_dns = metadata_dir_v1_srv / Path(
+            logging.debug("Writing(JSON) - %s", logical_node.DNS)
+            logical_node_file_dns = metadata_dir_json_v1_srv / Path(
                 logical_node.DNS
             )
             with open(logical_node_file_dns, "w", encoding="utf-8") as f:
@@ -787,11 +864,37 @@ def write_metadata(
                     (json.dumps(obj=logical_node, indent=2, default=vars))
                 )
         except Exception:
-            logging.critical("Failed to write JSON - %s", logical_node.DNS)
+            logging.exception("Failed to write JSON - %s", logical_node.DNS)
             sys.exit(1)
 
-    if verbose:
-        logical_node_list_file = metadata_dir_v1 / Path("list")
+        # Write CSV
+        try:
+            logging.debug("Writing(CSV) - %s", logical_node.Name)
+            logical_node_file_csv = metadata_dir_csv_v1_srv / Path(
+                logical_node.Name.replace("#", "-")
+            )
+            with open(logical_node_file_csv, "w", encoding="utf-8") as f:
+                f.writelines("\n".join(logical_node.dump_csv_name()))
+        except Exception:
+            logging.exception(
+                "Failed to write CSV - %s",
+                logical_node.Name.replace("#", "-"),
+            )
+            sys.exit(1)
+
+        try:
+            logging.debug("Writing(CSV) - %s", logical_node.DNS)
+            logical_node_file_csv_dns = metadata_dir_csv_v1_srv / Path(
+                logical_node.DNS
+            )
+            with open(logical_node_file_csv_dns, "w", encoding="utf-8") as f:
+                f.writelines("\n".join(logical_node.dump_csv_dns()))
+        except Exception:
+            logging.exception("Failed to write CSV - %s", logical_node.DNS)
+            sys.exit(1)
+
+    if generate_list:
+        logical_node_list_file = metadata_dir_json_v1 / Path("list")
         try:
             logging.info("Writing - %s", logical_node_list_file)
             with open(logical_node_list_file, "w", encoding="utf-8") as f:
@@ -799,13 +902,15 @@ def write_metadata(
                     (json.dumps(obj=logical_node_list, indent=2, default=vars))
                 )
         except Exception:
-            logging.critical("Failed to write JSON - %s", logical_node_list_file)
+            logging.exception(
+                "Failed to write JSON - %s", logical_node_list_file
+            )
             sys.exit(1)
 
     logging.info("Server count - %s", srv_count)
 
-    logging.info("Writing 404.html")
     error_404_file = metadata_dir / Path("404.html")
+    logging.info("Writing - %s", error_404_file)
     error_404_data = {
         "message": "Not Found.",
         "code": 404,
@@ -813,8 +918,8 @@ def write_metadata(
     with open(error_404_file, "w", encoding="utf-8") as f:
         json.dump(error_404_data, f, indent=2)
 
-    logging.info("Writing metadata.json")
     metadata_ts_file = metadata_dir / Path("metadata.json")
+    logging.info("Writing - %s", metadata_ts_file)
     metadata_ts = {
         "info": "Protonwire - Metadata API",
         "repo": "https://github.com/tprasadtp/protonwire",
@@ -859,6 +964,24 @@ if __name__ == "__main__":
         default=None,
         required=False,
         help="Proton Client Secret",
+    )
+
+    parser.add_argument(
+        "--generate-list",
+        dest="generate_list",
+        action="store_true",
+        default=False,
+        required=False,
+        help="Generate a list of logical nodes for /list API endpoint",
+    )
+
+    parser.add_argument(
+        "--save-api-response",
+        dest="save_api_response",
+        action="store_true",
+        default=False,
+        required=False,
+        help="Saves API response from upstream API",
     )
 
     parser.add_argument(
@@ -909,6 +1032,9 @@ if __name__ == "__main__":
         api_url=args.api_url,
         username=args.username,
         password=args.password,
+        client_secret=args.client_secret,
         metadata_dir=Path(args.output),
+        generate_list=args.generate_list,
+        save_api_resp=args.save_api_response,
         verbose=args.verbose,
     )

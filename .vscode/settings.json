@@ -3,12 +3,5 @@
         "*.pkla": "ini",
         "*.rules": "javascript"
     },
-    "cSpell.words": [
-        "apiversion",
-        "appversion",
-        "clientsecret",
-        "hashpw",
-        "logicals",
-        "nbytes"
-    ]
+    "search.useIgnoreFiles": false,
 }

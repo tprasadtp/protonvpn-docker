@@ -22,24 +22,23 @@ jobs:
           python3-bcrypt \
           python3-coloredlogs
       - name: Generate metadata
-        run: ./scripts/generate-server-metadata --output ./metadata
+        run: ./scripts/generate-server-metadata --generate-list --output ./metadata
         env:
           PROTON_USERNAME: ${{ secrets.PROTON_USERNAME }}
           PROTON_PASSWORD: ${{ secrets.PROTON_PASSWORD }}
       - name: Generate bot token
-        id: bot
-        uses: tibdex/github-app-token@f717b5ecd4534d3c4df4ce9b5c1c2214f0f7cd06 # ratchet:tibdex/github-app-token@v1.7.0
+        id: bot-token
+        uses: tibdex/github-app-token@f717b5ecd4534d3c4df4ce9b5c1c2214f0f7cd06 # ratchet:tibdex/github-app-token@v1.8.0
         with:
-          repository: tprasadtp/protonwire-api-deploy
-          app_id: 241646
-          installation_id: ${{ secrets.APP_INSTALLATION_ID }}
+          repository: ${{ vars.METADATA_REPO }}
+          app_id: ${{ vars.METADATA_BOT_APP_ID }}
           private_key: ${{ secrets.APP_PRIVATE_KEY }}
       - name: Checkout metadata repo to protonwire-api-deploy
         uses: actions/checkout@v3 # ratchet:exclude
         with:
-          repository: tprasadtp/protonwire-api-deploy
+          repository: ${{ vars.METADATA_REPO }}
           path: protonwire-api-deploy
-          token: ${{ steps.bot.outputs.token }}
+          token: ${{ steps.bot-token.outputs.token }}
           persist-credentials: true
       - name: Sync metadata
         run: |
@@ -52,8 +51,8 @@ jobs:
       - name: Push Metadata
         working-directory: protonwire-api-deploy
         run: |
-          git config user.name protonwire-api-deploy[bot]
-          git config user.email 114404808+protonwire-api-deploy[bot]@users.noreply.github.com
+          git config user.name ${{ vars.METADATA_BOT_GIT_USERNAME }}
+          git config user.email ${{ vars.METADATA_BOT_GIT_EMAIL }}
           git add --all
           git commit -m "Updated at - $(date)"
           git push -u origin master

@@ -54,7 +54,7 @@ function main() {
             --tmpfs /tmp \
             "${extra_args[@]}" \
             ghcr.io/tprasadtp/protonwire:dev \
-            bash -c "echo \"alias c='clear';alias e='exit';export PS1='\\e[38;5;220m\u@\\e[38;5;208mprotonwire\\e[0m on \\e[32m\W\[\033[0;35m\] \[\033[1;36m\]\n🐳\\e[0m ➜ '\" >> ~/.bashrc && bash"
+            bash
     else
         docker run \
             -it \

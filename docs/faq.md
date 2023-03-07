@@ -176,7 +176,7 @@ sudo wg show
 
 ## Non reachable LAN hosts
 
-Following addresses on local network or other VPNs cannot be reached when ProtonVPN is active. This is the way ProtonVPN is setup on server side and **CANNOT** be changed!
+Following addresses on local network or other VPNs **cannot** be reached when ProtonVPN is active. This is the way ProtonVPN is setup on server side and **CANNOT** be changed!
 Also these addresses cannot belong to machine running protonwire.
 - 10.2.0.1 (used by server)
 - 10.2.0.2 (used client)
@@ -191,6 +191,6 @@ You can use any of the following services for verification as they return your _
 ## Metadata updates
 
 Metadata updates includes updating server IPs and their public keys.
-Usually it should be automatic. But Proton API and libraries are in constant state of chaos
+Usually it should be automatic. But Proton API and libraries are in constant state of ~~chaos~~ flux
 and documentation is virtually non-existent or incorrect. So stuff might break.
-PRs welcome! This is not a rant!, but just take a look at [library here](https://github.com/ProtonMail/proton-python-client/tree/5d9dfa77fdaccb0c800134dab08dc3d5d8147363) and try to **use** it.
+PRs welcome! Bulk of the work is done via `scripts/generate-server-metadata`

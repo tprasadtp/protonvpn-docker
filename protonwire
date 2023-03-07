@@ -142,7 +142,9 @@ function __logger_core_event_handler() {
 
     # Immediately return if log level is not enabled
     # If LOG_LVL is not set, defaults to 20 - info level
-    [[ ${LOG_LVL:-20} -gt "${level}" ]] && return
+    if [[ ${LOG_LVL:-20} -gt "${level}" ]]; then
+        return
+    fi
 
     shift
     local lvl_msg="$*"
@@ -161,12 +163,22 @@ function __logger_core_event_handler() {
     local lvl_prefix
     # Level name in string format with timestamp if enabled or level symbol
     local lvl_string
+    # Caller trace
+    local caller_info
 
     # Log format
     if [[ ${LOG_FMT:-pretty} == "pretty" ]] && [[ -n ${lvl_colorized} ]]; then
         lvl_string="[•]"
     elif [[ ${LOG_FMT} = "full" ]] || [[ ${LOG_FMT} = "long" ]]; then
-        printf -v lvl_prefix "%(%FT%TZ)T " -1
+        if [[ ${LOG_LVL:-20} -lt 20 ]]; then
+            printf -v lvl_prefix "%(%FT%TZ)T (%-4s) " -1 "${BASH_LINENO[1]}"
+        else
+            printf -v lvl_prefix "%(%FT%TZ)T" -1
+        fi
+    elif [[ ${LOG_FMT} = "journald" ]] || [[ ${LOG_FMT} = "journal" ]]; then
+        if [[ ${LOG_LVL:-20} -lt 20 ]]; then
+            printf -v lvl_prefix "(%-4s) " "${BASH_LINENO[1]}"
+        fi
     fi
 
     # Define level, color and timestamp
@@ -444,7 +456,6 @@ function __is_valid_ipcheck_url() {
     esac
     return 1
 }
-
 
 # checks if IPv6 is enabled on the system
 function __is_ipv6_disabled() {
@@ -951,7 +962,17 @@ function __detect_paths() {
         runtime_dir="/tmp"
     fi
 
-    declare -g __PROTONWIRE_SRV_INFO="${runtime_dir%/}/protonwire.serverinfo.json"
+    local proton_srv
+    if [[ -z $PROTONVPN_SERVER ]]; then
+        log_warn "PROTONVPN_SERVER is not defined!"
+        proton_srv="undefined"
+    else
+        log_variable "PROTONVPN_SERVER"
+        proton_srv=${PROTONVPN_SERVER,,}
+    fi
+
+
+    declare -g __PROTONWIRE_SRV_INFO="${runtime_dir%/}/protonwire.server-${proton_srv}.json"
     declare -g __PROTONWIRE_HCR="${runtime_dir%/}/protonwire.hc.response"
 
     log_variable "__PROTONWIRE_SRV_INFO"
@@ -1150,7 +1171,7 @@ function protonvpn_fetch_metadata() {
     done
 
     # Check if __PROTONWIRE_SRV_INFO is present
-    # and is not older than 60 min
+    # and corresponds to correct server.
     if [[ -f ${__PROTONWIRE_SRV_INFO} ]]; then
         local current_ts=0
         local metadata_ts=-1
@@ -1496,7 +1517,7 @@ function __is_usable_keyfile() {
     return 1
 }
 
-# Selects server based on criteria
+# Selects server endpoint
 function __protonvpn_config_select_server() {
     local metadata_fetch_tries=0
     local metadata_fetch_max_tries=3
@@ -1515,101 +1536,99 @@ function __protonvpn_config_select_server() {
 
     # Use cached file if failed to fetch metadata,
     # this is most likely due to a network issue
-    if [[ $metadata_fetch_tries -gt $metadata_fetch_max_tries ]]; then
+    log_debug "metadata_fetch_tries=${metadata_fetch_tries}"
+    log_debug "metadata_fetch_max_tries=${metadata_fetch_max_tries}"
+    if [[ $metadata_fetch_tries -ge $metadata_fetch_max_tries ]]; then
         if [[ ! -f ${__PROTONWIRE_SRV_INFO} ]]; then
-            log_error "Failed to fetch server metadata after $metadata_fetch_max_tries tries"
+            log_error "Failed to fetch server metadata after $metadata_fetch_max_tries tries!"
             log_error "Please check your internet connection and try again!"
             log_error "If you have killswitch enabled please disable it and try again!"
             return 1
         else
-            log_warning "Failed to fetch server metadata after 5 tries, using cached file (might be stale)"
+            log_warning "Failed to fetch server metadata after ${metadata_fetch_max_tries} tries, using cached file (might be stale)"
         fi
     fi
 
-    # check if server is offline
+    # Check if server is offline
     local _server_online
     _server_online="$(jq -r '.Status' "${__PROTONWIRE_SRV_INFO}" 2>/dev/null)"
-    if [[ $_server_online != "1" ]]; then
-        log_error "Server ${PROTONVPN_SERVER^^} is offline"
-        return 1
-    else
+    if [[ $_server_online == "1" ]]; then
         log_success "Server ${PROTONVPN_SERVER^^} is online"
-    fi
-
-    # now check if we have an active wireguard interface
-    if [[ -n $(ip link show protonwire0 type wireguard 2>/dev/null) ]]; then
-        log_debug "Wireguard interface 'protonwire0' exists"
-        declare -a configured_endpoints
-        readarray -t configured_endpoints < <(wg show protonwire0 peers 2>/dev/null)
-        if [[ ${#configured_endpoints[@]} -eq 0 ]]; then
-            log_warning "WireGuard interface 'protonwire0' is not connected to any peers"
-        elif [[ ${#configured_endpoints[@]} -gt 1 ]]; then
-            log_debug "Connected peers - ${configured_endpoints[*]}"
-            log_error "WireGuard interface 'protonwire0' is connected to multiple peers"
-            log_error "Please run protonvpn disconnect and try again!"
-            return 1
-        else
-            log_debug "Connected peers - ${configured_endpoints[*]}"
-            # if we have a peer check its key is in list of keys for the server
-            if [[ -n ${configured_endpoints[0]} ]]; then
-                log_debug "Lookup server name for peer - ${configured_endpoints[0]}"
-                declare -a connected_server_name
-                readarray -t connected_server_name < <(jq -r \
-                    --arg PEER_KEY "${configured_endpoints[0]}" \
-                    '[.LogicalServers[] | select(.Servers[].X25519PublicKey==$PEER_KEY)] | unique_by(.Name) | .[].Name' \
-                    "${__PROTONWIRE_SRV_INFO}" 2>/dev/null)
-                if [[ ${#connected_server_name[@]} -eq 0 ]]; then
-                    log_error "Unable to lookup server name for peer - ${configured_endpoints[0]}"
-                    return 1
-                elif [[ ${#connected_server_name[@]} -gt 1 ]]; then
-                    log_error "Multiple server names found for peer - ${configured_endpoints[0]}"
-                    return 1
-                elif [[ -z ${connected_server_name[0]} ]]; then
-                    log_debug "Unknown error fetching server name for peer - ${configured_endpoints[0]}"
-                    log_error "Please run protonvpn disconnect and try again!"
-                    return 1
-                fi
-
-                # check if server is in the criteria
-                local connected_peer_is_in_pool="false"
-                for server in "${server_pool[@]}"; do
-                    if [[ ${connected_server_name[0]} == "$server" ]]; then
-                        connected_peer_is_in_pool="true"
-                        log_notice "Selecting already connected/configured server ${connected_server_name[0]}"
-                        __PROTONWIRE_SELECTED_SERVER="$server"
-                        return 0
-                    fi
-                done
-
-                if [[ $connected_peer_is_in_pool == "false" ]]; then
-                    log_error "Existing peer ${configured_endpoints[0]}(${connected_server_name[0]}) is not in the specified server pool"
-                    log_error "Please run protonvpn disconnect and try again!"
-                    return 1
-                fi
-            else
-                log_warning "WireGuard interface 'protonwire0' exists, but is not connected to any peers"
-            fi
-        fi
-    fi
-
-    # If a large pool is returned >20 lets randomize from first 5 servers
-    # Otherwise chose fastest.
-    log_debug "Server Pool = ${server_pool[*]}"
-    if [[ ${#server_pool[@]} -ge 20 ]]; then
-        log_info "Server pool is larger than 20 (${#server_pool[@]}), selecting random server from top 5 servers"
-        __PROTONWIRE_SELECTED_SERVER="${server_pool[$((RANDOM % 5))]}"
     else
-        log_info "Server pool is less than 20 (${#server_pool[@]}), selecting fastest server"
-        __PROTONWIRE_SELECTED_SERVER="${server_pool[0]}"
-    fi
-
-    log_notice "Selecting server - ${__PROTONWIRE_SELECTED_SERVER:-unknown}"
-
-    if [[ -z $__PROTONWIRE_SELECTED_SERVER ]]; then
-        log_error "Unknown error! No server selected"
+        log_error "Server ${PROTONVPN_SERVER^^} is offline!"
         return 1
     fi
 
+    # Two associative arrays to save keys and endpoint maps.
+    # We do not care about status of physical nodes are they are not in the maps.
+    declare -A -g __PROTONWIRE_KEY_MAP
+    declare -A -g __PROTONWIRE_ENDPOINT_MAP
+
+
+
+
+    # # now check if we have an active wireguard interface
+    # if [[ -n $(ip link show protonwire0 type wireguard 2>/dev/null) ]]; then
+    #     log_debug "Wireguard interface 'protonwire0' exists"
+    #     exit 1 # debugging
+    #     declare -a configured_peers
+    #     readarray -t configured_peers < <(wg show protonwire0 peers 2>/dev/null)
+    #     if [[ ${#configured_peers[@]} -eq 0 ]]; then
+    #         log_warning "WireGuard interface 'protonwire0' is not connected to any peers"
+    #     elif [[ ${#configured_peers[@]} -gt 1 ]]; then
+    #         log_debug "Connected peers - ${configured_peers[*]}"
+    #         log_error "WireGuard interface 'protonwire0' is connected to multiple peers"
+    #         log_error "Please run protonvpn disconnect and try again!"
+    #         return 1
+    #     else
+    #         log_debug "Connected peers - ${configured_peers[*]}"
+    #         # if we have a peer check its key is in list of keys for the server
+    #         if [[ -n ${configured_peers[0]} ]]; then
+    #             log_debug "Lookup server name for peer - ${configured_peers[0]}"
+    #             declare -a connected_server_name
+    #             readarray -t connected_server_name < <(jq -r \
+    #                 --arg PEER "${configured_peers[0]}" \
+    #                 '[.Nodes[] | select(.PublicKey==$P)] | unique_by(.Endpoint) | .[].Endpoint' \
+    #                 "${__PROTONWIRE_SRV_INFO}" 2>/dev/null)
+    #             if [[ ${#connected_server_name[@]} -eq 0 ]]; then
+    #                 log_error "Unable to lookup server name for peer - ${configured_peers[0]}"
+    #                 return 1
+    #             elif [[ ${#connected_server_name[@]} -gt 1 ]]; then
+    #                 log_error "Multiple server names found for peer - ${configured_peers[0]}"
+    #                 return 1
+    #             elif [[ -z ${connected_server_name[0]} ]]; then
+    #                 log_debug "Unknown error fetching server name for peer - ${configured_peers[0]}"
+    #                 log_error "Please run protonvpn disconnect and try again!"
+    #                 return 1
+    #             fi
+
+    #             # check if server is in the criteria
+    #             local connected_peer_is_in_pool="false"
+    #             for server in "${server_pool[@]}"; do
+    #                 if [[ ${connected_server_name[0]} == "$server" ]]; then
+    #                     connected_peer_is_in_pool="true"
+    #                     log_notice "Selecting already connected/configured server ${connected_server_name[0]}"
+    #                     __PROTONWIRE_SELECTED_SERVER="$server"
+    #                     return 0
+    #                 fi
+    #             done
+
+    #             if [[ $connected_peer_is_in_pool == "false" ]]; then
+    #                 log_error "Existing peer ${configured_peers[0]}(${connected_server_name[0]}) is not in the specified server pool"
+    #                 log_error "Please run protonvpn disconnect and try again!"
+    #                 return 1
+    #             fi
+    #         else
+    #             log_warning "WireGuard interface 'protonwire0' exists, but is not connected to any peers"
+    #         fi
+    #     fi
+    # else
+    #     # There is no active wireguard interface.
+    #     # select a random server from the pool.
+    #     log_info "Wireguard interface 'protonwire0' does not exist"
+
+
+    # fi
 }
 
 # Builds list of routable subnets
@@ -1920,7 +1939,7 @@ function __protonvpn_connect() {
 
     # Get server
     if ! __protonvpn_config_select_server; then
-        log_debug "Server is not defined or invalid!"
+        log_error "Failed to select a valid server!"
         return 1
     fi
 
@@ -2428,6 +2447,18 @@ function display_usage() {
         local GRAY=$'\e[38;5;246m'
         local LGRAY=$'\e[38;5;240m'
         local MAGENTA=$'\e[38;5;219m'
+    else
+        local NC
+        local BOLD
+        local YELLOW
+        local BLUE
+        local CYAN
+        local ORANGE
+        local TEAL
+        local PINK
+        local GRAY
+        local LGRAY
+        local MAGENTA
     fi
 
     cat <<EOF
