@@ -26,7 +26,7 @@ Please use `tmpfs` mounts for `/tmp`
 
 ## Split Horizon DNS
 
-- Split horizon DNS is only supported with `systemd-resolved` **AND** when not running in a container.
+- Split horizon DNS is only supported with `systemd-resolved` **AND** when **NOT** running in a container.
 - It depends on `systemd-resolved` to be up and running and `/etc/resolv.conf` to be in stub resolver mode or using `nss-resolve`
 - It also requires you to specify routing domains and/or search domains for your local/non-vpn networks, via DHCP options or via `resolvectl`
 - By default script will set default routing domain on VPN interface.

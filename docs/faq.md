@@ -1,6 +1,5 @@
 ## FAQ
 
-
 ## Run container as systemd unit
 
 - Use `podman` instead of docker as it has better support for systemd.
@@ -18,7 +17,7 @@
 
 - This is caused by API changed on server side.
 - To do that it requires authenticating via proton account username and password and we want to avoid that(there are no scoped tokens and minted access tokens have full access to proton API including payments and Email!!).
-- Because fastest server selection depends on geo-location, it can no longer be supported.
+- Because fastest server selection depends on geo-location and latency info, it can no longer be supported.
 
 ## Can I have a sample API response JSON
 
@@ -171,15 +170,15 @@ Please ensure to use stub resolver mode as many statically built programs (Espec
 ## How can I see WireGuard settings
 
 ```bash
-sudo wg show
+wg show
 ```
 
 ## Non reachable LAN hosts
 
 Following addresses on local network or other VPNs **cannot** be reached when ProtonVPN is active. This is the way ProtonVPN is setup on server side and **CANNOT** be changed!
 Also these addresses cannot belong to machine running protonwire.
-- 10.2.0.1 (used by server)
-- 10.2.0.2 (used client)
+- 10.2.0.1 (used by server and as DNS server)
+- 10.2.0.2 (used by client)
 
 ## IP check endpoints
 

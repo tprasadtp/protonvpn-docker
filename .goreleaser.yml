@@ -116,12 +116,12 @@ nfpms:
           owner: root
           group: root
 
-      - src: dist/protonwire.1
-        dst: /usr/share/man/man1/protonwire.1
-        file_info:
-          mode: 0644
-          owner: root
-          group: root
+      # - src: protonwire.1
+      #   dst: /usr/share/man/man1/protonwire.1
+      #   file_info:
+      #     mode: 0644
+      #     owner: root
+      #     group: root
 
 changelog:
   sort: asc
