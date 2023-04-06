@@ -41,7 +41,7 @@ function main() {
         docker run \
             -it \
             --rm \
-            --name=protonwire \
+            --name=protonwire_dev \
             --init \
             -e DEBUG \
             -e PROTONVPN_SERVER \
@@ -59,7 +59,7 @@ function main() {
         docker run \
             -it \
             --rm \
-            --name=protonwire \
+            --name=protonwire_dev \
             --init \
             -e DEBUG \
             -e PROTONVPN_SERVER \

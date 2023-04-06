@@ -20,11 +20,11 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2 # ratchet:exclude
+        uses: docker/setup-qemu-action@e81a89b1732b9c48d79cd809d8d81d79c4647a18 # ratchet:docker/setup-qemu-action@v2
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2 # ratchet:exclude
+        uses: docker/setup-buildx-action@4b4e9c3e2d4531116a6f8ba8e71fc6e2cb6e6c8c # ratchet:docker/setup-buildx-action@v2
       - name: Install GoReleaser
-        uses: ratchet:goreleaser/goreleaser-action@v3 # ratchet:exclude
+        uses: goreleaser/goreleaser-action@b508e2e3ef3b19d4e4146d4f8fb3ba9db644a757 # ratchet:goreleaser/goreleaser-action@v3
         with:
           version: latest
           install-only: true
