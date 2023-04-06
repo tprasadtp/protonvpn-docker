@@ -550,7 +550,10 @@ class LogicalNode:
         tier: int,
         nodes: List[ServerNode],
         exit_ips: List[str],
-        features: List[str],
+        streaming: bool,
+        p2p: bool,
+        tor: bool,
+        secure_core: bool,
         server_status: str = "UNKNOWN",
     ) -> None:
         self.Name: str = name
@@ -560,8 +563,11 @@ class LogicalNode:
         self.Nodes: List[ServerNode] = nodes
 
         self.ExitIPs: List[str] = exit_ips
-        self.Features: List[str] = features
         self.Status: str = server_status
+        self.Streaming: bool = streaming
+        self.P2P: bool = p2p
+        self.Tor: bool = tor
+        self.SecureCore: bool = secure_core
 
 
 class EnvDefault(argparse.Action):
@@ -619,7 +625,7 @@ def write_metadata(
 
     logging.info("Creating a API Session")
     try:
-        s = Session(api_url=api_url, client_secret=client_secret)
+        s = Session(api_url=api_url)
         logging.info("Logging in to Proton API")
         s.authenticate(
             username=username,
@@ -671,6 +677,11 @@ def write_metadata(
             logical_server_status = "ONLINE"
 
         # server features builder
+        p2p: bool = False
+        secure_core: bool = False
+        streaming: bool = False
+        tor: bool = False
+        features: List[str] = []
         try:
             feature_bits = list(bin(logical_server["Features"])[2:].zfill(8))
             feature_bits.reverse()
@@ -685,12 +696,12 @@ def write_metadata(
             # P2P = 1 << 2          # 4
             # STREAMING = 1 << 3    # 8
             # IPv6 = 1 << 4         # 16
-            features = []
 
             if feature_bits[0] == "1":
                 features.append("SECURE_CORE")
             if feature_bits[1] == "1":
                 features.append("TOR")
+                secure_core = True
             if feature_bits[2] == "1":
                 features.append("P2P")
             if feature_bits[3] == "1":
@@ -782,7 +793,10 @@ def write_metadata(
             dns_name=logical_server_domain,
             exit_country=logical_server["ExitCountry"],
             tier=logical_server["Tier"],
-            features=features,
+            p2p="P2P" in features,
+            streaming="STREAMING" in features,
+            secure_core="SECURE_CORE" in features,
+            tor="TOR" in features,
             nodes=servers,
             exit_ips=sorted(exit_ips),
             server_status=logical_server_status,

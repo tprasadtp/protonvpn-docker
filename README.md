@@ -94,7 +94,7 @@ Images are published at [ghcr.io/tprasadtp/protonwire][ghcr].
 | `PROTONVPN_SERVER` | REQUIRED | (String) ProtonVPN server to connect to.
 | `WIREGUARD_PRIVATE_KEY` | REQUIRED  | (String) Wireguard Private key
 | `IPCHECK_INTERVAL` | `60` | (Integer) Interval between internal health-checks in seconds. Set this to `0` to disable IP checks.
-| `SKIP_DNS`       | false | (Boolean) Set this to `1` or `true` to skip configuring DNS.
+| `SKIP_DNS_CONFIG` | false | (Boolean) Set this to `1` or `true` to skip configuring DNS.
 | `KILLSWITCH`     | false | (Boolean) Enable Killswitch
 
 > Environment variables starting with `__PROTONWIRE` are reserved for internal use.
