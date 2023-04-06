@@ -1,4 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0
+# SPDX-FileCopyrightText: 2023 Prasad Tengse <tprasadtp@users.noreply.github.com>
+#
 # This file is part of protonwire package.
 
 [Unit]

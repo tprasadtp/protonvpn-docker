@@ -1,4 +1,7 @@
 #!/usr/bin/bash
+# SPDX-License-Identifier: GPL-3.0
+# SPDX-FileCopyrightText: 2023 Prasad Tengse <tprasadtp@users.noreply.github.com>
+
 
 if [ "$1" = "purge" ]; then
     deluser --quiet --system protonwire 2>/dev/null || userdel --force protonwire 2>/dev/null || true

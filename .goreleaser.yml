@@ -8,7 +8,7 @@ builds:
     goos:
       - linux
     goarch:
-      - amd64
+      - amd64 # ignored for builds
     binary: protonwire
     gobinary: ./scripts/goreleaser-wrapper
     mod_timestamp: '{{ .CommitTimestamp }}'

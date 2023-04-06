@@ -13,10 +13,3 @@
 ## Additional Comments (if any)
 
 {Please write here}
-
-
-
-<!-- COMMIT-NOTES-BEGIN -->
-
-
-<!-- COMMIT-NOTES-END -->

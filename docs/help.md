@@ -1,7 +1,5 @@
 # Troubleshooting
 
-Please try the following steps before opening an issue on GitHub.
-
 ## Exit IP mismatch even though VPN connects
 
 - ProtonVPN separates entry IP from exit IP using internal routing.
@@ -37,7 +35,7 @@ Please use `tmpfs` mounts for `/tmp`
 
 ## DNS leak protection and Kubernetes
 
-On Kubernetes using ProtonVPN DNS **WILL** break resolving `.cluster` domains. You can use [external-dns](https://github.com/kubernetes-sigs/external-dns) and use public DNS zones for your hosted services or use DoH or DoT on kubernetes nodes and use `SKIP_DNS` or `--skip-dns`.
+On Kubernetes using ProtonVPN DNS **WILL** break resolving `.cluster` domains. You can use [external-dns](https://github.com/kubernetes-sigs/external-dns) and use public DNS zones for your hosted services or use DoH or DoT on kubernetes **nodes** and use `SKIP_DNS_CONFIG` or `--skip-dns-config`.
 
 ## My public IP is not same as EndpointIP
 
@@ -46,7 +44,7 @@ Your public IP might be different than `Endpoint` as shown by `wg show` command.
 ## Container is not accessible from LAN or Services within LAN are not accessible within the container
 
 - Check if you are using IPv6 only. If yes, prefix delegation might be in use and your LAN hosts will have a Public IPv6 address. You will need to tweak `PROTONVPN_ALLOWED_SUBNETS_IPV6` to **exclude** your prefix.
-- Check your firewall rules
+- Check your firewall rules.
 
 ## User namespaces and file permissions
 
@@ -75,12 +73,12 @@ protonwire disable-ks
 ## Manually Disabling Kill-Switch
 
 ```bash
-ip -4 route flush table 51820
-ip -6 route flush table 51820
-ip -4 rule | grep 51821 | cut -f 1 -d ':' | xargs ip rule del priority
-ip -6 rule | grep 51821 | cut -f 1 -d ':' | xargs ip rule del priority
-ip -4 route flush table 51821
-ip -6 route flush table 51821
+ip -4 route flush table 51888
+ip -6 route flush table 51888
+ip -4 rule | grep 51888 | cut -f 1 -d ':' | xargs ip rule del priority
+ip -6 rule | grep 51888 | cut -f 1 -d ':' | xargs ip rule del priority
+ip -4 route flush table 51888
+ip -6 route flush table 51888
 ```
 
 ## Manually Disconnecting from VPN
@@ -89,12 +87,12 @@ ip -6 route flush table 51821
 as it handles things properly. If not possible, try the following.
 
 ```bash
-resolvectl revert protonwire0
-resolvconf -f -d protonwire0.wg
-ip -4 rule del not fwmark 51820 table 51820
-ip -6 rule del not fwmark 51820 table 51820
-ip -4 route flush table 51820
-ip -6 route flush table 51820
+resolvectl revert protonwire0   # only if using systemd-resolved and not in container
+resolvconf -f -d protonwire0.wg # only if not using systemd-resolved and in container
+ip -4 rule del not fwmark 51888 table 51888
+ip -6 rule del not fwmark 51888 table 51889
+ip -4 route flush table 51888
+ip -6 route flush table 51888
 ip link del protonwire0
 ```
 

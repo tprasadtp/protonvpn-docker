@@ -112,8 +112,6 @@ body:
       description: |
         - Check common troubleshooting steps.
       options:
-        - label: I have reviewed [troubleshooting steps](https://protonwire.prasadt.com/troubleshooting)
-          required: true
         - label: I am **NOT** using container runtime which use user-mode networking, [Docker Rootless](https://docs.docker.com/engine/security/rootless/), [gVisor](https://gvisor.dev), [Podman Rootless](https://github.com/containers/podman/blob/main/rootless.md) etc.
           required: true
         - label: I am using latest stable version
