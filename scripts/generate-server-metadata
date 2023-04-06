@@ -563,35 +563,6 @@ class LogicalNode:
         self.Features: List[str] = features
         self.Status: str = server_status
 
-    def dump_csv_name(self) -> List[str]:
-        """
-        Dumps as CSV with Name.
-        """
-        csv: List[str] = []
-        for node in self.Nodes:
-            features = "|".join(self.Features)
-            exit_ip = "|".join(self.ExitIPs)
-            csv.append(
-                f"{self.Name},{self.Status},{self.Tier},{self.ExitCountry},"
-                f"{features},{node.Endpoint},{node.PublicKey},{exit_ip}"
-            )
-        return csv
-
-    def dump_csv_dns(self) -> List[str]:
-        """
-        Dumps as CSV with DNS Name.
-        """
-        csv: List[str] = []
-        for node in self.Nodes:
-            features = "|".join(self.Features)
-            exit_ip = "|".join(self.ExitIPs)
-            csv.append(
-                f"{self.DNS},{self.Status},{self.Tier},{self.ExitCountry},"
-                f"{features},{node.Endpoint},{node.PublicKey},{exit_ip}"
-            )
-        return csv
-
-
 class EnvDefault(argparse.Action):
     """ENV Default"""
 
@@ -646,24 +617,6 @@ def write_metadata(
     else:
         metadata_dir_json_v1_srv.mkdir(parents=True)
 
-    # CSV metadata
-    metadata_dir_csv_v1 = metadata_dir / Path("v1") / Path("csv")
-    if metadata_dir_csv_v1.exists():
-        if not metadata_dir_csv_v1.is_dir():
-            logging.error("{metadata_dir_v1} exits, but is not a directory")
-            sys.exit(1)
-    else:
-        metadata_dir_csv_v1.mkdir(parents=True)
-
-    metadata_dir_csv_v1_srv = metadata_dir_csv_v1 / Path("server")
-    if metadata_dir_csv_v1_srv.exists():
-        if not metadata_dir_csv_v1_srv.is_dir():
-            logging.error(
-                "{metadata_dir_v1_srv} exits, but is not a directory"
-            )
-            sys.exit(1)
-    else:
-        metadata_dir_csv_v1_srv.mkdir(parents=True)
 
     logging.info("Creating a API Session")
     try:
@@ -865,32 +818,6 @@ def write_metadata(
                 )
         except Exception:
             logging.exception("Failed to write JSON - %s", logical_node.DNS)
-            sys.exit(1)
-
-        # Write CSV
-        try:
-            logging.debug("Writing(CSV) - %s", logical_node.Name)
-            logical_node_file_csv = metadata_dir_csv_v1_srv / Path(
-                logical_node.Name.replace("#", "-")
-            )
-            with open(logical_node_file_csv, "w", encoding="utf-8") as f:
-                f.writelines("\n".join(logical_node.dump_csv_name()))
-        except Exception:
-            logging.exception(
-                "Failed to write CSV - %s",
-                logical_node.Name.replace("#", "-"),
-            )
-            sys.exit(1)
-
-        try:
-            logging.debug("Writing(CSV) - %s", logical_node.DNS)
-            logical_node_file_csv_dns = metadata_dir_csv_v1_srv / Path(
-                logical_node.DNS
-            )
-            with open(logical_node_file_csv_dns, "w", encoding="utf-8") as f:
-                f.writelines("\n".join(logical_node.dump_csv_dns()))
-        except Exception:
-            logging.exception("Failed to write CSV - %s", logical_node.DNS)
             sys.exit(1)
 
     if generate_list:

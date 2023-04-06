@@ -142,3 +142,4 @@ __pycache__/
 metadata/*
 logicals.json
 .mypy_cache/
+.envrc

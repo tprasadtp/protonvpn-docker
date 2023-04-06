@@ -1,6 +1,6 @@
 #!/bin/bash
-# Copyright (c) 2022, Prasad Tengse
 # SPDX-License-Identifier: GPL-3.0
+# SPDX-FileCopyrightText: 2023 Prasad Tengse <tprasadtp@users.noreply.github.com>
 
 set -o pipefail
 
