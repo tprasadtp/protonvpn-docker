@@ -563,6 +563,7 @@ class LogicalNode:
         self.Features: List[str] = features
         self.Status: str = server_status
 
+
 class EnvDefault(argparse.Action):
     """ENV Default"""
 
@@ -585,7 +586,6 @@ def write_metadata(
     username: str,
     password: str,
     metadata_dir: Path,
-    client_secret: Optional[str] = None,
     verbose: bool = False,
     generate_list: bool = False,
     save_api_resp: bool = False,
@@ -616,7 +616,6 @@ def write_metadata(
             sys.exit(1)
     else:
         metadata_dir_json_v1_srv.mkdir(parents=True)
-
 
     logging.info("Creating a API Session")
     try:
@@ -883,17 +882,6 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "--client-secret",
-        dest="client_secret",
-        action=EnvDefault,
-        envvar="PROTON_CLIENT_SECRET",
-        type=str,
-        default=None,
-        required=False,
-        help="Proton Client Secret",
-    )
-
-    parser.add_argument(
         "--generate-list",
         dest="generate_list",
         action="store_true",
@@ -959,7 +947,6 @@ if __name__ == "__main__":
         api_url=args.api_url,
         username=args.username,
         password=args.password,
-        client_secret=args.client_secret,
         metadata_dir=Path(args.output),
         generate_list=args.generate_list,
         save_api_resp=args.save_api_response,

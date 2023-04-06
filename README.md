@@ -66,7 +66,7 @@ Images are published at [ghcr.io/tprasadtp/protonwire][ghcr].
 - Generated config might look something like below,
     ```ini
     [Interface]
-    # Key for MyDeviceName
+    # Key for <name>
     # VPN Accelerator = on
     PrivateKey = KLjfIMiuxPskM4+DaSUDmL2uSIYKJ9Wap+CHvs0Lfkw=
     Address = 10.2.0.2/32

@@ -1,0 +1,24 @@
+changelog:
+  exclude:
+    labels:
+      - release
+      - ignore-changelog
+  categories:
+    - title: "🍒 Features & Enhancements"
+      labels:
+        - feature
+        - enhancement
+    - title: "🐛 Bug Fixes"
+      labels:
+        - bugfix
+    - title: "📖 Documentation"
+      labels:
+        - docs
+    - title: 🚧 Security Update
+      labels:
+        - security
+    - title: Other Changes
+      labels:
+        - dependabot
+        - deps/docker
+        - deps/actions
