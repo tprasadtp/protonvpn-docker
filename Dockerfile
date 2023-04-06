@@ -3,8 +3,6 @@ FROM alpine:3.17.3 as base
 
 FROM base
 
-ENV CREDENTIALS_DIRECTORY=/run/secrets
-
 # hadolint ignore=DL3008,DL3009
 RUN --mount=type=cache,sharing=private,target=/var/cache/apk \
     apk update \

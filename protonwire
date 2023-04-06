@@ -856,6 +856,7 @@ function __run_checks() {
 
 # resolvectl wrapper
 function __resolvctl_up_hook() {
+    local errs=0
 
     # Configure search/routing domains and the
     # default-route before configuring the DNS server
@@ -884,13 +885,15 @@ function __resolvctl_up_hook() {
 
     if [[ $errs -eq 0 ]]; then
         return 0
+    else
+        __resolvctl_down_hook
     fi
 
     return 1
 }
 
 function __resolvctl_down_hook() {
-    if resolvectl revert protonwire0 2>&1 | log_tail "resolvectl"; then
+    if resolvectl revert protonwire0 2>&1 | log_tail "resolvectl-revert"; then
         log_success "Reverted systemd-resolved configuration for protonwire0"
         return 0
     else
@@ -901,17 +904,23 @@ function __resolvctl_down_hook() {
 
 # resolvconf hook
 function __resolvconf_up_hook() {
+    local errs=0
+
     if has_command resolvconf; then
         if printf "nameserver 10.2.0.1" | timeout 5s resolvconf -a protonwire0.wg 2>&1 | log_tail "resolvconf set"; then
             log_debug "Successfully updated /etc/resolv.conf"
-            return 0
         else
             log_error "Failed to update /etc/resolv.conf!"
+            ((++errs))
         fi
     else
         log_error "resolvconf is not installed!"
+        ((++errs))
     fi
 
+    if [[ $errs -eq 0 ]]; then
+        return 0
+    fi
     return 1
 }
 
@@ -958,24 +967,17 @@ function __detect_paths() {
         fi
     fi
 
+    # fallback to tmp
     if [[ -z ${runtime_dir} ]]; then
         runtime_dir="/tmp"
     fi
 
-    local proton_srv
-    if [[ -z $PROTONVPN_SERVER ]]; then
-        log_warn "PROTONVPN_SERVER is not defined!"
-        proton_srv="undefined"
-    else
-        log_variable "PROTONVPN_SERVER"
-        proton_srv=${PROTONVPN_SERVER,,}
-    fi
-
-
-    declare -g __PROTONWIRE_SRV_INFO="${runtime_dir%/}/protonwire.server-${proton_srv}.json"
+    declare -g __PROTONWIRE_SRV_INFO="${runtime_dir%/}/protonwire.server.json"
     declare -g __PROTONWIRE_HCR="${runtime_dir%/}/protonwire.hc.response"
 
     log_variable "__PROTONWIRE_SRV_INFO"
+
+    declare -g __PROTONWIRE_HCR="${runtime_dir%/}/protonwire.hc.response"
     log_variable "__PROTONWIRE_HCR"
 }
 
@@ -1156,6 +1158,10 @@ function protonvpn_looper_cmd() {
 function protonvpn_fetch_metadata() {
     local metadata_stale="true"
     local force_refresh="${PROTONVPN_FORCE:-false}"
+    # when running as a service, script periodically refreshes
+    # the metadata. Healthcheck only depends on allowed Ips and not
+    # status of server. This a server being taken offline should not result in
+    # issues as connection should be re-established automatically.
     local wrapped_invocation="false"
 
     while [[ ${1} != "" ]]; do
@@ -1169,6 +1175,10 @@ function protonvpn_fetch_metadata() {
         esac
         shift
     done
+
+    # avoid urlencoding
+    local api_server_name
+    api_server_name=${PROTONVPN_SERVER//#/-}
 
     # Check if __PROTONWIRE_SRV_INFO is present
     # and corresponds to correct server.
@@ -1184,6 +1194,14 @@ function protonvpn_fetch_metadata() {
         else
             log_warning "Server info is stale - ${__PROTONWIRE_SRV_INFO}"
         fi
+
+        # check if existing metadata file belongs to correct server
+        local existing_server
+        existing_server="$(jq -r '.Name' "${__PROTONWIRE_SRV_INFO}")"
+
+        if [[ $existing_server != "$PROTONVPN_SERVER" ]]; then
+            log_debug "Server info metadta belongs to ${existing_server}, not $api_server_name"
+        fi
     else
         log_debug "Server info file is missing - ${__PROTONWIRE_SRV_INFO}"
     fi
@@ -1191,7 +1209,7 @@ function protonvpn_fetch_metadata() {
     # Fetch if file is stale or forced
     if [[ $metadata_stale != "false" ]] || [[ $force_refresh == "true" ]]; then
         log_info "Refresing ProtonVPN server metadata (for $PROTONVPN_SERVER)"
-        local api_call="${SERVER_METADATA_URL}/${PROTONVPN_SERVER//\#/-}"
+        local api_call="${SERVER_METADATA_URL}/${api_server_name}"
         log_debug "API - ${api_call}"
         local curl_rc="-1"
         # we use wait to ensure the term signals can be handled properly
@@ -1211,7 +1229,7 @@ function protonvpn_fetch_metadata() {
         # save to a backup file as download can fail or be corrupted
         if [[ $curl_rc == "0" ]]; then
             # ensure file is json formatted and valid
-            if jq -e '.Nodes[]' "${__PROTONWIRE_SRV_INFO}.bak" >/dev/null 2>&1; then
+            if jq --exit-status '.Nodes' "${__PROTONWIRE_SRV_INFO}.bak" >/dev/null 2>&1; then
                 if mv "${__PROTONWIRE_SRV_INFO}.bak" "${__PROTONWIRE_SRV_INFO}"; then
                     log_success "Refreshed ProtonVPN server metadata"
                     return 0
@@ -1552,10 +1570,10 @@ function __protonvpn_config_select_server() {
     # Check if server is offline
     local _server_online
     _server_online="$(jq -r '.Status' "${__PROTONWIRE_SRV_INFO}" 2>/dev/null)"
-    if [[ $_server_online == "1" ]]; then
+    if [[ $_server_online == "ONLINE" ]]; then
         log_success "Server ${PROTONVPN_SERVER^^} is online"
     else
-        log_error "Server ${PROTONVPN_SERVER^^} is offline!"
+        log_error "Server ${PROTONVPN_SERVER^^} is ${_server_online:-UNKNOWN}!"
         return 1
     fi
 
@@ -1563,9 +1581,6 @@ function __protonvpn_config_select_server() {
     # We do not care about status of physical nodes are they are not in the maps.
     declare -A -g __PROTONWIRE_KEY_MAP
     declare -A -g __PROTONWIRE_ENDPOINT_MAP
-
-
-
 
     # # now check if we have an active wireguard interface
     # if [[ -n $(ip link show protonwire0 type wireguard 2>/dev/null) ]]; then
@@ -1626,7 +1641,6 @@ function __protonvpn_config_select_server() {
     #     # There is no active wireguard interface.
     #     # select a random server from the pool.
     #     log_info "Wireguard interface 'protonwire0' does not exist"
-
 
     # fi
 }
@@ -1932,24 +1946,49 @@ function __build_route_rules() {
     return 1
 }
 
+# Fetch metadata from API (if stale) and then parse it
+# to get endpoint IPs and endpoint keys and allowed exit IPs.
+function __compute_connect_metadata() {
+    local metadata_fetch_tries=0
+    local metadata_fetch_max_tries=3
+    while [[ $metadata_fetch_tries -lt $metadata_fetch_max_tries ]]; do
+        ((++metadata_fetch_tries))
+        if protonvpn_fetch_metadata --wrapper; then
+            break
+        else
+            if [[ $metadata_fetch_tries -lt $metadata_fetch_max_tries ]]; then
+                log_error "Retrying after $((2 ** metadata_fetch_tries)) seconds ($metadata_fetch_tries/$metadata_fetch_max_tries)"
+                sleep "$((2 ** metadata_fetch_tries))" &
+                wait $!
+            fi
+        fi
+    done
+
+    # Use cached file if failed to fetch metadata,
+    # this is most likely due to a network issue
+    log_debug "metadata_fetch_tries=${metadata_fetch_tries}"
+    log_debug "metadata_fetch_max_tries=${metadata_fetch_max_tries}"
+    if [[ $metadata_fetch_tries -ge $metadata_fetch_max_tries ]]; then
+        if [[ ! -f ${__PROTONWIRE_SRV_INFO} ]]; then
+            log_error "Failed to fetch server metadata after $metadata_fetch_max_tries tries!"
+            log_error "Please check your internet connection and try again!"
+            log_error "If you have killswitch enabled please disable it and try again!"
+            return 1
+        else
+            log_warning "Failed to fetch server metadata after ${metadata_fetch_max_tries} tries, using cached file (might be stale)"
+        fi
+    fi
+}
+
 function __protonvpn_connect() {
-    # We collect all errors and display them together
-    # This helps to detect all errors at once.
     local errs=0
 
-    # Get server
-    if ! __protonvpn_config_select_server; then
-        log_error "Failed to select a valid server!"
-        return 1
-    fi
-
     if __has_notify_socket; then
-        __systemd_notify --status "Connecting to ${__PROTONWIRE_SELECTED_SERVER}"
+        __systemd_notify --status "Connecting to ${PROTONVPN_SERVER}"
     fi
 
     # Get entry IP of server
-    # prefer IP than hostnames because DNS might be broken because
-    # of broken tunnel.
+    # prefer IP than hostnames because DNS might be broken because of broken tunnel.
     declare -a entry_ips
     readarray -t entry_ips < <(jq -r \
         --arg SERVER_NAME "${__PROTONWIRE_SELECTED_SERVER}" \
@@ -1961,7 +2000,7 @@ function __protonvpn_connect() {
         log_error "No entry IPs found for server ${__PROTONWIRE_SELECTED_SERVER}"
         return 1
     elif [[ ${#entry_ips[@]} -gt 1 ]]; then
-        log_info "More than one EntryIP found for server ${__PROTONWIRE_SELECTED_SERVER}, selecting forst IP"
+        log_info "More than one EntryIP found for server ${__PROTONWIRE_SELECTED_SERVER}, selecting first IP"
     fi
 
     if __is_valid_ipv4 "${entry_ips[0]}"; then
@@ -2086,6 +2125,10 @@ function __protonvpn_connect() {
     fi
 
     # Wireguard interface
+    local wg_existing_ip
+    local wg_exiting_prefixlen
+    local wg_exiting_mtu
+    local wg_existing_link_state
     if [[ -n $(ip link show protonwire0 type wireguard 2>/dev/null) ]]; then
         log_notice "WireGuard interface 'protonwire0' already exists"
         local _ipjson
@@ -2094,11 +2137,6 @@ function __protonvpn_connect() {
             log_error "Failed to get link properties for 'protonwire0'"
             return 1
         fi
-
-        local wg_existing_ip
-        local wg_exiting_prefixlen
-        local wg_exiting_mtu
-        local wg_existing_link_state
 
         wg_existing_ip="$(jq -r '.[].addr_info[] | select(.family=="inet") | .local' <<<"${_ipjson}" 2>/dev/null)"
         wg_exiting_prefixlen="$(jq -r '.[].addr_info[] | select(.family=="inet") | .prefixlen' <<<"${_ipjson}" 2>/dev/null)"
@@ -2110,7 +2148,7 @@ function __protonvpn_connect() {
         log_debug "Current Link MTU   (protonwire0) : $wg_exiting_mtu"
         log_debug "Current Link State (protonwire0) : $wg_existing_link_state"
     elif [[ -n $(ip link show protonwire0 2>/dev/null) ]]; then
-        log_error "Existing 'protonwire0' is not a WireGuard interface"
+        log_error "Existing interface 'protonwire0' is not a WireGuard interface"
         return 1
     else
         log_notice "Creating WireGuard Interface - protonwire0"
@@ -2119,11 +2157,6 @@ function __protonvpn_connect() {
             log_error "Please install WireGuard. For more info see https://www.wireguard.com/install/"
             return 1
         fi
-        # init to emtpy
-        local wg_existing_ip
-        local wg_exiting_prefixlen
-        local wg_exiting_mtu
-        local wg_existing_link_state
     fi
 
     # Protonvpn has static ip same for all clients
@@ -2323,7 +2356,6 @@ function protonvpn_connect_cmd() {
     fi
 
     __detect_paths
-
     __detect_dns_updater
 
     if __protonvpn_connect; then
@@ -2481,8 +2513,11 @@ ${BOLD}${CYAN}Options:${NC}
       --metadata-endpoint [URL] Server metadata endpoint URL
       --check-interval [INT]    IP check interval in seconds
       --check-endpoint [URL]    IP check endpoint URL
-      --skip-dns                Skip configuring DNS
-      --skip-routes             Skip configuring Routes
+      --skip-dns-config         Skip configuring DNS
+      --p2p                     Check if server supports P2P
+      --streaming               Check if server supports streaming
+      --tor                     Check if server supports Tor
+      --secure-core             Check if server supports secure core
   -q, --quiet                   Show only errors
   -v, --verbose,                Show debug logs
   -h, --help                    Display this help and exit
@@ -2501,8 +2536,9 @@ ${BOLD}${MAGENTA}Environment:${NC}
   WIREGUARD_PRIVATE_KEY         WireGuard private key or file
   PROTONVPN_SERVER              ProtonVPN server name
   IPCHECK_INTERVAL              Custom IP check interval in seconds
-  SKIP_DNS                      Set to '1' to skip configuring DNS
-  DEBUG                         Set this to '1' for debug logs
+  SKIP_DNS_CONFIG               Set to '1' to skip configuring DNS
+  KILLSWITCH                    Set to '1' to enable killswitch (beta)
+  DEBUG                         Set to '1' to enable debug logs
 EOF
 }
 
@@ -2560,12 +2596,24 @@ function main() {
             shift
             IPCHECK_URL="${1}"
             ;;
-        --skip-dns)
+        --skip-dns | --skip-dns-config)
             SKIP_DNS="false"
             ;;
         -k | --key | --private-key)
             shift
             WIREGUARD_PRIVATE_KEY="$1"
+            ;;
+        --p2p)
+            __PROTONWIRE_FEATURE_P2P="true"
+            ;;
+        --streaming)
+            __PROTONWIRE_FEATURE_STREAMING="true"
+            ;;
+        --tor)
+            __PROTONWIRE_FEATURE_TOR="true"
+            ;;
+        --secure-core)
+            __PROTONWIRE_FEATURE_SECURE_CORE="true"
             ;;
         --container)
             ((++looper_lock))
