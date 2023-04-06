@@ -605,7 +605,7 @@ def write_metadata(
     else:
         metadata_dir.mkdir(parents=True)
 
-    metadata_dir_json_v1 = metadata_dir / Path("v1") / Path("json")
+    metadata_dir_json_v1 = metadata_dir / Path("v1")
     if metadata_dir_json_v1.exists():
         if not metadata_dir_json_v1.is_dir():
             logging.error("{metadata_dir_v1} exits, but is not a directory")
