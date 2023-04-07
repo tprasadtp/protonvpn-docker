@@ -86,16 +86,17 @@ Images are published at [ghcr.io/tprasadtp/protonwire][ghcr].
 - CLI arguments will always take precedence over environment variables.
 - Environment variables takes precedence over any config file.
 - If private key is not specified in config or via environment variable, it is searched in following locations. If `$CREDENTIALS_DIRECTORY` is not set, it is skipped.
-  - `/etc/protonwire/protonwire-private-key`
-  - `${CREDENTIALS_DIRECTORY}/protonwire-private-key`
+  - `/etc/protonwire/private-key`
+  - `${CREDENTIALS_DIRECTORY}/private-key`
 
-| Name | Default | Description
+| Name | Default/Required | Description
 |---|---|---
 | `PROTONVPN_SERVER` | REQUIRED | (String) ProtonVPN server to connect to.
-| `WIREGUARD_PRIVATE_KEY` | REQUIRED  | (String) Wireguard Private key
+| `WIREGUARD_PRIVATE_KEY` | -  | (String) Wireguard Private key
+| `IPCHECK_URL` | https://protonwire-api.vercel.app/v1/client/ip  | (String) URL to check client IP.
 | `IPCHECK_INTERVAL` | `60` | (Integer) Interval between internal health-checks in seconds. Set this to `0` to disable IP checks.
 | `SKIP_DNS_CONFIG` | false | (Boolean) Set this to `1` or `true` to skip configuring DNS.
-| `KILLSWITCH`     | false | (Boolean) Enable Killswitch
+| `KILLSWITCH`     | false | (Boolean) Enable KillSwitch (Experimental and can cause issues)
 
 > Environment variables starting with `__PROTONWIRE` are reserved for internal use.
 
@@ -104,8 +105,11 @@ Images are published at [ghcr.io/tprasadtp/protonwire][ghcr].
 This should server name like `NL-FREE#1`(or `NL-FREE-1`) or domain name like,
 `nl-free-01.protonvpn.net`.
 
-> Script cannot validate if specified server is available under your plan. Its user's responsibility to ensure that server specified is available under your subscription
-and supports required features (like P2P, Streaming etc.)
+> **Warning**
+>
+> Script cannot validate if specified server is available under your plan.
+> Its user's responsibility to ensure that server specified is available
+> under your subscription and supports required features (like P2P, Streaming etc.)
 
 ## Dependencies
 
@@ -115,18 +119,18 @@ Following dependencies are **in addition** to WireGuard support in Kernel. See h
 
     - If using `systemd-resolved` (default),
         ```console
-        sudo apt-get install curl jq procps iproute2 libcap2-bin wireguard-tools
+        sudo apt-get install curl jq procps iproute2 libcap2-bin util-linux wireguard-tools
         ```
     - Otherwise,
         ```console
-        sudo apt-get install curl jq procps iproute2 libcap2-bin wireguard-tools openresolv
+        sudo apt-get install curl jq procps iproute2 libcap2-bin util-linux wireguard-tools openresolv
         ```
 
 - If running on Debian, Raspberry Pi OS, and other **Debian** based derivatives etc
 
     - If using `systemd-resolved` (**NOT** default),
         ```console
-        sudo apt-get install curl jq procps iproute2 libcap2-bin wireguard-tools
+        sudo apt-get install curl jq procps iproute2 libcap2-bin util-linux wireguard-tools
         ```
     - Otherwise,
         ```console
@@ -137,70 +141,59 @@ Following dependencies are **in addition** to WireGuard support in Kernel. See h
 
     - If using `systemd-resolved`  (default),
         ```console
-        sudo dnf install curl jq procps-ng libcap iproute wireguard-tools
+        sudo dnf install curl jq procps-ng libcap iproute util-linux wireguard-tools
         ```
 
     - Otherwise,
         ```console
-        sudo dnf install curl jq procps-ng libcap iproute wireguard-tools openresolv
+        sudo dnf install curl jq procps-ng libcap iproute util-linux wireguard-tools openresolv
         ```
 
 - If running on  CentOS 8, Fedora 34+, Amazon Linux 2022, RHEL 9, Rocky Linux, Alma Linux 8
 
     - If using `systemd-resolved` (NOT default),
         ```console
-        sudo dnf install curl jq procps-ng libcap iproute wireguard-tools
+        sudo dnf install curl jq procps-ng libcap iproute util-linux wireguard-tools
         ```
 
     - Otherwise,
         ```console
-        sudo dnf install curl jq procps-ng libcap iproute wireguard-tools openresolv
+        sudo dnf install curl jq procps-ng libcap iproute util-linux wireguard-tools openresolv
         ```
 
 - If running on ArchLinux, Manjaro and other ArchLinux based distribution,
 
     - If using `systemd-resolved`,
         ```console
-        sudo pacman -S curl jq procps-ng libcap iproute2 wireguard-tools systemd-resolvconf
+        sudo pacman -S curl jq procps-ng libcap iproute2 util-linux wireguard-tools systemd-resolvconf
         ```
 
     - Otherwise,
         ```console
-        sudo pacman -S curl jq procps-ng libcap iproute2 wireguard-tools openresolv
+        sudo pacman -S curl jq procps-ng libcap iproute2 util-linux wireguard-tools openresolv
         ```
 
 - If running OpenSUSE Leap,
     - If using `systemd-resolved` (default),
         ```console
-        zypper install curl jq procps-ng libcap iproute2 wireguard-tools
+        zypper install curl jq procps-ng libcap iproute2 util-linux wireguard-tools
         ```
 
     - Otherwise,
         ```console
-        zypper install curl jq procps-ng libcap iproute2 wireguard-tools openresolv
+        zypper install curl jq procps-ng libcap iproute2 util-linux wireguard-tools openresolv
         ```
 
 ## Installation
 
 - You can install DEB or RPM packages from releases.
 - Alternatively, you can clone this repository and run `sudo make install`
-- Alternatively, You can simply drop the script in to any location in your `$PATH`.
-
-    - Download the script
-        ```bash
-        sudo curl -sSfL -o /usr/local/bin/protonwire https://github.com/tprasadtp/protonwire/releases/latest/download/protonwire
-        ```
-
-    - Ensure that script is executable
-        ```bash
-        sudo chmod 755 /usr/local/bin/protonwire
-        ```
 
 ## Usage
 
 - To connect to a server,
     ```bash
-    sudo protonwire -k <FILE> connect <SERVER>
+    sudo protonwire -k <KEY_FILE> connect <SERVER>
     ```
 - To disconnect from server
     ```bash
@@ -285,7 +278,7 @@ For example, we can run caddy to proxy `https://api.ipify.org/` via VPN. Visitin
             init: true
             restart: unless-stopped
             environment:
-                PROTONVPN_SERVER: ${PROTONVPN_SERVER:-FREE}
+                PROTONVPN_SERVER: <SERVER_NAME>
             cap_add:
                 - NET_ADMIN
             sysctls:
@@ -319,10 +312,13 @@ For example, we can run caddy to proxy `https://api.ipify.org/` via VPN. Visitin
 
 - It is **essential** to expose/publish port(s) on protonwire container, instead of your application.
 - You **SHOULD NOT** run the container as privileged. Adding capability `CAP_NET_ADMIN` **AND** defined `sysctls` should be sufficient.
-- You can use `protonwire healthcheck --use-status-file --quiet` as your healthcheck/liveness probe command to avoid making duplicate HTTP requests.
 
-    > If you are using custom non-zero check interval via `--check-interval`,
-    consider specifying it via `IPCHECK_INTERVAL` environment variable or add `--check-interval <int>` flag to your healthcheck command above.
+> **Warning**
+>
+> The sample docker-compose file may bypass your firewall rules!
+> It is recommended to use it within a local network, localhost only mapping
+> or use expose and access services via docker network IPs.
+> See [docker-iptables](https://github.com/docker/for-linux/issues/690) for more info.
 
 ## Systemd
 
@@ -456,7 +452,7 @@ If your system package already provides a systemd unit file, you can use [drop-i
     --tmpfs /tmp \
     --port 8000:80 \
     --cap-add NET_ADMIN \
-    --env PROTONVPN_SERVER=FREE \
+    --env PROTONVPN_SERVER=<SERVER-NAME> \
     --secret protonwire-private-key \
     --sysctl net.ipv4.conf.all.rp_filter=2 \
     --sysctl net.ipv6.conf.all.disable_ipv6=0 \
@@ -469,7 +465,7 @@ If your system package already provides a systemd unit file, you can use [drop-i
 
 ## Troubleshooting & FAQ
 
-See [Troubleshooting][Troubleshooting] and [FAQ][]
+See [Troubleshooting][] and [FAQ][]
 
 ## Building
 

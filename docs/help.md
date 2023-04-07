@@ -43,7 +43,8 @@ Your public IP might be different than `Endpoint` as shown by `wg show` command.
 
 ## Container is not accessible from LAN or Services within LAN are not accessible within the container
 
-- Check if you are using IPv6 only. If yes, prefix delegation might be in use and your LAN hosts will have a Public IPv6 address. You will need to tweak `PROTONVPN_ALLOWED_SUBNETS_IPV6` to **exclude** your prefix.
+- Check if you are using IPv6 only. If yes, prefix delegation might be in use and your LAN hosts will have a Public IPv6 address. You will need to tweak `PROTONVPN_ALLOWED_SUBNETS_IPV6` to **exclude** your prefix. You can use https://www.procustodibus.com/blog/2021/03/wireguard-allowedips-calculator/
+to calculate `PROTONVPN_ALLOWED_SUBNETS_IPV6`.
 - Check your firewall rules.
 
 ## User namespaces and file permissions

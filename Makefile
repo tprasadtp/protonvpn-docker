@@ -6,7 +6,7 @@ endif
 export REPO_ROOT := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 
 ifeq ($(SHELLCHECK_VERSION),)
-	SHELLCHECK_VERSION := v0.7.2
+	SHELLCHECK_VERSION := v0.9.0
 endif
 
 # Set default goal to help

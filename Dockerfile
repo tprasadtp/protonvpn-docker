@@ -8,6 +8,8 @@ RUN --mount=type=cache,sharing=private,target=/var/cache/apk \
     apk update \
     && apk add \
         bash \
+        flock \
+        socat \
         curl \
         iproute2-minimal \
         libcap \
