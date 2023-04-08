@@ -2598,11 +2598,18 @@ function __protonvpn_disconnect() {
 }
 
 function protonvpn_disconnect_cmd() {
-    if ! __run_checks; then
-        log_error "Please fix the errors and try again!"
+    __detect_paths
+
+
+    # Check if all required commands are available
+    if ! __run_cmd_checks; then
         return 1
     fi
-    __detect_paths
+
+    if ! __check_caps; then
+        log_error "Run as root and/or add CAP_NET_ADMIN capability"
+        return 1
+    fi
 
     if __protonvpn_disconnect; then
         return 0
