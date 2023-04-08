@@ -98,6 +98,8 @@ Images are published at [ghcr.io/tprasadtp/protonwire][ghcr].
 | `SKIP_DNS_CONFIG` | false | (Boolean) Set this to `1` or `true` to skip configuring DNS.
 | `KILLSWITCH`     | false | (Boolean) Enable KillSwitch (Experimental and can cause issues)
 
+> **Warning**
+>
 > Environment variables starting with `__PROTONWIRE` are reserved for internal use.
 
 ## PROTONVPN_SERVER
@@ -110,27 +112,39 @@ This should server name like `NL-FREE#1`(or `NL-FREE-1`) or domain name like,
 > Script cannot validate if specified server is available under your plan.
 > Its user's responsibility to ensure that server specified is available
 > under your subscription and supports required features (like P2P, Streaming etc.)
+> use `--p2p`, `--streaming`, `--secure-core` flags to enable client side validations.
+
+## KillSwitch
+
+> **Warning**
+>
+> This Feature is experimental.
+
+Kill-Switch is not a hard kill-switch but more of an "internet" kill-switch.
+Your LAN addresses, Link-Local addresses and CGNAT remain reachable.
+This ensures that Tailscale works with protonwire.
 
 ## Dependencies
 
-Following dependencies are **in addition** to WireGuard support in Kernel. See https://www.wireguard.com/install/ for more info.
+Following dependencies are **in addition** to WireGuard support in Kernel.
+See https://www.wireguard.com/install/ for more info.
 
 - If running on Ubuntu, Linux Mint, Elementary OS and other **Ubuntu** based derivatives etc.
 
     - If using `systemd-resolved` (default),
         ```console
-        sudo apt-get install curl jq procps iproute2 libcap2-bin util-linux wireguard-tools
+        sudo apt-get install curl jq procps iproute2 libcap2-bin util-linux socat wireguard-tools
         ```
     - Otherwise,
         ```console
-        sudo apt-get install curl jq procps iproute2 libcap2-bin util-linux wireguard-tools openresolv
+        sudo apt-get install curl jq procps iproute2 libcap2-bin util-linux socat wireguard-tools openresolv
         ```
 
 - If running on Debian, Raspberry Pi OS, and other **Debian** based derivatives etc
 
     - If using `systemd-resolved` (**NOT** default),
         ```console
-        sudo apt-get install curl jq procps iproute2 libcap2-bin util-linux wireguard-tools
+        sudo apt-get install curl jq procps iproute2 libcap2-bin util-linux socat wireguard-tools
         ```
     - Otherwise,
         ```console
@@ -141,47 +155,36 @@ Following dependencies are **in addition** to WireGuard support in Kernel. See h
 
     - If using `systemd-resolved`  (default),
         ```console
-        sudo dnf install curl jq procps-ng libcap iproute util-linux wireguard-tools
+        sudo dnf install curl jq procps-ng libcap iproute util-linux socat wireguard-tools
         ```
 
     - Otherwise,
         ```console
-        sudo dnf install curl jq procps-ng libcap iproute util-linux wireguard-tools openresolv
+        sudo dnf install curl jq procps-ng libcap iproute util-linux socat wireguard-tools openresolv
         ```
 
-- If running on  CentOS 8, Fedora 34+, Amazon Linux 2022, RHEL 9, Rocky Linux, Alma Linux 8
+- If running on  CentOS 8, RHEL 8, Rocky Linux 8, Alma Linux 8
 
     - If using `systemd-resolved` (NOT default),
         ```console
-        sudo dnf install curl jq procps-ng libcap iproute util-linux wireguard-tools
+        sudo dnf install curl jq procps-ng libcap iproute util-linux socat wireguard-tools
         ```
 
     - Otherwise,
         ```console
-        sudo dnf install curl jq procps-ng libcap iproute util-linux wireguard-tools openresolv
+        sudo dnf install curl jq procps-ng libcap iproute util-linux socat wireguard-tools openresolv
         ```
 
 - If running on ArchLinux, Manjaro and other ArchLinux based distribution,
 
     - If using `systemd-resolved`,
         ```console
-        sudo pacman -S curl jq procps-ng libcap iproute2 util-linux wireguard-tools systemd-resolvconf
+        sudo pacman -S curl jq procps-ng libcap iproute2 util-linux socat wireguard-tools systemd-resolvconf
         ```
 
     - Otherwise,
         ```console
-        sudo pacman -S curl jq procps-ng libcap iproute2 util-linux wireguard-tools openresolv
-        ```
-
-- If running OpenSUSE Leap,
-    - If using `systemd-resolved` (default),
-        ```console
-        zypper install curl jq procps-ng libcap iproute2 util-linux wireguard-tools
-        ```
-
-    - Otherwise,
-        ```console
-        zypper install curl jq procps-ng libcap iproute2 util-linux wireguard-tools openresolv
+        sudo pacman -S curl jq procps-ng libcap iproute2 util-linux socat wireguard-tools openresolv
         ```
 
 ## Installation
@@ -226,7 +229,7 @@ Following dependencies are **in addition** to WireGuard support in Kernel. See h
     docker pull ghcr.io/tprasadtp/protonwire:latest
     ```
 - Run VPN Container. Assuming that you have have a container which needs to be routed via VPN, listening on container port `80` and you wish to map it to host port `8000`,
-    ```bash
+    ```console
     docker run \
     -it \
     --rm \
@@ -248,7 +251,7 @@ Following dependencies are **in addition** to WireGuard support in Kernel. See h
 - To use VPN in other container(s), use `--net=container:protonwire` flag.
 For example, we can run caddy to proxy `https://api.ipify.org/` via VPN. Visiting http://localhost:8000, or `curl http://localhost:8000` should show your VPN's country and IP address.
 
-    ```bash
+    ```console
     docker run \
         -it \
         --rm \
@@ -267,7 +270,7 @@ For example, we can run caddy to proxy `https://api.ipify.org/` via VPN. Visitin
 
 - If you have your entire stack in a single compose file, then `network_mode: service:protonwire` on the services which should be routed via VPN. If your VPN stack is **NOT** in same compose file use `network_mode: container:<protonwire-container-name>`.
 
-- As an example, run caddy webserver, proxying `api.ipify.org` via VPN is shown below. Visiting http://localhost:8000, or `curl -s http://localhost:8000` should show your VPN's country and IP address.
+- As an example, run caddy web-server, proxying `api.ipify.org` via VPN is shown below. Visiting http://localhost:8000, or `curl -s http://localhost:8000` should show your VPN's country and IP address.
 
     ```yaml
     version: '2.3'
@@ -288,7 +291,7 @@ For example, we can run caddy to proxy `https://api.ipify.org/` via VPN. Visitin
                 - type: tmpfs
                   target: /tmp
                 - type: bind
-                  source: PATH_TO_PRIVATE_KEYFILE
+                  source: PATH_TO_PRIVATE_KEY_FILE
                   target: /etc/protonwire/private-key
                   read_only: true
             # You MUST also publish
@@ -316,9 +319,9 @@ For example, we can run caddy to proxy `https://api.ipify.org/` via VPN. Visitin
 > **Warning**
 >
 > The sample docker-compose file may bypass your firewall rules!
-> It is recommended to use it within a local network, localhost only mapping
-> or use expose and access services via docker network IPs.
-> See [docker-iptables](https://github.com/docker/for-linux/issues/690) for more info.
+> It is recommended to use it within a local network, use localhost only mapping
+> or use expose and access services via docker network IPs. See
+> [docker-iptables](https://github.com/docker/for-linux/issues/690) for more info.
 
 ## Systemd
 
@@ -359,7 +362,7 @@ Provides rich systemd integration. Connected server and last verification time i
         ```
     - Allow `systemd-network` group to access,
         ```bash
-        sudo chmown root:systemd-network /etc/protonwire/private-key
+        sudo chown root:systemd-network /etc/protonwire/private-key
         ```
     - Ensure ony `root` can write to file, members of group `systemd-network` can read the file and others have no access to file.
         ```bash
@@ -367,12 +370,12 @@ Provides rich systemd integration. Connected server and last verification time i
         ```
     > Script will refuse to use key file, if its is readable by others.
 
-    > If running as non-root user(default), ensure unit's user has access to the key file. Using `SupplimentaryGroup=systemd-network` and giving `systemd-network` group read access to key file.
+    > If running as non-root user(default), ensure unit's user has access to the key file. Using `SupplementaryGroup=systemd-network` and giving `systemd-network` group read access to key file.
 
 - For non sensitive settings, you can use environment files(`.env`) in `/etc/protonwire/` They are loaded automatically be the default unit.
     ```bash
     # /etc/protonwire/settings.env
-    PROTONVPN_SERVER="NL-FREE#1"
+    PROTONVPN_SERVER="nl-free-127.protonvpn.net"
     ```
 
 - If you installed or modified unit files, You must reload systemd via
@@ -388,11 +391,13 @@ Provides rich systemd integration. Connected server and last verification time i
     sudo systemctl start protonwire
     ```
 - You can stop VPN service via
+    > **Warning**
+    >
+    > Units bound to protonwire unit will also be stopped.
+
     ```bash
     sudo systemctl stop protonwire
     ```
-
-    > Please note unit(s) bound to protonwire unit will also be stopped.
 
 - You can check status of VPN service via
     ```bash
@@ -474,7 +479,6 @@ Building requires `goreleaser`(v1.9+), and `docker` with `buildx` plugin.
 ```
 make docker
 ```
-
 
 [drop-in]: https://wiki.archlinux.org/title/systemd#Drop-in_files
 [nss-resolve]: https://www.freedesktop.org/software/systemd/man/nss-resolve.html

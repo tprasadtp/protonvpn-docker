@@ -422,6 +422,10 @@ function __is_valid_ipcheck_url() {
     fi
 
     case ${IPCHECK_URL} in
+    http://*)
+        log_error "IPCHECK_URL must be secure (https://)"
+        return 1
+        ;;
     https://*)
         local curl_rc="-1"
         {
@@ -494,7 +498,6 @@ function __is_debug() {
 
 # Check if DNS configuration is disbaled
 function __is_skip_cfg_dns() {
-
     if [[ ${__PROTONWIRE_DNS_UPDATER,,} == "none" ]]; then
         return 0
     fi
@@ -532,7 +535,6 @@ function __has_notify_socket() {
 
 # Wrapper for systemd-notify
 function __systemd_notify() {
-
     local status
     local status_prefix
     local status_lock=0
@@ -559,10 +561,6 @@ function __systemd_notify() {
         --watchdog | -w)
             status_prefix="WATCHDOG="
             status="1"
-            ;;
-        -*)
-            log_warning "Invalid Usage - $1, can only be --status [STATUS] or --ready"
-            return 1
             ;;
         *)
             if [[ $1 =~ ^(STATUS|WATCHDOG|READY|STOPPING|RELOADING)=(.*) ]]; then
@@ -602,7 +600,7 @@ function __systemd_notify() {
     return 1
 }
 
-# systemd-resolved support for default routes in >= 241
+# systemd-resolved supports default routes in >= 241
 function __check_systemd_version() {
     local systemd_version="0"
     if has_command systemctl; then
@@ -711,17 +709,13 @@ function __sd_notify_checks() {
 
 # checks capabilities
 function __check_caps() {
-    if [[ $__PROTONWIRE_SKIP_CAP_CHECKS != "true" ]]; then
-        if capsh --has-p=CAP_NET_ADMIN >/dev/null 2>&1; then
-            return 0
-        else
-            log_error "CAP_NET_ADMIN capability is not available!"
-            log_error "If running as systemd unit ensure 'AmbientCapabilities' is set to 'CAP_NET_ADMIN'"
-            log_error "If running as podman/docker use --cap-add=CAP_NET_ADMIN flag."
-        fi
-    else
-        log_warning "Skipping capability checks"
+    if capsh --has-p=CAP_NET_ADMIN >/dev/null 2>&1; then
+        log_success "Can use CAP_NET_ADMIN capability"
         return 0
+    else
+        log_error "CAP_NET_ADMIN capability is not available!"
+        log_error "If running as systemd unit ensure 'AmbientCapabilities' is set to 'CAP_NET_ADMIN'"
+        log_error "If running as podman/docker use --cap-add=CAP_NET_ADMIN flag."
     fi
     return 1
 }
@@ -731,7 +725,6 @@ function __run_cmd_checks() {
     local errs=0
 
     __detect_paths
-
     log_debug "Checking requirements"
 
     declare -a commands=(
@@ -745,8 +738,7 @@ function __run_cmd_checks() {
         # "flock"   # flock | linux-utils
     )
 
-    # Detect how to update DNS and add required commands
-    # to list of commands to check
+    # Detect how to update DNS and add required commands to list of commands to check
     __detect_dns_updater
 
     case ${__PROTONWIRE_DNS_UPDATER,,} in
@@ -798,7 +790,6 @@ function __run_cmd_checks() {
     if [[ $errs -gt 0 ]]; then
         return 1
     fi
-
 }
 
 # systemd and sd-notify checks
@@ -869,11 +860,27 @@ function __run_checks() {
 
     # Check if all required commands are available
     if ! __run_cmd_checks; then
-        ((++errs))
+        return 1
     fi
 
     if ! __run_systemd_checks; then
         ((++errs))
+    fi
+
+    # check if any interfaces have reserved ip addresses
+    declare ip_on_ifaces
+    readarray -t ip_on_ifaces < <(ip -4 --json addr show | jq -r '.[] | .addr_info[] | .local' 2>/dev/null)
+    if [[ ${#ip_on_ifaces[@]} -lt 1 ]]; then
+        log_error "There are no interfaces with IP addresses"
+        ((++errs))
+    else
+        for iface_ip in ${#ip_on_ifaces[@]}; do
+            log_debug "Checking if IP is reserved - $iface_ip"
+            if [[ $iface_ip == "10.2.0.1" ]]; then
+                log_error "One of the interfaces has IP - 10.2.0.1, which is reserved for server"
+                ((++errs))
+            fi
+        done
     fi
 
     if ! __is_valid_ipcheck_url; then
@@ -932,7 +939,7 @@ function __resolvctl_up_hook() {
     if [[ $errs -eq 0 ]]; then
         return 0
     else
-        __resolvctl_down_hook
+        __resolvctl_down_hook # ignore errors
     fi
 
     return 1
@@ -951,7 +958,6 @@ function __resolvctl_down_hook() {
 # resolvconf hook
 function __resolvconf_up_hook() {
     local errs=0
-
     if has_command resolvconf; then
         if printf "nameserver 10.2.0.1" | timeout 5s resolvconf -a protonwire0.wg 2>&1 | log_tail "resolvconf set"; then
             log_debug "Successfully updated /etc/resolv.conf"
@@ -1045,9 +1051,6 @@ function protonvpn_looper_cmd() {
         log_error "Please fix the errors above and try again!"
         return 1
     fi
-
-    # define paths and dns updater
-    __detect_dns_updater
 
     log_variable "PROTONVPN_CHECK_THRESHOLD"
     log_variable "IPCHECK_INTERVAL"
@@ -1285,13 +1288,13 @@ function protonvpn_fetch_metadata() {
             # ensure file is json formatted and valid
             if jq --exit-status '.Nodes' "${__PROTONWIRE_SRV_INFO_FILE}.bak" >/dev/null 2>&1; then
                 if mv "${__PROTONWIRE_SRV_INFO_FILE}.bak" "${__PROTONWIRE_SRV_INFO_FILE}"; then
-                    log_success "Refreshed ProtonVPN server metadata"
+                    log_success "Successfully refreshed server metadata"
                 else
-                    log_error "Refreshing ProtonVPN server metadata failed (trampoline error)"
+                    log_error "Refreshing server metadata failed (trampoline error)"
                     return 1
                 fi
             else
-                log_error "Refreshing ProtonVPN server metadata failed (invalid json)"
+                log_error "Refreshing server metadata failed (invalid json)"
                 return 1
             fi
         elif [[ $hc_response_rc == 6 ]]; then
@@ -1725,16 +1728,19 @@ function __build_subnets() {
 # Build route table
 function __build_route_table() {
     local table_type="$1"
+    declare -a table_action
 
     case "${table_type}" in
     wireguard)
-        table_id="51820"
+        table_id="51821"
+        table_action=(dev protonwire0)
         ;;
     killswitch)
-        table_id="51820"
+        table_id="51822"
+        table_action=(prohibit)
         ;;
     *)
-        log_error "Unknown route table type"
+        log_error "Unknown route table type: $table_type"
         return 1
         ;;
     esac
@@ -1747,7 +1753,6 @@ function __build_route_table() {
     fi
 
     local errs=0
-
     for proto in "${__rt_protos[@]}"; do
         if [[ $proto == "4" ]]; then
             declare -a desired_routes=("${__PROTONWIRE_SUBNET_4[@]}")
@@ -1755,35 +1760,37 @@ function __build_route_table() {
             declare -a desired_routes=("${__PROTONWIRE_SUBNET_6[@]}")
         fi
 
+        # These bools are false by default as it makes things
+        # easier when tracking individual routes easier.
         local create_table="false"
         local flush_table="false"
-        log_info "Configuring table ($table_id) for IPv$proto"
+        log_info "Configuring $table_type table $table_id (IPv$proto)"
         if [[ -z $(ip "-${proto}" route show table "$table_id" 2>/dev/null) ]]; then
-            log_debug "${table_name} table($table_id) not present or empty(IP$proto)"
+            log_debug "Not found $table_type table $table_id (IPv$proto)"
             create_table="true"
         else
-            log_debug "Route table($table_id) already exists, checking routes"
+            log_debug "Checking routes $table_type table $table_id (IPv$proto)"
             local existing_routes
 
-            log_debug "Collecting (IPv$proto) routes from table $table_id"
+            log_debug "Collecting routes from $table_type table $table_id (IPv$proto)"
             existing_routes="$(ip "-${proto}" --json route show table "$table_id" | jq -r '.[].dst' 2>/dev/null)"
 
             if [[ -z ${existing_routes} ]]; then
-                log_warning "No (IPv$proto) routes configured in table"
+                log_warning "No routes in $table_type table $table_id (IPv$proto)"
                 create_table="true"
             fi
 
             # we have a route table already, check if its configured correctly
-            log_info "Verifying routes(IPv$proto) in table $table_id"
+            log_info "Verifying $table_type table $table_id (IPv$proto)"
 
             for route in "${desired_routes[@]}"; do
                 # special handling of /32 route
                 __route_regex="(${route}|${route///32/})"
 
                 if [[ "$existing_routes" =~ ${__route_regex} ]]; then
-                    log_debug "Route - $route already present in table ($table_id)"
+                    log_debug "Route - $route already present in $table_type table $table_id (IPv$proto)"
                 else
-                    log_warning "Route - $route is not present in table ($table_id)"
+                    log_warning "Route - $route is not present in $table_type table $table_id (IPv$proto)"
                     create_table="true"
                     flush_table="true"
                 fi
@@ -1791,22 +1798,22 @@ function __build_route_table() {
         fi
 
         if [[ $flush_table == "true" ]]; then
-            log_debug "Flush (IPv$proto) ${table_name} table($table_id)"
+            log_debug "Flush (IPv$proto)  table($table_id)"
             if ! ip "-${proto}" route flush table "$table_id" 2>&1 | log_tail "ip route flush"; then
-                log_error "Failed to flush ${table_name} table($table_id)"
+                log_error "Failed to flush $table_type table $table_id (IPv$proto)"
                 ((++errs))
             fi
         else
-            log_debug "No need to flush (IPv$proto) ${table_name} table($table_id)"
+            log_debug "No need to flush $table_type table $table_id (IPv$proto)"
         fi
 
         if [[ $create_table == "true" ]]; then
             for route in "${desired_routes[@]}"; do
-                if ! ip "-${proto}" route add table "$table_id" dev protonwire0 "$route" 2>&1 | log_tail "ip route"; then
-                    log_error "Failed to add route(IPv$proto) - $route to ${table_name} table($table_id)"
+                if ! ip "-${proto}" route add table "$table_id" ${table_action[@]} "$route" 2>&1 | log_tail "ip route"; then
+                    log_error "Failed to add $table_type route(IPv$proto) - $route to table($table_id)"
                     ((++errs))
                 else
-                    log_debug "Added route(IPv$proto) - $route to ${table_name} table($table_id)"
+                    log_debug "Added $table_type route(IPv$proto) - $route to table($table_id)"
                 fi
             done
         fi
@@ -1820,7 +1827,7 @@ function __build_route_table() {
 
 function __build_route_rules() {
     if __is_ipv6_disabled; then
-        log_info "IPv6 is disabled, skipping IPv6 routes and rules"
+        log_debug "IPv6 is disabled, skipping IPv6 routing rules"
         declare -ar __rt_protos=("4")
     else
         declare -ar __rt_protos=("4" "6")
@@ -1829,55 +1836,42 @@ function __build_route_rules() {
     local errs=0
     for proto in "${__rt_protos[@]}"; do
         declare -a wg_rule_p
-        declare -a manual_route_p
+        declare -a ks_route_p
 
         local config_rules="true"
-
-        # There may be multiple rules added with same
-        # setting but with diff priority
         log_info "Configuring IP rules (IPv$proto)"
-        readarray -t wg_rule_p < <(ip "-${proto}" --json rule | jq '.[] | select((.fwmark=="0xca6c") and (.table=="51820") and (.src=="all")) | .priority' 2>/dev/null)
-        readarray -t manual_route_p < <(ip "-${proto}" --json rule | jq '.[] | select((.suppress_prefixlen=0) and (.table=="main") and (.src=="all")) | .priority' 2>/dev/null)
-        log_debug "Rule Wiregurad Table - ${wg_rule_p[*]}"
-        log_debug "Rule Manual Routes   - ${manual_route_p[*]}"
+        readarray -t wg_rule_p < <(ip "-${proto}" --json rule | jq '.[] | select((.fwmark=="0xca6d") and (.table=="51821") and (.src=="all")) | .priority' 2>/dev/null)
+        readarray -t ks_route_p < <(ip "-${proto}" --json rule | jq '.[] | select((.fwmark=="0xca6d") and (.table=="51822") and (.src=="all")) | .priority' 2>/dev/null)
+        log_debug "Rule Wiregurad  Table - ${wg_rule_p[*]}"
+        log_debug "Rule Killswitch Table - ${wg_rule_p[*]}"
 
-        if [[ ${#wg_rule_p[@]} -eq 1 ]] && [[ ${#manual_route_p[@]} -eq 1 ]]; then
-            if [[ ${wg_rule_p[0]} -lt ${manual_route_p[0]} ]]; then
+        if [[ ${#wg_rule_p[@]} -eq 1 ]] && [[ ${#ks_route_p[@]} -eq 1 ]]; then
+            # wireguard route must have lower priority number than killswitch.
+            if [[ ${wg_rule_p[0]} -lt ${ks_route_p[0]} ]]; then
                 log_success "IP(v$proto) rules are already configured"
                 config_rules="false"
             else
                 log_error "IP(v$proto) rules are configured but have wrong priority!"
             fi
+        else
+            log_debug "wg rules(${#manual_route_p[@]}) and ks rules (${#ks_route_p[@]}), reconfigure rules"
         fi
 
         if [[ $config_rules != "false" ]]; then
-            log_debug "Cleanup old IP(v$proto) rules (if any)"
+            log_debug "Cleanup old rules if any (IPv$proto)"
 
-            while [[ $(ip "-${proto}" rule show 2>/dev/null) == *"lookup 51820"* ]]; do
+            while [[ $(ip "-${proto}" rule show 2>/dev/null) == *"lookup 51821"* ]]; do
                 log_warning "Removing (IPv$proto) WireGuard table rule"
-                if ! ip "-${proto}" rule del not fwmark 51820 table 51820 2>&1 | log_tail "ip rule"; then
+                if ! ip "-${proto}" rule del not fwmark 51821 table 51821 2>&1 | log_tail "ip rule"; then
                     log_error "Failed to remove rule(IPv$proto) to route traffic via WireGuard"
                     ((++errs))
                 fi
             done
 
-            while [[ $(ip "-${proto}" rule show 2>/dev/null) == *"from all lookup main suppress_prefixlength 0"* ]]; do
-                log_warning "Removing (IPv$proto) Manual route rule"
-                if ! ip "-${proto}" rule delete table main suppress_prefixlength 0 2>&1 | log_tail "ip rule"; then
-                    log_error "Failed to remove rule(IPv$proto) for manual routes"
-                    ((++errs))
-                fi
-            done
-
-            log_info "Adding Manual route (IPv$proto) rule"
-            if ! ip "-${proto}" add table main suppress_prefixlength 0 2>&1 | log_tail "ip rule"; then
-                log_error "Failed to add (IPv$proto) rule to Killswitch"
-                ((++errs))
-            fi
-
-            log_debug "Adding IP rule for Wireguard Table (51820)"
-            if ! ip "-${proto}" rule add not fwmark 51820 table 51820 2>&1 | log_tail "ip rule"; then
-                log_error "Failed to add rule to route traffic via WireGuard(51820)"
+            # from all not fwmark 0xca6c lookup 51821
+            log_debug "Adding IP rule for Wireguard Table (51821)"
+            if ! ip "-${proto}" rule add not fwmark 51821 table 51821 2>&1 | log_tail "ip rule"; then
+                log_error "Failed to add rule to route traffic via WireGuard(51821)"
                 ((++errs))
             fi
         fi
@@ -1936,16 +1930,16 @@ function __protonvpn_pre_connect_get_endpoints_and_keys() {
     local _server_online
     _server_online="$(jq -r '.Status' <<<"${__PROTONWIRE_SRV_INFO}" 2>/dev/null)"
     if [[ $_server_online == "ONLINE" ]]; then
-        log_success "Server ${PROTONVPN_SERVER^^} is online"
+        log_success "Server ${PROTONVPN_SERVER} is online"
     else
-        log_error "Server ${PROTONVPN_SERVER^^} is ${_server_online:-UNKNOWN_STATE}!"
+        log_error "Server ${PROTONVPN_SERVER} is ${_server_online:-UNKNOWN_STATE}!"
         return 1
     fi
 
     # Extract Endpoint IPs (including offline ones)
-    declare -a g __PROTONWIRE_ENDPOINT_IPS_ALL
+    declare -a -g __PROTONWIRE_ENDPOINT_IPS_ALL
     # Extract Endpoint IPs (only online ones)
-    declare -a g __PROTONWIRE_ENDPOINT_IPS_ONLINE
+    declare -a -g __PROTONWIRE_ENDPOINT_IPS_ONLINE
 
     # Get all Endpoint IPs which are online.
     log_debug "Selecting all ONLINE endpoints"
@@ -1964,7 +1958,7 @@ function __protonvpn_pre_connect_get_endpoints_and_keys() {
     fi
 
     # Get all Endpoint IPs (including offline)
-    log_debug "Selecting all ONLINE endpoints"
+    log_debug "Selecting all endpoints for building keymap"
     readarray -t __PROTONWIRE_ENDPOINT_IPS_ALL < <(jq -r \
         '[.Nodes[]] | sort_by(.Endpoint) | .[].Endpoint' \
         <<<"${__PROTONWIRE_SRV_INFO}" 2>/dev/null)
@@ -1992,13 +1986,13 @@ function __protonvpn_pre_connect_get_endpoints_and_keys() {
             '[.Nodes[] | select(.Endpoint==$endpoint)] | .[].PublicKey' \
             <<<"${__PROTONWIRE_SRV_INFO}" 2>/dev/null)
         if [[ ${#endpoint_keys[@]} -gt 1 ]]; then
-            log_warning "endpoint($endpoint) has multiple pub keys, only using first key"
+            log_warning "Endpoint($endpoint) has multiple pub keys, only using first key"
             __PROTONWIRE_KEY_MAP["$endpoint"]="${endpoint_keys[0]}"
         elif [[ ${#endpoint_keys[@]} -eq 1 ]]; then
-            log_debug "endpoint($endpoint) has pubkey - ${endpoint_keys[0]}"
+            log_debug "Endpoint($endpoint) has pubkey - ${endpoint_keys[0]}"
             __PROTONWIRE_KEY_MAP["$endpoint"]="${endpoint_keys[0]}"
         else
-            log_error "endpoint($endpoint) for server ${PROTONVPN_SERVER} returned no pubkeys"
+            log_error "Endpoint($endpoint) for server ${PROTONVPN_SERVER} returned no pubkeys"
             return 1
         fi
     done
@@ -2034,6 +2028,7 @@ function __protonvpn_pre_connect_get_endpoints_and_keys() {
     return 1
 }
 
+# verifies server has required features.
 function __protonvpn_pre_connect_verify_server_attributes() {
     # Ensure __PROTONWIRE_SRV_INFO is defined
     if [[ -z ${__PROTONWIRE_SRV_INFO} ]]; then
@@ -2043,6 +2038,7 @@ function __protonvpn_pre_connect_verify_server_attributes() {
 
     # Validate server attributes
     local errs=0
+
     local server_country
     local server_feature_p2p
     local server_feature_streaming
@@ -2065,7 +2061,7 @@ function __protonvpn_pre_connect_verify_server_attributes() {
     if [[ $__PROTONWIRE_FEATURE_P2P == "true" ]]; then
         server_feature_p2p="$(jq -r '.P2P' <<<"${__PROTONWIRE_SRV_INFO}" 2>/dev/null)"
         if [[ ${server_feature_p2p,,} != "true" ]]; then
-            log_error "Selected server(${PROTONVPN_SERVER^^}) does not supprt P2P"
+            log_error "Selected server(${PROTONVPN_SERVER}) does not supprt P2P"
             ((++errs))
         else
             log_success "Server supports P2P"
@@ -2077,7 +2073,7 @@ function __protonvpn_pre_connect_verify_server_attributes() {
     if [[ $__PROTONWIRE_FEATURE_STREAMING == "true" ]]; then
         server_feature_streaming="$(jq -r '.Streaming' <<<"${__PROTONWIRE_SRV_INFO}" 2>/dev/null)"
         if [[ ${server_feature_streaming,,} != "true" ]]; then
-            log_error "Selected server(${PROTONVPN_SERVER^^}) does not supprt Streaming"
+            log_error "Selected server(${PROTONVPN_SERVER}) does not supprt Streaming"
             ((++errs))
         else
             log_success "Server supports Streaming"
@@ -2089,7 +2085,7 @@ function __protonvpn_pre_connect_verify_server_attributes() {
     if [[ $__PROTONWIRE_FEATURE_TOR == "true" ]]; then
         server_feature_tor="$(jq -r '.Tor' <<<"${__PROTONWIRE_SRV_INFO}" 2>/dev/null)"
         if [[ ${server_feature_tor,,} != "true" ]]; then
-            log_error "Selected server(${PROTONVPN_SERVER^^}) does not supprt Tor"
+            log_error "Selected server(${PROTONVPN_SERVER}) does not supprt Tor"
             ((++errs))
         else
             log_success "Server supports Tor"
@@ -2101,7 +2097,7 @@ function __protonvpn_pre_connect_verify_server_attributes() {
     if [[ $__PROTONWIRE_FEATURE_SECURE_CORE == "true" ]]; then
         server_feature_secure_core="$(jq -r '.SecureCore' <<<"${__PROTONWIRE_SRV_INFO}" 2>/dev/null)"
         if [[ ${server_feature_secure_core,,} != "true" ]]; then
-            log_error "Selected server(${PROTONVPN_SERVER^^}) does not supprt SecureCore"
+            log_error "Selected server(${PROTONVPN_SERVER}) does not supprt SecureCore"
             ((++errs))
         else
             log_success "Server supports SecureCore"
@@ -2110,60 +2106,36 @@ function __protonvpn_pre_connect_verify_server_attributes() {
         log_debug "Not validating if server supports SecureCore"
     fi
 
-    if [[ $err -eq 0 ]]; then
+    if [[ $errs -eq 0 ]]; then
         return 0
     fi
 
     return 1
 }
 
+# Connects to ProtonVPN.
 function __protonvpn_connect() {
     local errs=0
+
+    if [[ -z ${PROTONVPN_SERVER} ]]; then
+        log_error "PROTONVPN_SERVER not specified"
+        return 1
+    fi
 
     if __has_notify_socket; then
         __systemd_notify --status "Connecting to ${PROTONVPN_SERVER}"
     fi
 
-    # Get entry IP of server
-    # prefer IP than hostnames because DNS might be broken because of broken tunnel.
-    declare -a entry_ips
-    readarray -t entry_ips < <(jq -r \
-        --arg SERVER_NAME "${__PROTONWIRE_SELECTED_SERVER}" \
-        '[ .LogicalServers[] | select(.Name==$SERVER_NAME) | .Servers[] | select(.Status==1) ] | unique_by(.EntryIP) | .[].EntryIP' \
-        "${__PROTONWIRE_SRV_INFO_FILE}" 2>/dev/null)
-
-    log_debug "EntryIPs for $__PROTONWIRE_SELECTED_SERVER - ${entry_ips[*]}"
-    if [[ ${#entry_ips[@]} -eq 0 ]]; then
-        log_error "No entry IPs found for server ${__PROTONWIRE_SELECTED_SERVER}"
-        return 1
-    elif [[ ${#entry_ips[@]} -gt 1 ]]; then
-        log_info "More than one EntryIP found for server ${__PROTONWIRE_SELECTED_SERVER}, selecting first IP"
-    fi
-
-    if __is_valid_ipv4 "${entry_ips[0]}"; then
-        log_info "Peer Endpoint (IPv4) - ${entry_ips[0]}"
-    elif __is_valid_ipv6 "${entry_ips[0]}"; then
-        log_info "Peer Endpoint (IPv6) - ${entry_ips[0]}"
-    else
-        log_error "Invalid peer endpoint address - ${entry_ips[0]}"
+    if ! __fetch_metadata_with_retries; then
         return 1
     fi
 
-    # Get public key for entry IP
-    declare -a pubkeys_list
-    readarray -t pubkeys_list < <(jq -r \
-        --arg ENTRY_IP "${entry_ips[0]}" \
-        '[ .LogicalServers[] | .Servers[]  | select(.EntryIP==$ENTRY_IP)] | unique_by(.X25519PublicKey) | .[].X25519PublicKey' \
-        "${__PROTONWIRE_SRV_INFO_FILE}" 2>/dev/null)
+    if ! __protonvpn_pre_connect_get_endpoints_and_keys; then
+        return 1
+    fi
 
-    if [[ ${#pubkeys_list[@]} -eq 0 ]]; then
-        log_error "Failed to populate public keys for IP - ${__PROTONWIRE_ENDPOINT_IP:-NA}(${#pubkeys_list[@]})"
+    if ! __protonvpn_pre_connect_verify_server_attributes; then
         return 1
-    elif [[ ${#pubkeys_list[@]} -gt 1 ]]; then
-        log_warning "More than one public key found for IP - ${__PROTONWIRE_ENDPOINT_IP:-NA}(${#pubkeys_list[@]})"
-        return 1
-    else
-        log_info "Peer PublicKey - ${pubkeys_list[0]}"
     fi
 
     # Lookup private key
@@ -2266,6 +2238,9 @@ function __protonvpn_connect() {
     local wg_exiting_prefixlen
     local wg_exiting_mtu
     local wg_existing_link_state
+    declare -a configured_endpoints
+    declare -a configured_peers
+
     if [[ -n $(ip link show protonwire0 type wireguard 2>/dev/null) ]]; then
         log_notice "WireGuard interface 'protonwire0' already exists"
         local _ipjson
@@ -2279,18 +2254,21 @@ function __protonvpn_connect() {
         wg_exiting_prefixlen="$(jq -r '.[].addr_info[] | select(.family=="inet") | .prefixlen' <<<"${_ipjson}" 2>/dev/null)"
         wg_exiting_mtu="$(jq -r '.[].mtu' <<<"${_ipjson}" 2>/dev/null)"
         wg_existing_link_state="$(jq -r '.[].operstate' <<<"${_ipjson}" 2>/dev/null)"
+        readarray -t configured_endpoints < <(wg show protonwire0 endpoints 2>/dev/null)
 
         log_debug "Current IPAddress  (protonwire0) : $wg_existing_ip"
         log_debug "Current Prefix     (protonwire0) : $wg_exiting_prefixlen"
         log_debug "Current Link MTU   (protonwire0) : $wg_exiting_mtu"
         log_debug "Current Link State (protonwire0) : $wg_existing_link_state"
+        log_debug "Current Endpoints  (protonwire0) : ${configured_endpoints[*]}"
+        log_debug "Current Peers      (protonwire0) : ${configured_peers[*]}"
     elif [[ -n $(ip link show protonwire0 2>/dev/null) ]]; then
         log_error "Existing interface 'protonwire0' is not a WireGuard interface"
         return 1
     else
         log_notice "Creating WireGuard Interface - protonwire0"
         if ! ip link add protonwire0 type wireguard 2>&1 | log_tail "ip-link"; then
-            log_error "WireGuard Interface creation failed!"
+            log_error "WireGuard interface creation failed!"
             log_error "Please install WireGuard. For more info see https://www.wireguard.com/install/"
             return 1
         fi
@@ -2307,7 +2285,7 @@ function __protonvpn_connect() {
                 return 1
             fi
         fi
-        log_info "Setting WireGuard Interface address - 10.2.0.2"
+        log_info "Setting WireGuard interface address - 10.2.0.2"
         if ! ip -4 address add 10.2.0.2/32 dev protonwire0 2>&1 | log_tail "ip-addr"; then
             log_error "Setting address on 'protonwire0' failed!"
             return 1
@@ -2328,20 +2306,20 @@ function __protonvpn_connect() {
     # Private key
     # check if public key
     if [[ $(wg show protonwire0 public-key) == "${wg_client_pubkey:-none}" ]]; then
-        log_success "WireGuard interface already has private key"
+        log_success "WireGuard interface already has private key configured"
     else
         if [[ -n $WIREGUARD_PRIVATE_KEY ]]; then
             if printf "%s" "${WIREGUARD_PRIVATE_KEY}" | wg set protonwire0 private-key /dev/stdin 2>&1 | log_tail "wg-set-key"; then
                 log_success "Setting WireGuard private key"
             else
-                log_error "Setting WireGuard private key failed"
+                log_error "Setting WireGuard private key failed!"
                 return 1
             fi
         elif [[ -n $WIREGUARD_PRIVATE_KEY_FILE ]]; then
             if wg set protonwire0 private-key "${WIREGUARD_PRIVATE_KEY_FILE}" 2>&1 | log_tail "wg-set-key"; then
                 log_success "Setting WireGuard private key from $WIREGUARD_PRIVATE_KEY_FILE"
             else
-                log_error "Setting WireGuard private key from $WIREGUARD_PRIVATE_KEY_FILE failed"
+                log_error "Setting WireGuard private key from $WIREGUARD_PRIVATE_KEY_FILE failed!"
                 return 1
             fi
         else
@@ -2351,46 +2329,78 @@ function __protonvpn_connect() {
     fi
 
     # peers and endpoints
-    declare -a configured_endpoints
-    readarray -t configured_endpoints < <(wg show protonwire0 endpoints 2>/dev/null)
-    if [[ ${#configured_endpoints[@]} -eq 0 ]] || [[ -z ${configured_endpoints[0]} ]]; then
-        if wg set protonwire0 peer "${pubkeys_list[0]}" \
-            allowed-ips 0.0.0.0/0,::/0 \
-            endpoint "${entry_ips[0]}:51820" \
-            persistent-keepalive 25 \
-            2>&1 | log_tail "wg-set-peer"; then
-            log_debug "WireGuard interface is configured with peer - ${pubkeys_list[0]}"
+    # If interface already has a peer,
+    # check if its in the available endpoints
+    # if yes, continue to use it.
+    # if not, select a random endpoint from list of endpoints.
+    local ep_reconfigure="true"
+    if [[ ${#configured_endpoints[@]} -eq 0 ]]; then
+        log_debug "No configured endpoints on the interface 'protonwire0'"
+        log_variable "__PROTONWIRE_ENDPOINT_IPS_ONLINE"
+        local selected_endpoint
+        local selected_endpoint_index
+        if [[ ${#__PROTONWIRE_ENDPOINT_IPS_ONLINE[@]} -gt 1 ]]; then
+            selected_endpoint_index="$(((RANDOM % ${#__PROTONWIRE_ENDPOINT_IPS_ONLINE[@]}) + 1))"
+            selected_endpoint="${__PROTONWIRE_ENDPOINT_IPS_ONLINE["${selected_endpoint_index}"]}"
+            log_debug "Selected endpoint($selected_endpoint_index) $selected_endpoint"
+        elif [[ ${#__PROTONWIRE_ENDPOINT_IPS_ONLINE[@]} -eq 1 ]]; then
+            selected_endpoint="${__PROTONWIRE_ENDPOINT_IPS_ONLINE[0]}"
+            log_debug "Selected endpoint $selected_endpoint"
         else
-            log_error "Setting WireGuard peer on interface failed"
+            log_error "No endpoints to select"
             return 1
         fi
-    elif [[ ${#configured_endpoints[@]} -eq 1 ]]; then
-        log_debug "Endpoint - ${configured_endpoints[0]}"
 
-        local ep_mismatch="false"
-        if [[ ${configured_endpoints[0]} == *"${pubkeys_list[0]}"* ]]; then
-            log_success "WireGuard interface is already configured with peer - ${pubkeys_list[0]}"
+    elif [[ ${#configured_endpoints[@]} -eq 1 ]]; then
+        log_debug "Single peer configured with ${configured_endpoints[0]}"
+        log_variable "__PROTONWIRE_ENDPOINT_IPS_ONLINE"
+
+        # check if configured endpoint is in the list of online endpoints
+        if [[ ${configured_endpoints[0]} == *"${__PROTONWIRE_ENDPOINT_IPS_ONLINE[*]}"* ]]; then
+            selected_endpoint="${configured_endpoints[0]}"
+            log_debug "WireGuard interface configured with peer - ${selected_endpoint%%	*}(${selected_endpoint##*	})"
+            ep_reconfigure="false"
         else
             log_error "WireGuard interface is configured wrong peer - ${configured_endpoints[0]}"
-            ep_mismatch="true"
-        fi
-
-        if [[ ${configured_endpoints[0]} =~ ${entry_ips[0]}\:51820$ ]]; then
-            log_success "WireGuard interface is already configured with endpoint - ${entry_ips[0]}"
-        else
-            log_error "WireGuard interface is configured wrong endpoint - ${configured_endpoints[0]}"
-            ep_mismatch="true"
-        fi
-
-        if [[ $ep_mismatch == "true" ]]; then
-            log_error "Please run protonwire disconnect and try again!"
-            return 1
+            local selected_endpoint
+            local selected_endpoint_index
+            if [[ ${#__PROTONWIRE_ENDPOINT_IPS_ONLINE[@]} -gt 1 ]]; then
+                selected_endpoint_index="$(((RANDOM % ${#__PROTONWIRE_ENDPOINT_IPS_ONLINE[@]}) + 1))"
+                selected_endpoint="${__PROTONWIRE_ENDPOINT_IPS_ONLINE["${selected_endpoint_index}"]}"
+                log_debug "Selected endpoint($selected_endpoint_index) $selected_endpoint"
+            elif [[ ${#__PROTONWIRE_ENDPOINT_IPS_ONLINE[@]} -eq 1 ]]; then
+                selected_endpoint="${__PROTONWIRE_ENDPOINT_IPS_ONLINE[0]}"
+                log_debug "Selected endpoint $selected_endpoint"
+            else
+                log_error "No endpoints to select"
+                return 1
+            fi
         fi
     else
         log_debug "Connected peers - ${configured_endpoints[*]}"
-        log_error "WireGuard interface 'protonwire0' is connected to multiple peers"
+        log_error "WireGuard interface 'protonwire0' is connected to multiple endpoints"
         log_error "Please run protonwire disconnect and try again!"
         return 1
+    fi
+
+    # Configure peers
+    if [[ $ep_reconfigure != "false" ]]; then
+        local peer_pub_key
+        peer_pub_key="${__PROTONWIRE_KEY_MAP["${selected_endpoint}"]}"
+        log_debug "Peer public key - $peer_pub_key"
+
+        if wg set protonwire0 peer "$peer_pub_key" \
+            allowed-ips 0.0.0.0/0,::/0 \
+            endpoint "${selected_endpoint}:51820" \
+            persistent-keepalive 25 \
+            2>&1 | log_tail "wg-set-peer"; then
+            log_debug "WireGuard interface is configured with peer - $peer_pub_key(${selected_endpoint})"
+        else
+            log_error "Setting WireGuard peer $peer_pub_key(${selected_endpoint}) on interface failed!"
+            return 1
+        fi
+    else
+        log_success "WireGuard interface already has peer - ${selected_endpoint%%	*}(${selected_endpoint##*	})"
     fi
 
     # Check if link is down if so, bring it up
@@ -2432,22 +2442,22 @@ function __protonvpn_connect() {
             return 1
         fi
     else
-        log_debug "Killswitch is disabled, check if Killswitch table is present"
+        log_debug "Killswitch is disabled, check if killswitch table 51822 is present"
         if __is_ipv6_disabled; then
-            log_info "IPv6 is disabled, skipping IPv6 routes and rules"
+            log_debug "IPv6 is disabled, skipping IPv6 routes"
             declare -ar __rt_protos=("4")
         else
             declare -ar __rt_protos=("4" "6")
         fi
 
         for proto in "${__rt_protos[@]}"; do
-            if [[ -z $(ip "-${proto}" route show table 51820 2>/dev/null) ]]; then
-                log_warning "Flush (IPv$proto) Killswitch table (51820)"
-                if ! ip "-${proto}" route flush table 51820 2>&1 | log_tail "ip route flush"; then
-                    log_warning "Failed to flush IPv$proto Killswitch table(51820)"
+            if [[ -z $(ip "-${proto}" route show table 51822 2>/dev/null) ]]; then
+                log_warning "Flush killswitch table (51822) (IPv$proto)"
+                if ! ip "-${proto}" route flush table 51822 2>&1 | log_tail "ip route flush"; then
+                    log_warning "Failed to flush killswitch table 51822 (IPv$proto)"
                 fi
             else
-                log_debug "Killswitch table (IPv$proto) 51820 is not present or empty!"
+                log_debug "Killswitch table 51820 is not present or empty (IPv$proto)"
             fi
         done
     fi
@@ -2492,39 +2502,8 @@ function protonvpn_connect_cmd() {
         return 1
     fi
 
-    __detect_paths
-    __detect_dns_updater
-
     if __protonvpn_connect; then
         return 0
-    fi
-    return 1
-}
-
-function __pre_connect_cmd() {
-    if [[ -z ${PROTONVPN_SERVER} ]]; then
-        log_error "PROTONVPN_SERVER not specified"
-        return 1
-    fi
-
-    if ! __run_checks; then
-        log_error "Please fix the errors and try again!"
-        return 1
-    fi
-
-    __detect_paths
-    __detect_dns_updater
-
-    if ! __fetch_metadata_with_retries; then
-        return 1
-    fi
-
-    if ! __protonvpn_pre_connect_get_endpoints_and_keys; then
-        return 1
-    fi
-
-    if ! __protonvpn_pre_connect_verify_server_attributes; then
-        return 1
     fi
     return 1
 }
@@ -2565,16 +2544,16 @@ function __protonvpn_disconnect() {
     fi
 
     log_info "Removing IP rules"
-    while [[ $(ip -4 rule show 2>/dev/null) == *"lookup 51820"* ]]; do
-        if ! ip -4 rule del not fwmark 51820 table 51820 2>&1 | log_tail "ip rule"; then
+    while [[ $(ip -4 rule show 2>/dev/null) == *"lookup 51821"* ]]; do
+        if ! ip -4 rule del not fwmark 51821 table 51821 2>&1 | log_tail "ip rule"; then
             log_error "Failed to remove rule(IPv4) to route traffic via WireGuard"
             ((++errs))
         fi
     done
 
     if [[ $skip_ipv6 != "true" ]]; then
-        while [[ $(ip -6 rule show 2>/dev/null) == *"lookup 51820"* ]]; do
-            if ! ip -6 rule del not fwmark 51820 table 51820 2>&1 | log_tail "ip rule"; then
+        while [[ $(ip -6 rule show 2>/dev/null) == *"lookup 51821"* ]]; do
+            if ! ip -6 rule del not fwmark 51821 table 51821 2>&1 | log_tail "ip rule"; then
                 log_error "Failed to remove rule(IPv4) to route traffic via WireGuard"
                 ((++errs))
             fi
@@ -2582,9 +2561,9 @@ function __protonvpn_disconnect() {
     fi
 
     # delete table
-    if ip -4 route list table 51820 >/dev/null 2>&1; then
+    if ip -4 route list table 51821 >/dev/null 2>&1; then
         log_debug "Flushing routing table 51820 (IPv4)"
-        if ! ip -4 route flush table 51820 2>&1 | log_tail "ip route"; then
+        if ! ip -4 route flush table 51821 2>&1 | log_tail "ip route"; then
             log_error "Failed to flush table 51820"
             ((++errs))
         fi
@@ -2593,9 +2572,9 @@ function __protonvpn_disconnect() {
     fi
 
     if [[ $skip_ipv6 != "true" ]]; then
-        if ip -6 route list table 51820 >/dev/null 2>&1; then
-            log_debug "Flushing routing table 51820 (IPv6)"
-            if ! ip -6 route flush table 51820 2>&1 | log_tail "ip route"; then
+        if ip -6 route list table 51821 >/dev/null 2>&1; then
+            log_debug "Flushing routing table 51821 (IPv6)"
+            if ! ip -6 route flush table 51821 2>&1 | log_tail "ip route"; then
                 log_error "Failed to flush table 51820"
                 ((++errs))
             fi
@@ -2678,7 +2657,9 @@ ${BOLD}${CYAN}Options:${NC}
       --metadata-endpoint [URL] Server metadata endpoint URL
       --check-interval [INT]    IP check interval in seconds
       --check-endpoint [URL]    IP check endpoint URL
-      --skip-dns-config         Skip configuring DNS
+      --skip-dns-config         Skip configuring DNS.
+                                (Useful for Kubernetes and Nomad)
+      --killswitch              Enable killswitch (Experimental)
       --p2p                     Check if server supports P2P
       --streaming               Check if server supports streaming
       --tor                     Check if server supports Tor
@@ -2689,7 +2670,6 @@ ${BOLD}${CYAN}Options:${NC}
       --version                 Display version and exit
 
 ${BOLD}${TEAL}Examples:${NC}
-  protonwire connect FREE       Connect to fastest free server
   protonwire connect NL#17      Connect to server NL#17
   protonwire disconnect         Disconnect from current server
   protonwire check              Check if connected to a server
@@ -2702,7 +2682,7 @@ ${BOLD}${MAGENTA}Environment:${NC}
   PROTONVPN_SERVER              ProtonVPN server name
   IPCHECK_INTERVAL              Custom IP check interval in seconds
   SKIP_DNS_CONFIG               Set to '1' to skip configuring DNS
-  KILLSWITCH                    Set to '1' to enable killswitch (beta)
+  KILLSWITCH                    Set to '1' to enable killswitch (Experimental)
   DEBUG                         Set to '1' to enable debug logs
 EOF
 }
@@ -2768,6 +2748,9 @@ function main() {
             shift
             WIREGUARD_PRIVATE_KEY="$1"
             ;;
+        --killswitch | --kill-switch | --ks | -ks)
+            KILLSWITCH="true"
+            ;;
         --p2p)
             __PROTONWIRE_FEATURE_P2P="true"
             ;;
@@ -2804,14 +2787,6 @@ function main() {
         check | healthcheck | health-check | status | s)
             cmd_mode="HEALTHCHECK"
             ((++cmd_lock))
-            ;;
-        # Debugging commands
-        pre-connect-checks | pc)
-            cmd_mode="PRE_CONNECT_CHECKS"
-            ((++cmd_lock))
-            ;;
-        --skip-cap-checks)
-            __PROTONWIRE_SKIP_CAP_CHECKS="true"
             ;;
         *-)
             log_error "Invalid argument - $1. See usage below."
@@ -2949,9 +2924,6 @@ function main() {
     VERSION)
         __print_version
         exit $?
-        ;;
-    PRE_CONNECT_CHECKS)
-        __pre_connect_cmd
         ;;
     *)
         log_error "Unknown PROTONVPN_EXE_MODE - $cmd_mode"

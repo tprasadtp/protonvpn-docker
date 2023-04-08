@@ -24,9 +24,9 @@
 - If you are using Ubuntu/Fedora with defaults you are most likely using systemd-resolved for local DNS.
 - Run `resolvectl status --no-pager`. If it has `resolv.conf mode: stub`.  you are using `systemd-resolved`.
 
-## What with route table 51820
+## What with route table 51821 and 51821
 
-- We keep WireGuard route table separate (`51820`).
+- We keep WireGuard route table separate (`51821` and `51822` for killswitch).
 - By default we _include_ following subnets to be routed over VPN
     - `10.2.0.1/32` (_DNS server_)
     - `0.0.0.0/5`
@@ -147,6 +147,22 @@ You can use any of the following services for verification as they return your _
   * https://icanhazip.com/
   * https://api.ipify.org/
   * https://checkip.amazonaws.com/
+
+> **Warning**
+>
+> Do not use ip.me, as they seem to do user agent whitelisting and return html page
+> when user agent does not contain `curl` or `wget` or `requests`. (Sigh!)
+>
+> ```console
+> curl -si -H "User-Agent: Go-http-client/1.1" https://ip.me/ -o /dev/null -D -
+> HTTP/1.1 200 OK
+> Server: nginx/1.18.0
+> Date: Fri, 07 Apr 2023 22:26:15 GMT
+> Content-Type: text/html; charset=utf-8
+> Content-Length: 14626
+> Connection: keep-alive
+> ```
+>
 
 ## Metadata updates
 
