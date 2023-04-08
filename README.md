@@ -41,7 +41,7 @@
 - Supports roaming clients
 
 > If you are looking documentation for old OpenVPN based container,
-> See [here](https://github.com/tprasadtp/protonvpn-docker/tree/20f73fc7a74c1968c2ebf27d2044e928fc772ec4).
+> See [here](https://github.com/tprasadtp/protonvpn-docker/tree/2791aa332881f9409689c908cc7e83e8e4b3cc0b).
 
 ## Container Images
 
@@ -85,8 +85,10 @@ Images are published at [ghcr.io/tprasadtp/protonwire][ghcr].
 
 - CLI arguments will always take precedence over environment variables.
 - Environment variables takes precedence over any config file.
-- If private key is not specified in config or via environment variable, it is searched in following locations. If `$CREDENTIALS_DIRECTORY` is not set, it is skipped.
+- If private key is not specified via CLI or environment variable, it is searched
+in following locations. If `$CREDENTIALS_DIRECTORY` is not set, it is skipped.
   - `/etc/protonwire/private-key`
+  - `/run/secrets/protonwire/private-key`
   - `${CREDENTIALS_DIRECTORY}/private-key`
 
 | Name | Default/Required | Description
@@ -111,8 +113,8 @@ This should server name like `NL-FREE#1`(or `NL-FREE-1`) or domain name like,
 >
 > Script cannot validate if specified server is available under your plan.
 > Its user's responsibility to ensure that server specified is available
-> under your subscription and supports required features (like P2P, Streaming etc.)
-> use `--p2p`, `--streaming`, `--secure-core` flags to enable client side validations.
+> under your subscription and supports required features, like P2P, Streaming etc.
+> Use `--p2p`, `--streaming`, `--secure-core` flags to enable client side validations.
 
 ## KillSwitch
 

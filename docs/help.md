@@ -71,15 +71,13 @@ User namespaces can cause file permission issues. If you have problem accessing 
 protonwire disable-ks
 ```
 
-## Manually Disabling Kill-Switch
+## Manually Disabling Kill-Switch and disconnecting from
 
 ```bash
-ip -4 route flush table 51888
-ip -6 route flush table 51888
-ip -4 rule | grep 51888 | cut -f 1 -d ':' | xargs ip rule del priority
-ip -6 rule | grep 51888 | cut -f 1 -d ':' | xargs ip rule del priority
-ip -4 route flush table 51888
-ip -6 route flush table 51888
+ip -4 route flush table 51822
+ip -4 rule | grep 51822 | cut -f 1 -d ':' | xargs ip rule del priority
+ip -6 route flush table 51822
+ip -6 rule | grep 51822 | cut -f 1 -d ':' | xargs ip rule del priority
 ```
 
 ## Manually Disconnecting from VPN
@@ -90,10 +88,10 @@ as it handles things properly. If not possible, try the following.
 ```bash
 resolvectl revert protonwire0   # only if using systemd-resolved and not in container
 resolvconf -f -d protonwire0.wg # only if not using systemd-resolved and in container
-ip -4 rule del not fwmark 51888 table 51888
-ip -6 rule del not fwmark 51888 table 51889
-ip -4 route flush table 51888
-ip -6 route flush table 51888
+ip -4 rule del not fwmark 51821 table 51821
+ip -6 rule del not fwmark 51821 table 51821
+ip -4 route flush table 51821
+ip -6 route flush table 51821
 ip link del protonwire0
 ```
 

@@ -20,5 +20,5 @@ changelog:
     - title: Other Changes
       labels:
         - dependabot
-        - deps/docker
-        - deps/actions
+        - dep/docker
+        - dep/actions

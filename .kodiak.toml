@@ -24,7 +24,7 @@ autoupdate_label = "luna/autoupdate"
 method = "squash"
 
 # Blacklisted Labels
-blocking_labels = ["s/wip", "luna/lock", "luna", "s/review-required", "s/wont-fix"]
+blocking_labels = ["s/wip", "s/blocked", "luna/lock", "luna", "s/review-required", "s/wont-fix"]
 
 # Priority
 priority_merge_label = "p/critical"

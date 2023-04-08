@@ -166,7 +166,8 @@ You can use any of the following services for verification as they return your _
 
 ## Metadata updates
 
-Metadata updates includes updating server IPs and their public keys.
-Usually it should be automatic. But Proton API and libraries are in constant state of ~~chaos~~ flux
+Metadata updates includes updating server IPs, feature flags on servers, exit IPs and their public keys.
+It also applies some workarounds to API quirks or bugs. Usually it should be automatic.
+But Proton API and libraries are in constant state of ~~chaos~~ flux
 and documentation is virtually non-existent or incorrect. So stuff might break.
-PRs welcome! Bulk of the work is done via `scripts/generate-server-metadata`
+Bulk of the work is done via `scripts/generate-server-metadata`

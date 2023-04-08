@@ -4,7 +4,7 @@ updates:
     labels:
       - "dependabot"
       - "dependencies"
-      - "docker"
+      - "dep/docker"
       - "luna/automerge"
       - "luna/autoupdate"
     commit-message:
@@ -27,7 +27,7 @@ updates:
     labels:
       - "dependabot"
       - "dependencies"
-      - "docker"
+      - "dep/docker"
       - "luna/autoupdate"
     commit-message:
       prefix: "chore(deps):"

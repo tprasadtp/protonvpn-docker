@@ -315,19 +315,6 @@ function __cleanup_bg_tasks() {
             fi
         done
     fi
-
-    declare -a pending_tasks_kill
-    readarray -t pending_tasks_kill < <(jobs -p)
-    if [[ ${#pending_tasks_kill[@]} -gt 1 ]]; then
-        log_debug "Cleaning up background tasks - ${pending_tasks[*]:-NONE}"
-        for pid in "${pending_tasks_kill[@]}"; do
-            log_debug "Killing PID - $pid with SIGTERM"
-            if ! kill -s KILL "$pid" >/dev/null 2>&1; then
-                log_warning "Failed to kill PID - $pid"
-            fi
-        done
-    fi
-
 }
 
 # Checks if command is available
@@ -511,6 +498,7 @@ function __is_skip_cfg_dns() {
     return 1
 }
 
+# Check if killswitch is enabled
 function __is_enable_killswitch() {
     case ${KILLSWITCH,,} in
     yes | true | enable | enabled | on | 1)
@@ -520,8 +508,7 @@ function __is_enable_killswitch() {
     return 1
 }
 
-# Systemd Checks and wrappers
-# -----------------------------------------------------
+# Checks if NOTIFY_SOCKET is defined and valid
 function __has_notify_socket() {
     if [[ -n $NOTIFY_SOCKET ]]; then
         if [[ -S ${NOTIFY_SOCKET} ]]; then
@@ -639,36 +626,6 @@ function __check_systemd_version() {
     return 1
 }
 
-# detect dns update handler
-function __detect_dns_updater() {
-    if [[ -n $__PROTONWIRE_DNS_UPDATER ]]; then
-        return 0
-    fi
-
-    if ! __is_skip_cfg_dns; then
-        if has_command systemctl; then
-            if systemctl is-active --quiet systemd-resolved; then
-                if [[ -L /etc/resolv.conf ]]; then
-                    log_info "Using systemd-resolved for DNS"
-                    __PROTONWIRE_DNS_UPDATER="systemd-resolved"
-                else
-                    log_info "Using resolvconf(8) for DNS (/etc/resolv.conf is not a symlink)"
-                    __PROTONWIRE_DNS_UPDATER="resolvconf"
-                fi
-            else
-                log_info "Using resolvconf(8) for DNS (systemd-resolved is not running)"
-                __PROTONWIRE_DNS_UPDATER="resolvconf"
-            fi
-        else
-            log_info "Using resolvconf(8) for DNS (systemd is not available)"
-            __PROTONWIRE_DNS_UPDATER="resolvconf"
-        fi
-    else
-        log_debug "Skipping DNS configuration"
-        __PROTONWIRE_DNS_UPDATER="none"
-    fi
-}
-
 # sd-notify and watchdog checks
 function __sd_notify_checks() {
     local errs=0
@@ -707,6 +664,36 @@ function __sd_notify_checks() {
     return 1
 }
 
+# detect dns update handler
+function __detect_dns_updater() {
+    if [[ -n $__PROTONWIRE_DNS_UPDATER ]]; then
+        return 0
+    fi
+
+    if ! __is_skip_cfg_dns; then
+        if has_command systemctl; then
+            if systemctl is-active --quiet systemd-resolved; then
+                if [[ -L /etc/resolv.conf ]]; then
+                    log_info "Using systemd-resolved for DNS"
+                    __PROTONWIRE_DNS_UPDATER="systemd-resolved"
+                else
+                    log_info "Using resolvconf(8) for DNS (/etc/resolv.conf is not a symlink)"
+                    __PROTONWIRE_DNS_UPDATER="resolvconf"
+                fi
+            else
+                log_info "Using resolvconf(8) for DNS (systemd-resolved is not running)"
+                __PROTONWIRE_DNS_UPDATER="resolvconf"
+            fi
+        else
+            log_info "Using resolvconf(8) for DNS (systemd is not available)"
+            __PROTONWIRE_DNS_UPDATER="resolvconf"
+        fi
+    else
+        log_debug "Skipping DNS configuration"
+        __PROTONWIRE_DNS_UPDATER="none"
+    fi
+}
+
 # checks capabilities
 function __check_caps() {
     if capsh --has-p=CAP_NET_ADMIN >/dev/null 2>&1; then
@@ -720,13 +707,73 @@ function __check_caps() {
     return 1
 }
 
-# Checks all commands are available
-function __run_cmd_checks() {
+# systemd and sd-notify checks
+function __check_systemd() {
     local errs=0
 
-    __detect_paths
-    log_debug "Checking requirements"
+    # check systemd requirements
+    # Triggered by using
+    # - systemd-resolved or
+    # - running as a systemd unit
+    if [[ $__PROTONWIRE_LOOPER == "systemd" ]] ||
+        [[ $__PROTONWIRE_DNS_UPDATER == "systemd-resolved" ]]; then
+        if ! __check_systemd_version; then
+            return 1
+        fi
+    fi
 
+    # If running as loop via --systemd or --container
+    # then check if NOTIFY_SOCKET is set
+    if [[ $__PROTONWIRE_LOOPER == "systemd" ]]; then
+        if ! __sd_notify_checks; then
+            ((++errs))
+        fi
+    elif [[ $__PROTONWIRE_LOOPER == "container" ]]; then
+        if ! __sd_notify_checks; then
+            ((++errs))
+        fi
+
+        # containers cannot change sysctls so check it now
+        if [[ $(sysctl -n net.ipv4.conf.all.rp_filter) != "2" ]] &&
+            [[ $(sysctl -n net.ipv4.conf.all.src_valid_mark) != "1" ]]; then
+            log_error "net.ipv4.conf.all.rp_filter!=2 && net.ipv4.conf.all.src_valid_mark!=1"
+            ((++errs))
+            log_error "Set one of the sysctls to expected value,"
+            log_error "If using docker/podman add --sysctl net.ipv4.conf.all.rp_filter=2 flag to your run command"
+            log_error "If using docker-compose add 'net.ipv4.conf.all.rp_filter: 2' under 'sysctls' section for protonvpn service."
+            log_error "If using Kubernetes see https://kubernetes.io/docs/tasks/administer-cluster/sysctl-cluster/ to set sysctl values."
+        fi
+    fi
+
+    # If check systemd variables
+    if [[ $__PROTONWIRE_LOOPER == "systemd" ]]; then
+        declare -ar systemd_populated_vars=(
+            "RUNTIME_DIRECTORY"
+            "STATE_DIRECTORY"
+            "CACHE_DIRECTORY"
+            "LOGS_DIRECTORY"
+        )
+
+        for var in "${systemd_populated_vars[@]}"; do
+            if [[ -z ${!var} ]]; then
+                log_warning "$var is not defined!"
+            else
+                log_variable "$var"
+            fi
+        done
+    fi
+
+    if [[ $errs -eq 0 ]]; then
+        return 0
+    fi
+    return 1
+}
+
+# Checks all commands are available
+function __check_tools() {
+    local errs=0
+
+    log_debug "Checking requirements"
     declare -a commands=(
         "curl"    # curl
         "jq"      # jq
@@ -792,83 +839,23 @@ function __run_cmd_checks() {
     fi
 }
 
-# systemd and sd-notify checks
-function __run_systemd_checks() {
-    local errs=0
-
-    # check systemd requirements
-    # Triggered by using
-    # - systemd-resolved or
-    # - running as a systemd unit
-    if [[ $__PROTONWIRE_LOOPER == "systemd" ]] ||
-        [[ $__PROTONWIRE_DNS_UPDATER == "systemd-resolved" ]]; then
-        if ! __check_systemd_version; then
-            return 1
-        fi
-    fi
-
-    # If running as loop via --systemd or --container
-    # then check if NOTIFY_SOCKET is set
-    if [[ $__PROTONWIRE_LOOPER == "systemd" ]]; then
-        if ! __sd_notify_checks; then
-            ((++errs))
-        fi
-    elif [[ $__PROTONWIRE_LOOPER == "container" ]]; then
-        if ! __sd_notify_checks; then
-            ((++errs))
-        fi
-
-        # containers cannot change sysctls so check it now
-        if [[ $(sysctl -n net.ipv4.conf.all.rp_filter) != "2" ]] &&
-            [[ $(sysctl -n net.ipv4.conf.all.src_valid_mark) != "1" ]]; then
-            log_error "net.ipv4.conf.all.rp_filter!=2 && net.ipv4.conf.all.src_valid_mark!=1"
-            ((++errs))
-            log_error "Set one of the sysctls to expected value,"
-            log_error "If using docker/podman add --sysctl net.ipv4.conf.all.rp_filter=2 flag to your run command"
-            log_error "If using docker-compose add 'net.ipv4.conf.all.rp_filter: 2' under 'sysctls' section for protonvpn service."
-            log_error "If using Kubernetes see https://kubernetes.io/docs/tasks/administer-cluster/sysctl-cluster/ to set sysctl values."
-        fi
-    fi
-
-    # If check systemd variables
-    if [[ $__PROTONWIRE_LOOPER == "systemd" ]]; then
-        declare -ar systemd_populated_vars=(
-            "RUNTIME_DIRECTORY"
-            "STATE_DIRECTORY"
-            "CACHE_DIRECTORY"
-            "LOGS_DIRECTORY"
-        )
-
-        for var in "${systemd_populated_vars[@]}"; do
-            if [[ -z ${!var} ]]; then
-                log_warning "$var is not defined!"
-            else
-                log_variable "$var"
-            fi
-        done
-    fi
-
-    if [[ $errs -eq 0 ]]; then
-        return 0
-    fi
-    return 1
-}
-
 # check dependencies
 function __run_checks() {
     local errs=0
 
     # Check if all required commands are available
-    if ! __run_cmd_checks; then
+    if ! __check_tools; then
         return 1
     fi
 
-    if ! __run_systemd_checks; then
+    __detect_paths
+
+    if ! __check_systemd; then
         ((++errs))
     fi
 
     # check if any interfaces have reserved ip addresses
-    declare ip_on_ifaces
+    declare -a ip_on_ifaces
     readarray -t ip_on_ifaces < <(ip -4 --json addr show | jq -r '.[] | .addr_info[] | .local' 2>/dev/null)
     if [[ ${#ip_on_ifaces[@]} -lt 1 ]]; then
         log_error "There are no interfaces with IP addresses"
@@ -883,8 +870,12 @@ function __run_checks() {
         done
     fi
 
-    if ! __is_valid_ipcheck_url; then
-        ((++errs))
+    if [[ $IPCHECK_URL != "https://protonwire-api.vercel.app/v1/client/ip" ]]; then
+        if ! __is_valid_ipcheck_url; then
+            ((++errs))
+        fi
+    else
+        log_notice "Skipped validating default IPCHECK_URL"
     fi
 
     if ! __check_caps; then
@@ -1026,10 +1017,7 @@ function __detect_paths() {
 
     declare -g __PROTONWIRE_SRV_INFO_FILE="${runtime_dir%/}/protonwire.server.json"
     declare -g __PROTONWIRE_HCR="${runtime_dir%/}/protonwire.hc.response"
-
     log_variable "__PROTONWIRE_SRV_INFO_FILE"
-
-    declare -g __PROTONWIRE_HCR="${runtime_dir%/}/protonwire.hc.response"
     log_variable "__PROTONWIRE_HCR"
 }
 
@@ -1117,13 +1105,13 @@ function protonvpn_looper_cmd() {
         log_debug "Notifying systemd that we are ready"
         if ! __systemd_notify --ready; then
             log_error "Failed to notify systemd!"
-            protonvpn_disconnect
+            __protonvpn_disconnect
             return 1
         fi
 
         if ! __systemd_notify --watchdog; then
             log_error "Failed to notify systemd!"
-            protonvpn_disconnect
+            __protonvpn_disconnect
             return 1
         fi
     else
@@ -1746,7 +1734,6 @@ function __build_route_table() {
     esac
 
     if __is_ipv6_disabled; then
-        log_info "IPv6 is disabled, skipping IPv6 routes and rules"
         declare -ar __rt_protos=("4")
     else
         declare -ar __rt_protos=("4" "6")
@@ -1835,23 +1822,31 @@ function __build_route_rules() {
 
     local errs=0
     for proto in "${__rt_protos[@]}"; do
+        declare -a _routes_json
         declare -a wg_rule_p
         declare -a ks_route_p
+        declare -a manual_route_p
+
+        readarray -t _routes_json < <(ip "-${proto}" --json rule)
+        _routes_json=$(ip "-${proto}" --json rule)
 
         local config_rules="true"
         log_info "Configuring IP rules (IPv$proto)"
-        readarray -t wg_rule_p < <(ip "-${proto}" --json rule | jq '.[] | select((.fwmark=="0xca6d") and (.table=="51821") and (.src=="all")) | .priority' 2>/dev/null)
-        readarray -t ks_route_p < <(ip "-${proto}" --json rule | jq '.[] | select((.fwmark=="0xca6d") and (.table=="51822") and (.src=="all")) | .priority' 2>/dev/null)
+        readarray -t wg_rule_p < <(jq '.[] | select((.fwmark=="0xca6d") and (.table=="51821") and (.src=="all")) | .priority' <<<"${_routes_json}" 2>/dev/null)
+        readarray -t ks_route_p < <(jq '.[] | select((.fwmark=="0xca6d") and (.table=="51822") and (.src=="all")) | .priority' <<<"${_routes_json}" 2>/dev/null)
+        readarray -t manual_route_p < <(jq '.[] | select((.suppress_prefixlen=0) and (.table=="main") and (.src=="all")) | .priority' <<<"${_routes_json}" 2>/dev/null)
+
         log_debug "Rule Wiregurad  Table - ${wg_rule_p[*]}"
         log_debug "Rule Killswitch Table - ${wg_rule_p[*]}"
+        log_debug "Rule Manual Route     - ${manual_route_p[*]}"
 
         if [[ ${#wg_rule_p[@]} -eq 1 ]] && [[ ${#ks_route_p[@]} -eq 1 ]]; then
             # wireguard route must have lower priority number than killswitch.
             if [[ ${wg_rule_p[0]} -lt ${ks_route_p[0]} ]]; then
-                log_success "IP(v$proto) rules are already configured"
+                log_success "IP routing rules are already configured IP(v$proto)"
                 config_rules="false"
             else
-                log_error "IP(v$proto) rules are configured but have wrong priority!"
+                log_error "IP routing rules are configured but have wrong priority!"
             fi
         else
             log_debug "wg rules(${#manual_route_p[@]}) and ks rules (${#ks_route_p[@]}), reconfigure rules"
@@ -1868,7 +1863,7 @@ function __build_route_rules() {
                 fi
             done
 
-            # from all not fwmark 0xca6c lookup 51821
+            # from all not fwmark 51821 lookup 51821
             log_debug "Adding IP rule for Wireguard Table (51821)"
             if ! ip "-${proto}" rule add not fwmark 51821 table 51821 2>&1 | log_tail "ip rule"; then
                 log_error "Failed to add rule to route traffic via WireGuard(51821)"
@@ -1949,7 +1944,7 @@ function __protonvpn_pre_connect_get_endpoints_and_keys() {
 
     # check if we have atleast one online endpoint server
     # this should not happen as the entire logical node itself should be offline
-    # but we include it here to avoid any bugs in api.
+    # but we include it here to avoid any bugs in API.
     if [[ ${#__PROTONWIRE_ENDPOINT_IPS_ONLINE[@]} -lt 1 ]]; then
         log_error "No online endpoints found for - PROTONVPN_SERVER=${PROTONVPN_SERVER}"
         return 1
@@ -1963,7 +1958,7 @@ function __protonvpn_pre_connect_get_endpoints_and_keys() {
         '[.Nodes[]] | sort_by(.Endpoint) | .[].Endpoint' \
         <<<"${__PROTONWIRE_SRV_INFO}" 2>/dev/null)
 
-    # check if we have atleast endpoint server
+    # Check if we have atleast endpoint server
     if [[ ${#__PROTONWIRE_ENDPOINT_IPS_ALL[@]} -lt 1 ]]; then
         log_error "No endpoints found for - PROTONVPN_SERVER=${PROTONVPN_SERVER}"
         return 1
@@ -1971,14 +1966,14 @@ function __protonvpn_pre_connect_get_endpoints_and_keys() {
         log_variable "__PROTONWIRE_ENDPOINT_IPS_ALL"
     fi
 
-    # Associative array to save keys and endpoint maps.
+    # Associative array to map endpoint ip to keys.
     declare -A -g __PROTONWIRE_KEY_MAP
 
     # Loop over all __PROTONWIRE_ENDPOINT_IPS_ALL and get their public key.
     # and save it in an associative array mapping endpoint to public keys.
     # we also consider all nodes as they may not be actually "offline"
     # though non-online nodes are not considered while connecting, only for verification.
-    # (Yet another quirk of ProtonVPN API which metaddata API cannot fix it)
+    # (Yet another quirk of ProtonVPN API which metadata API cannot fix)
     for endpoint in ${__PROTONWIRE_ENDPOINT_IPS_ALL[@]}; do
         declare -a endpoint_keys
         readarray -t endpoint_keys < <(jq -r \
@@ -2007,7 +2002,7 @@ function __protonvpn_pre_connect_get_endpoints_and_keys() {
         return 1
     fi
 
-    # As Metadata API endpoint is customizable,
+    # As metadata API endpoint is customizable,
     # Verify all returned IP addresseses are valid.
     for _server_exit_ip in ${__PROTONVPN_EXIT_IP_LIST[@]}; do
         if __is_valid_ipv4 "${_server_exit_ip}"; then
@@ -2180,6 +2175,7 @@ function __protonvpn_connect() {
             "/etc/protonwire/protonwire-private-key"
             "/etc/protonwire/wireguard-private-key"
             "/run/secrets/private-key"
+            "/run/secrets/protonwire/private-key"
             "/run/secrets/protonwire/protonwire-private-key"
             "/run/secrets/protonwire/wireguard-private-key"
         )
@@ -2239,7 +2235,6 @@ function __protonvpn_connect() {
     local wg_exiting_mtu
     local wg_existing_link_state
     declare -a configured_endpoints
-    declare -a configured_peers
 
     if [[ -n $(ip link show protonwire0 type wireguard 2>/dev/null) ]]; then
         log_notice "WireGuard interface 'protonwire0' already exists"
@@ -2261,7 +2256,6 @@ function __protonvpn_connect() {
         log_debug "Current Link MTU   (protonwire0) : $wg_exiting_mtu"
         log_debug "Current Link State (protonwire0) : $wg_existing_link_state"
         log_debug "Current Endpoints  (protonwire0) : ${configured_endpoints[*]}"
-        log_debug "Current Peers      (protonwire0) : ${configured_peers[*]}"
     elif [[ -n $(ip link show protonwire0 2>/dev/null) ]]; then
         log_error "Existing interface 'protonwire0' is not a WireGuard interface"
         return 1
@@ -2358,7 +2352,6 @@ function __protonvpn_connect() {
         # check if configured endpoint is in the list of online endpoints
         if [[ ${configured_endpoints[0]} == *"${__PROTONWIRE_ENDPOINT_IPS_ONLINE[*]}"* ]]; then
             selected_endpoint="${configured_endpoints[0]}"
-            log_debug "WireGuard interface configured with peer - ${selected_endpoint%%	*}(${selected_endpoint##*	})"
             ep_reconfigure="false"
         else
             log_error "WireGuard interface is configured wrong peer - ${configured_endpoints[0]}"
@@ -2414,14 +2407,14 @@ function __protonvpn_connect() {
         log_success "WireGuard interface is already UP"
     fi
 
-    # fw mark 0xca6c(51820)
-    if [[ $(wg show protonwire0 fwmark) == "0xca6c" ]]; then
-        log_success "WireGuard interface fwmark is already set to - 0xca6c"
+    # fw mark 0xca6d(51821)
+    if [[ $(wg show protonwire0 fwmark) == "0xca6d" ]]; then
+        log_success "WireGuard interface fwmark is already set to - 0xca6d"
     else
         if wg set protonwire0 fwmark 0xca6c 2>&1 | log_tail "wg-set-fwmark"; then
-            log_success "Setting fwmark on WireGuard interface to - 0xca6c"
+            log_success "Setting fwmark on WireGuard interface to - 0xca6d"
         else
-            log_error "Setting fwmark on WireGuard interface to - 0xca6c failed!"
+            log_error "Setting fwmark on WireGuard interface to - 0xca6d failed!"
             return 1
         fi
     fi
@@ -2442,30 +2435,29 @@ function __protonvpn_connect() {
             return 1
         fi
     else
-        log_debug "Killswitch is disabled, check if killswitch table 51822 is present"
+        log_debug "Killswitch is disabled, delete killswitch table 51822 if present"
         if __is_ipv6_disabled; then
-            log_debug "IPv6 is disabled, skipping IPv6 routes"
             declare -ar __rt_protos=("4")
         else
             declare -ar __rt_protos=("4" "6")
         fi
 
         for proto in "${__rt_protos[@]}"; do
-            if [[ -z $(ip "-${proto}" route show table 51822 2>/dev/null) ]]; then
+            if [[ -n $(ip "-${proto}" route show table 51822 2>/dev/null) ]]; then
                 log_warning "Flush killswitch table (51822) (IPv$proto)"
                 if ! ip "-${proto}" route flush table 51822 2>&1 | log_tail "ip route flush"; then
                     log_warning "Failed to flush killswitch table 51822 (IPv$proto)"
                 fi
             else
-                log_debug "Killswitch table 51820 is not present or empty (IPv$proto)"
+                log_debug "Killswitch table 51822 is not present or empty (IPv$proto)"
             fi
         done
     fi
 
-    if ! __build_route_rules; then
-        log_error "Failed to configure routing rules!"
-        return 1
-    fi
+    # if ! __build_route_rules; then
+    #     log_error "Failed to configure routing rules!"
+    #     return 1
+    # fi
 
     # DNS
     if __is_skip_cfg_dns; then
@@ -2568,7 +2560,7 @@ function __protonvpn_disconnect() {
             ((++errs))
         fi
     else
-        log_warning "Table 51820(IPv4) does not exist"
+        log_warning "Table 51821(IPv4) does not exist"
     fi
 
     if [[ $skip_ipv6 != "true" ]]; then
@@ -2600,9 +2592,8 @@ function __protonvpn_disconnect() {
 function protonvpn_disconnect_cmd() {
     __detect_paths
 
-
     # Check if all required commands are available
-    if ! __run_cmd_checks; then
+    if ! __check_tools; then
         return 1
     fi
 

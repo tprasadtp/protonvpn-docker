@@ -83,7 +83,7 @@ TasksAccounting = true
 
 # Service commands
 # ----------------------------------------
-ExecStart=protonwire connect --systemd
+ExecStart=protonwire connect --systemd --logfmt journald
 
 # Service lifecycle
 # ----------------------------------------

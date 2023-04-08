@@ -1,0 +1,282 @@
+[
+  {
+    "color": "e11d21",
+    "description": "Issue is a bug",
+    "name": "bug"
+  },
+  {
+    "color": "fca6da",
+    "description": "Documentation and related issues or PR",
+    "name": "documentation"
+  },
+  {
+    "color": "c8a2c8",
+    "description": "Issue or PR is duplicate",
+    "name": "duplicate"
+  },
+  {
+    "color": "84b6eb",
+    "description": "Improve existing feature",
+    "name": "enhancement"
+  },
+  {
+    "color": "7eed76",
+    "description": "Feature requests",
+    "name": "feature"
+  },
+  {
+    "color": "f4aea1",
+    "description": "Maintenance tasks/chore",
+    "name": "maintenance"
+  },
+  {
+    "color": "FFA500",
+    "description": "High importance",
+    "name": "p/high"
+  },
+  {
+    "color": "85e595",
+    "description": "Low prioirty tasks",
+    "name": "p/low"
+  },
+  {
+    "color": "00FF9F",
+    "description": "Completed and closed tasks/pr/issues",
+    "name": "s/done"
+  },
+  {
+    "color": "00b1ed",
+    "description": "Keep the issue /PR open and prevent from auto closing",
+    "name": "s/keep-open"
+  },
+  {
+    "color": "C4FF36",
+    "description": "Further review required",
+    "name": "Status:Review-Required"
+  },
+  {
+    "color": "6B2F5B",
+    "description": "External Networking Issue",
+    "name": "external-networking"
+  },
+  {
+    "color": "5F3878",
+    "description": "",
+    "name": "help"
+  },
+  {
+    "color": "ffffff",
+    "description": "Stale Issues and PRs",
+    "name": "s/stale"
+  },
+  {
+    "color": "e11d21",
+    "description": "Bugfix",
+    "name": "bugfix"
+  },
+  {
+    "color": "025E8C",
+    "description": "Enable Auto update PR via Luna",
+    "name": "luna/autoupdate"
+  },
+  {
+    "color": "f4aea1",
+    "description": "Security",
+    "name": "security"
+  },
+  {
+    "color": "ffd649",
+    "description": "Waiting and Work in progress",
+    "name": "s/wip"
+  },
+  {
+    "color": "025e8c",
+    "description": "Action by bot - Kodiak",
+    "name": "kodiak"
+  },
+  {
+    "color": "ff0000",
+    "description": "Urgent priority tasks",
+    "name": "p/critical"
+  },
+  {
+    "color": "00d100",
+    "description": "Issue/PR has been resolved",
+    "name": "s/resolved"
+  },
+  {
+    "color": "025e8c",
+    "description": "Action by bot - Luna",
+    "name": "luna"
+  },
+  {
+    "color": "025e8c",
+    "description": "Lock issue via bot - Luna",
+    "name": "luna/lock"
+  },
+  {
+    "color": "c4ff36",
+    "description": "Further review required",
+    "name": "s/review-required"
+  },
+  {
+    "color": "ceef86",
+    "description": "GitHub Actions Updates",
+    "name": "dep/github-actions"
+  },
+  {
+    "color": "025e8c",
+    "description": "Dependencies",
+    "name": "dependencies"
+  },
+  {
+    "color": "ffde57",
+    "description": "Python updates",
+    "name": "dep/python"
+  },
+  {
+    "color": "fbca04",
+    "description": "Medium priority tasks",
+    "name": "p/medium"
+  },
+  {
+    "color": "afafed",
+    "description": "Works as intended or out of scope",
+    "name": "s/wont-fix"
+  },
+  {
+    "color": "ffd649",
+    "description": "Blocked by other PR or pending issues",
+    "name": "s/blocked"
+  },
+  {
+    "color": "7eed76",
+    "description": "Request for enhancement",
+    "name": "rfe"
+  },
+  {
+    "color": "00b1ed",
+    "description": "Awaiting response from the issue creator or contributor",
+    "name": "s/awaiting-response"
+  },
+  {
+    "color": "0db7ed",
+    "description": "Issues or PR related to docker image",
+    "name": "docker"
+  },
+  {
+    "color": "025e8c",
+    "description": "Action by dependabot",
+    "name": "dependabot"
+  },
+  {
+    "color": "ffd649",
+    "description": "Issue/PR is pending",
+    "name": "s/pending"
+  },
+  {
+    "color": "025e8c",
+    "description": "Enable automatic merge via bot - Luna",
+    "name": "luna/automerge"
+  },
+  {
+    "color": "1fd021",
+    "description": "Patch updates via - dependabot",
+    "name": "dependabot/patch-update"
+  },
+  {
+    "color": "e4e669",
+    "description": "Issue or PR is invalid or spam",
+    "name": "invalid"
+  },
+  {
+    "color": "d876e3",
+    "description": "Question or Help",
+    "name": "question"
+  },
+  {
+    "color": "008672",
+    "description": "Extra attention is needed",
+    "name": "s/help-wanted"
+  },
+  {
+    "color": "ffffff",
+    "description": "This will not be worked on",
+    "name": "s/wontfix"
+  },
+  {
+    "color": "4285f4",
+    "description": "Metadata Generator",
+    "name": "metadata"
+  },
+  {
+    "color": "4285f4",
+    "description": "IP Check API",
+    "name": "api/ipcheck"
+  },
+  {
+    "color": "4285f4",
+    "description": "Metadata API",
+    "name": "api/metadata"
+  },
+  {
+    "color": "4285f4",
+    "description": "Upstream API bug/issue",
+    "name": "api/upstream"
+  },
+  {
+    "color": "844fba",
+    "description": "Dependency updates - Go",
+    "name": "dep/go"
+  },
+  {
+    "color": "ffde57",
+    "description": "Dependency updates - Nodejs",
+    "name": "dep/nodejs"
+  },
+  {
+    "color": "0db7ed",
+    "description": "Dependency updates - Docker",
+    "name": "dep/docker"
+  },
+  {
+    "color": "ffde57",
+    "description": "Dependency updates - Rust",
+    "name": "dep/rust"
+  },
+  {
+    "color": "ceef86",
+    "description": "Dependency updates - Submodules",
+    "name": "dep/submodule"
+  },
+  {
+    "color": "0db7ed",
+    "description": "Dependency updates - Docker",
+    "name": "dep/docker-pkgs"
+  },
+  {
+    "color": "0db7ed",
+    "description": "Dependency updates - Terraform",
+    "name": "dep/terraform"
+  },
+  {
+    "color": "025e8c",
+    "description": "Merge PR via bot - Kodiak",
+    "name": "kodiak/automerge"
+  },
+  {
+    "color": "1fd021",
+    "description": "Minor version updates via - dependabot",
+    "name": "dependabot/minor-update"
+  },
+  {
+    "color": "025e8c",
+    "description": "Automerge",
+    "name": "automerge"
+  },
+  {
+    "color": "fbca04",
+    "description": "Pending Upstream support",
+    "name": "s/upstream-support"
+  }
+]

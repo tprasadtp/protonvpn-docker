@@ -4,4 +4,7 @@
         "*.rules": "javascript"
     },
     "search.useIgnoreFiles": false,
+    "yaml.schemas": {
+        "https://json.schemastore.org/github-issue-config.json": "file:///home/prasad/Git/protonvpn-docker/.github/ISSUE_TEMPLATE/config.yml"
+    },
 }

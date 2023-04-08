@@ -1,0 +1,71 @@
+name: Metadata API Issue
+description: Report a bug with metadata API
+title: "[Metadata API] -  "
+labels: ["metadata", "api/metadata"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        - Thanks for taking the time to fill out this bug report!
+
+  - type: input
+    id: metadata-api-release-version
+    attributes:
+      label: Metadata API Version
+      description: |
+        - Metadata API published Version
+        - `curl -sL https://protonwire-api.vercel.app`
+      render: logs
+    validations:
+      required: true
+
+  - type: dropdown
+    id: adblock-dns
+    attributes:
+      label: Running via PiHole/Pfblocker or other ad-blocking DNS server?
+      options:
+        - "Yes"
+        - "No"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: dns-protocol
+    attributes:
+      label: DNS Protocol
+      options:
+        - Systemd's default DNS resolver
+        - DNS over HTTPS (DoH)
+        - DNS over TLS (DoT)
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: HTTP Trace Output
+      description: |
+        What do you see when you run
+        `curl -vvv https://protonwire-api.vercel.app/v1/server/<REPLACE_WITH_SERVER>`
+      render: log
+
+  - type: textarea
+    id: additional-info
+    attributes:
+      label: Any additional info
+      description: Any additional details like steps to reproduce intermittent bugs, race conditions etc.
+
+  - type: checkboxes
+    id: code-of-conduct
+    attributes:
+      label: Code of Conduct & PII Redaction
+      description: |
+        By submitting this issue, you agree to follow code of conduct for this repository.
+        In case the repository is missing code of conduct, Contributor Covenant code of conduct applies.
+        Please also ensure that you remove or redact any sensitive personally identifying information
+        like IP addresses and secrets like your API keys from logs and report included here.
+      options:
+        - label: I agree to follow this project's Code of Conduct
+          required: true
+        - label: I have removed any sensitive personally identifying information(PII) and secrets from in this issue report.
+          required: true

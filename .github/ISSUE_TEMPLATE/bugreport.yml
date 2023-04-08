@@ -40,7 +40,6 @@ body:
     validations:
       required: true
 
-  # Kernel version
   - type: input
     id: kernel-version
     attributes:
@@ -52,7 +51,6 @@ body:
     validations:
       required: true
 
-  # nas
   - type: dropdown
     id: nas
     attributes:
@@ -117,7 +115,6 @@ body:
         - label: I am using latest stable version
           required: true
 
-  # Logs
   - type: textarea
     id: logs
     attributes:
