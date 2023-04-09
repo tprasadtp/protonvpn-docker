@@ -163,7 +163,7 @@ Options:
       --check-endpoint URL      IP check endpoint URL
       --skip-dns-config         Skip configuring DNS.
                                 (Useful for Kubernetes and Nomad)
-      --killswitch              Enable killswitch (Experimental)
+      --kill-switch             Enable killswitch (Experimental)
       --p2p                     Check if server supports P2P
       --streaming               Check if server supports streaming
       --tor                     Check if server supports Tor
@@ -186,7 +186,7 @@ Environment:
   PROTONVPN_SERVER              ProtonVPN server name
   IPCHECK_INTERVAL              Custom IP check interval in seconds
   SKIP_DNS_CONFIG               Set to '1' to skip configuring DNS
-  KILLSWITCH                    Set to '1' to enable killswitch (Experimental)
+  KILL_SWITCH                   Set to '1' to enable killswitch (Experimental)
   DEBUG                         Set to '1' to enable debug logs
 </pre>
 <!--diana::dynamic:protonwire-help:end-->
