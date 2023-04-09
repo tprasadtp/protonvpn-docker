@@ -1339,8 +1339,8 @@ function protonvpn_healthcheck_status_file() {
 
         local hc_diff="-1"
         hc_diff=$((current_ts - hc_time))
-
-        if [[ $hc_diff -lt $((check_interval + 30)) ]]; then
+        # +10 is because of subtle race conditions (use flock?)
+        if [[ $hc_diff -lt $((check_interval + 10)) ]]; then
             log_success "Healthcheck is up (via status file), last checked ${hc_diff}s ago"
             return 0
         else
@@ -1558,6 +1558,10 @@ function __is_usable_keyfile() {
 # Builds list of routable subnets
 function __build_subnets() {
     local errs
+
+    declare -a invalid_ipv4_routes=()
+    declare -a invalid_ipv6_routes=()
+
     if [[ -z $PROTONVPN_ALLOWED_SUBNETS_IPV4 ]]; then
         log_debug "Excluding RFC-1918 subnets(IPv4) except DNS sever from WireGuard table"
         declare -ga __PROTONWIRE_SUBNET_4=(
@@ -1632,10 +1636,8 @@ function __build_subnets() {
             "228.0.0.0/6"
             "232.0.0.0/5"
         )
-        declare -a invalid_ipv4_routes=()
     else
         log_debug "ALLOWED_SUBNETS_IPV4 - ${PROTONVPN_ALLOWED_SUBNETS_IPV4}"
-        declare -a invalid_ipv4_routes=()
         # shellcheck disable=SC2206
         declare -ga __PROTONWIRE_SUBNET_4=(${PROTONVPN_ALLOWED_SUBNETS_IPV4//,/ })
         if [[ ${#__PROTONWIRE_SUBNET_4[@]} -eq 0 ]]; then
@@ -1654,11 +1656,9 @@ function __build_subnets() {
     if [[ -z $PROTONVPN_ALLOWED_SUBNETS_IPV6 ]]; then
         log_debug "Excluding ULA subnets(IPv6) from WireGuard table"
         declare -ga __PROTONWIRE_SUBNET_6=("2000::/3")
-        declare -a invalid_ipv6_routes=()
     else
         log_debug "ALLOWED_SUBNETS_IPV6 - ${PROTONVPN_ALLOWED_SUBNETS_IPV6}"
         declare -a __PROTONWIRE_SUBNET_6=()
-        declare -a invalid_ipv6_routes=()
         # shellcheck disable=SC2206
         declare -ga __PROTONWIRE_SUBNET_6=(${PROTONVPN_ALLOWED_SUBNETS_IPV6//,/ })
         if [[ ${#__PROTONWIRE_SUBNET_6[@]} -eq 0 ]]; then
@@ -1801,31 +1801,35 @@ function __build_route_rules() {
     for proto in "${__rt_protos[@]}"; do
         declare -a _routes_json
         declare -a wg_rule_p
-        declare -a ks_route_p
-        declare -a manual_route_p
+        declare -a ks_rule_p
 
         readarray -t _routes_json < <(ip "-${proto}" --json rule)
 
         local config_rules="true"
         log_info "Configuring IP rules (IPv$proto)"
-        readarray -t wg_rule_p < <(jq '.[] | select((.fwmark=="0xca6d") and (.table=="51821") and (.src=="all")) | .priority' <<<"${_routes_json[@]}" 2>/dev/null)
-        readarray -t ks_route_p < <(jq '.[] | select((.fwmark=="0xca6d") and (.table=="51822") and (.src=="all")) | .priority' <<<"${_routes_json[@]}" 2>/dev/null)
-        readarray -t manual_route_p < <(jq '.[] | select((.suppress_prefixlen=0) and (.table=="main") and (.src=="all")) | .priority' <<<"${_routes_json[@]}" 2>/dev/null)
+        readarray -t wg_rule_p < <(jq -r '.[] | select((.fwmark=="0xca6d") and (.table=="51821") and (.src=="all")) | .priority' <<<"${_routes_json[@]}" 2>/dev/null)
+        readarray -t ks_rule_p < <(jq -r '.[] | select((.fwmark=="0xca6d") and (.table=="51822") and (.src=="all")) | .priority' <<<"${_routes_json[@]}" 2>/dev/null)
 
-        log_debug "Rule Wiregurad  Table - ${wg_rule_p[*]}"
-        log_debug "Rule Killswitch Table - ${wg_rule_p[*]}"
-        log_debug "Rule Manual Route     - ${manual_route_p[*]}"
+        # If there are more than 1 routing rules return an error.
+        if [[ ${#wg_rule_p[@]} -gt 1 ]] || [[ ${#ks_rule_p[@]} -gt 1 ]]; then
+            log_error "More than one killswitch/wireguard route rule found!"
+            log_error "Cannot reliably connect to server without leaking connection!"
+            return 1
+        fi
 
-        if [[ ${#wg_rule_p[@]} -eq 1 ]] && [[ ${#ks_route_p[@]} -eq 1 ]]; then
-            # wireguard route must have lower priority number than killswitch.
-            if [[ ${wg_rule_p[0]} -lt ${ks_route_p[0]} ]]; then
-                log_success "IP routing rules are already configured IP(v$proto)"
+        # If both ks_rule_p and wg_rule_p bot have first element
+        if [[ -n ${ks_rule_p[0]} ]] && [[ -n ${wg_rule_p[0]} ]]; then
+            log_debug "ks_rule_p=${ks_rule_p[0]}, wg_rule_p${wg_rule_p[0]}"
+            # Validate ks rule has lower priority num than wg_rule_p rule
+            if [[ ${ks_rule_p[0]} -gt ${wg_rule_p[0]} ]]; then
+                log_success "Killswitch rule has lower priority(${ks_rule_p[0]}) than manual rule(${wg_rule_p[0]})"
                 config_rules="false"
             else
-                log_error "IP routing rules are configured but have wrong priority!"
+                log_error "Killswitch rule has priority (${ks_rule_p[0]}), but wireguard rule has (${wg_rule_p[0]})"
+                log_error "Cannot reliably connect to server without leaking connection!"
+                log_error "Run 'protonwire disconnect --kill-switch' and try again!"
+                return 1
             fi
-        else
-            log_debug "wg rules(${#manual_route_p[@]}) and ks rules (${#ks_route_p[@]}), reconfigure rules"
         fi
 
         if [[ $config_rules != "false" ]]; then
@@ -1833,16 +1837,41 @@ function __build_route_rules() {
 
             while [[ $(ip "-${proto}" rule show 2>/dev/null) == *"lookup 51821"* ]]; do
                 log_warning "Removing WireGuard table rule (IPv$proto)"
-                if ! ip "-${proto}" rule del not fwmark 51821 table 51821 2>&1 | log_tail "ip rule"; then
+                if ! ip "-${proto}" rule del not fwmark 51821 table 51821 2>&1 | log_tail "ip-rule-wireguard"; then
                     log_error "Failed to remove rule(IPv$proto) to route traffic via WireGuard"
                     ((++errs))
                 fi
             done
 
+            while [[ $(ip "-${proto}" rule show 2>/dev/null) == *"from all lookup main suppress_prefixlength 0"* ]]; do
+                log_warning "Removing (IPv$proto) Manual route rule"
+                if ! ip "-${proto}" rule delete table main suppress_prefixlength 0 2>&1 | log_tail "ip-rule-manual"; then
+                    log_error "Failed to remove rule for manual routes"
+                    ((++errs))
+                fi
+            done
+
+            # from all not fwmark 0xca6d lookup 51822
+            if __is_enable_killswitch; then
+                log_debug "Adding IP rule for Killswitch Table (51822)"
+                if ! ip "-${proto}" rule add not fwmark 0xca6d table 51822 2>&1 | log_tail "ip-rule-wireguard"; then
+                    log_error "Failed to add rule to Killswitch table 51822 (IPv$proto) "
+                    ((++errs))
+                fi
+            else
+                if [[ -n ${ks_rule_p[0]} ]]; then
+                    if ! __is_enable_killswitch; then
+                        log_warning "Killswitch is active, but flag --killswitch is not specified!"
+                    fi
+                else
+                    log_debug "No killswitch rules present"
+                fi
+            fi
+
             # from all not fwmark 51821 lookup 51821
             log_debug "Adding IP rule for Wireguard Table (51821)"
-            if ! ip "-${proto}" rule add not fwmark 51821 table 51821 2>&1 | log_tail "ip rule"; then
-                log_error "Failed to add rule to route traffic via WireGuard(51821)"
+            if ! ip "-${proto}" rule add not fwmark 51821 table 51821 2>&1 | log_tail "ip-rule-ks"; then
+                log_error "Failed to add rule to route traffic via WireGuard table 51821 (IPv$proto) "
                 ((++errs))
             fi
         fi
@@ -2591,6 +2620,31 @@ function protonvpn_disconnect_cmd() {
     if __protonvpn_disconnect; then
         return 0
     fi
+
+    if __is_ipv6_disabled; then
+        declare -ar __rt_protos=("4")
+    else
+        declare -ar __rt_protos=("4" "6")
+    fi
+
+    local errs=0
+    for proto in "${__rt_protos[@]}"; do
+        if __is_enable_killswitch; then
+            log_warning "Disabling killswitch (if any)"
+            while [[ $(ip "-${proto}" rule show 2>/dev/null) == *"lookup 51821"* ]]; do
+                log_warning "Removing WireGuard table rule (IPv$proto)"
+                if ! ip "-${proto}" rule del not fwmark 51821 table 51821 2>&1 | log_tail "ip-rule-wireguard"; then
+                    log_error "Failed to remove rule(IPv$proto) to route traffic via WireGuard"
+                    ((++errs))
+                fi
+            done
+        fi
+    done
+
+    if [[ $errs -eq 0 ]]; then
+        return 0
+    fi
+
     return 1
 }
 
