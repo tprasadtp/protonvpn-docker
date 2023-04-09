@@ -491,7 +491,7 @@ function __is_skip_cfg_dns() {
 
 # Check if killswitch is enabled
 function __is_enable_killswitch() {
-    case ${KILLSWITCH,,} in
+    case ${KILL_SWITCH,,} in
     yes | true | enable | enabled | on | 1)
         return 0
         ;;
@@ -2724,7 +2724,7 @@ function main() {
             WIREGUARD_PRIVATE_KEY="$1"
             ;;
         --killswitch | --kill-switch | --ks | -ks)
-            KILLSWITCH="true"
+            KILL_SWITCH="true"
             ;;
         --p2p)
             __PROTONWIRE_FEATURE_P2P="true"
