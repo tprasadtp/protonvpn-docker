@@ -2648,15 +2648,15 @@ ${BOLD}${YELLOW}or:${NC} protonwire [OPTIONS...] check
 ${BOLD}${YELLOW}or:${NC} protonwire [OPTIONS...] help
 
 ${BOLD}${CYAN}Options:${NC}
-  -k, --private-key [FILE|KEY]  Wireguard private key or
+  -k, --private-key FILE|KEY    Wireguard private key or
                                 file containing private key
       --container               Run as container
                                 (Cannot be used with --systemd)
       --systemd                 Run as systemd service
                                 (Cannot be used with --container)
-      --metadata-endpoint [URL] Server metadata endpoint URL
-      --check-interval [INT]    IP check interval in seconds
-      --check-endpoint [URL]    IP check endpoint URL
+      --metadata-endpoint URL   Server metadata endpoint URL
+      --check-interval INT      IP check interval in seconds
+      --check-endpoint URL      IP check endpoint URL
       --skip-dns-config         Skip configuring DNS.
                                 (Useful for Kubernetes and Nomad)
       --killswitch              Enable killswitch (Experimental)
@@ -2670,9 +2670,9 @@ ${BOLD}${CYAN}Options:${NC}
       --version                 Display version and exit
 
 ${BOLD}${TEAL}Examples:${NC}
-  protonwire connect NL#17      Connect to server NL#17
+  protonwire connect SERVER     Connect to server NL#17
   protonwire disconnect         Disconnect from current server
-  protonwire check              Check if connected to a server
+  protonwire verify [SERVER]    Check if connected to a server
 
 ${BOLD}${ORANGE}Files:${NC}
   /etc/protonwire/private-key   WireGuard private key

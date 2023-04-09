@@ -126,6 +126,59 @@ Kill-Switch is not a hard kill-switch but more of an "internet" kill-switch.
 Your LAN addresses, Link-Local addresses and CGNAT remain reachable.
 This ensures that Tailscale works with protonwire.
 
+## Usage
+
+<!--diana::dynamic:protonwire-help:begin-->
+<pre>
+
+ProtonVPN WireGuard Client
+
+Usage: protonwire [OPTIONS...]
+or: protonwire [OPTIONS...] c|connect [SERVER]
+or: protonwire [OPTIONS...] d|disconnect
+or: protonwire [OPTIONS...] check
+or: protonwire [OPTIONS...] help
+
+Options:
+  -k, --private-key FILE|KEY    Wireguard private key or
+                                file containing private key
+      --container               Run as container
+                                (Cannot be used with --systemd)
+      --systemd                 Run as systemd service
+                                (Cannot be used with --container)
+      --metadata-endpoint URL   Server metadata endpoint URL
+      --check-interval INT      IP check interval in seconds
+      --check-endpoint URL      IP check endpoint URL
+      --skip-dns-config         Skip configuring DNS.
+                                (Useful for Kubernetes and Nomad)
+      --killswitch              Enable killswitch (Experimental)
+      --p2p                     Check if server supports P2P
+      --streaming               Check if server supports streaming
+      --tor                     Check if server supports Tor
+      --secure-core             Check if server supports secure core
+  -q, --quiet                   Show only errors
+  -v, --verbose,                Show debug logs
+  -h, --help                    Display this help and exit
+      --version                 Display version and exit
+
+Examples:
+  protonwire connect SERVER     Connect to server NL#17
+  protonwire disconnect         Disconnect from current server
+  protonwire verify [SERVER]    Check if connected to a server
+
+Files:
+  /etc/protonwire/private-key   WireGuard private key
+
+Environment:
+  WIREGUARD_PRIVATE_KEY         WireGuard private key or file
+  PROTONVPN_SERVER              ProtonVPN server name
+  IPCHECK_INTERVAL              Custom IP check interval in seconds
+  SKIP_DNS_CONFIG               Set to '1' to skip configuring DNS
+  KILLSWITCH                    Set to '1' to enable killswitch (Experimental)
+  DEBUG                         Set to '1' to enable debug logs
+</pre>
+<!--diana::dynamic:protonwire-help:end-->
+
 ## Dependencies
 
 Following dependencies are **in addition** to WireGuard support in Kernel.

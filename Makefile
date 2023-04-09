@@ -92,3 +92,7 @@ uninstall: ## Uninstall protonwire
 clean: ## clean
 	rm -rf $(REPO_ROOT)/dist/
 	rm -rf $(REPO_ROOT)/metadata/
+
+.PHONY: update-readme
+update-readme: ## Update README
+	sed -i '/<!--diana::dynamic:protonwire-help:begin-->/,/<!--diana::dynamic:protonwire-help:end-->/!b;//!d;/<!--diana::dynamic:protonwire-help:end-->/e echo "<pre>" && ./protonwire --help && echo "</pre>"' README.md
