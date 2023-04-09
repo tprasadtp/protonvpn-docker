@@ -40,12 +40,12 @@ docker: ## Build docker image
 snapshot: ## Build snapshot
 	goreleaser release \
 		--snapshot \
-		--rm-dist
+		--clean
 
 .PHONY: release
 release: ## Build release
 	goreleaser release \
-		--rm-dist \
+		--clean
 		--skip-publish \
 		--skip-validate  \
 		--skip-announce \
@@ -53,7 +53,7 @@ release: ## Build release
 
 .PHONY: release-prod
 release-prod: ## Build release and publish
-	goreleaser release --rm-dist
+	goreleaser release --clean
 
 .PHONY: install
 install: ## Install protonwire

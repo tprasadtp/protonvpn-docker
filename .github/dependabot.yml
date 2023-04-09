@@ -5,7 +5,6 @@ updates:
       - "dependabot"
       - "dependencies"
       - "dep/docker"
-      - "luna/automerge"
       - "luna/autoupdate"
     commit-message:
       prefix: "chore(deps):"
@@ -13,33 +12,5 @@ updates:
     schedule:
       interval: "weekly"
       day: "saturday"
-    ignore:
-      # Ignore major and minor updates
-      # (patch updates are auto applied)
-      - dependency-name: "alpine"
-        update-types:
-          - version-update:semver-major
-          - version-update:semver-minor
-    pull-request-branch-name:
-      separator: "-"
-
-  - package-ecosystem: docker
-    labels:
-      - "dependabot"
-      - "dependencies"
-      - "dep/docker"
-      - "luna/autoupdate"
-    commit-message:
-      prefix: "chore(deps):"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "saturday"
-    # Ignore patch updates
-    # (these are NOT auto applied)
-    ignore:
-      - dependency-name: "alpine"
-        update-types:
-          - version-update:semver-patch
     pull-request-branch-name:
       separator: "-"
