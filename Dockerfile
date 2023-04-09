@@ -5,20 +5,20 @@ FROM base
 
 # hadolint ignore=DL3008,DL3009
 RUN --mount=type=cache,sharing=private,target=/var/cache/apk \
-    apk update
-    # && apk add \
-    #     bash \
-    #     flock \
-    #     curl \
-    #     iproute2-minimal \
-    #     libcap \
-    #     procps \
-    #     netcat-openbsd \
-    #     openresolv \
-    #     jq \
-    #     htop \
-    #     bind-tools \
-    #     wireguard-tools-wg
+    apk update \
+    && apk add \
+        bash \
+        flock \
+        curl \
+        iproute2-minimal \
+        libcap \
+        procps \
+        netcat-openbsd \
+        openresolv \
+        jq \
+        htop \
+        bind-tools \
+        wireguard-tools-wg
 
 COPY --chown=root:root \
     --chmod=0755 \
