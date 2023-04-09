@@ -4,47 +4,10 @@ updates:
     labels:
       - "dependabot"
       - "dependencies"
-      - "docker"
-      - "luna/automerge"
+      - "dep/docker"
       - "luna/autoupdate"
     commit-message:
       prefix: "chore(deps):"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "saturday"
-    pull-request-branch-name:
-      separator: "-"
-
-  - package-ecosystem: pip
-    labels:
-      - "dependabot"
-      - "dependencies"
-      - "python"
-      - "luna/autoupdate"
-    commit-message:
-      prefix: "chore(deps):"
-    directory: "/root"
-    schedule:
-      interval: "weekly"
-      day: "saturday"
-    pull-request-branch-name:
-      separator: "-"
-    ignore:
-      - dependency-name: "protonvpn-cli"
-      - dependency-name: "*"
-        update-types:
-          - version-update:semver-major
-
-  # Actions
-  - package-ecosystem: github-actions
-    labels:
-      - "dependabot"
-      - "dependencies"
-      - "github-action"
-      - "luna/autoupdate"
-    commit-message:
-      prefix: "ci(deps):"
     directory: "/"
     schedule:
       interval: "weekly"

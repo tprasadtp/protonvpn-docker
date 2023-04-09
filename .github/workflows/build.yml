@@ -1,77 +1,34 @@
 name: build
 on:
-  workflow_dispatch:
   push:
     branches:
       - "*"
   pull_request:
+  workflow_dispatch:
 jobs:
   shellcheck:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-
+      - uses: actions/checkout@v3 # ratchet:exclude
       - name: Shellcheck
-        run: |
-          make show-vars-base
-          make shellcheck
-  # Lint Dockerfile
-  docker-lint:
+        run: make shellcheck
+  build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-
-      - name: Lint
-        run: |
-          make show-vars-base
-          make docker-lint
-  # Build docker images
-  docker:
-    needs: [shellcheck, docker-lint]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Make Variables for Debugging
-        run: |
-          make show-vars-base || true
-          make show-vars-docker || true
-
-      - uses: actions/cache@v2
+      - uses: actions/checkout@v3 # ratchet:exclude
         with:
-          path: .trivy
-          key: ${{ runner.os }}-trivy-${{ github.run_id }}
-          restore-keys: |
-            ${{ runner.os }}-trivy-
-
+          fetch-depth: 0
+          persist-credentials: false
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v1
-
+        uses: docker/setup-qemu-action@e81a89b1732b9c48d79cd809d8d81d79c4647a18 # ratchet:docker/setup-qemu-action@v2
       - name: Set up Docker Buildx
-        id: buildx
-        uses: docker/setup-buildx-action@v1
-
+        uses: docker/setup-buildx-action@4b4e9c3e2d4531116a6f8ba8e71fc6e2cb6e6c8c # ratchet:docker/setup-buildx-action@v2
       - name: Install GoReleaser
-        uses: goreleaser/goreleaser-action@b953231f81b8dfd023c58e0854a721e35037f28b
+        uses: goreleaser/goreleaser-action@b508e2e3ef3b19d4e4146d4f8fb3ba9db644a757 # ratchet:goreleaser/goreleaser-action@v3
         with:
           version: latest
           install-only: true
-
-      - name: Build snapshot
+      - name: Install help2man
+        run: sudo apt-get install -y help2man
+      - name: Run GoReleaser
         run: make snapshot
-
-      - name: Run Trivy vulnerability scanner
-        id: trivy
-        uses: aquasecurity/trivy-action@a7a829a4345428ddd92ca57b18257440f6a18c90
-        with:
-          scan-type: 'image'
-          vuln-type: os
-          severity: HIGH,CRITICAL
-          ignore-unfixed: true
-          exit-code: 1
-          image-ref: 'ghcr.io/tprasadtp/protonvpn:${{ github.sha }}-amd64'
-          cache-dir: .trivy
-
-      - name: Correct Trivy cache permissions
-        run: sudo chown -R $USER:$GROUP .trivy
-        if: always()
