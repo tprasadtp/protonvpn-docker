@@ -4,12 +4,11 @@
 # licensed under GPLv3.
 
 """
-Get ProtonVPN server metadata and convert it
+Get ProtonVPN server metadata
 """
 
 import argparse
 import base64
-from enum import Enum, unique
 import hashlib
 import json
 import logging
@@ -17,7 +16,7 @@ import os
 import sys
 import time
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 
 try:
     import bcrypt
@@ -711,7 +710,9 @@ def write_metadata(
 
             logging.info(
                 "%-15s Status=%s Features=%s",
-                logical_server_name, logical_server_status, features
+                logical_server_name,
+                logical_server_status,
+                features,
             )
 
         except (IndexError, ValueError, TypeError) as e:

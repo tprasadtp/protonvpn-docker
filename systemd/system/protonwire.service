@@ -6,7 +6,7 @@
 [Unit]
 Description=ProtonVPN Wireguard Client
 Documentation=man:protonwire(1)
-Documentation=https://protonwire.github.io
+Documentation=https://github.com/tprasadtp/protonvpn-docker
 
 # Wait for Network dependency (networking)
 Wants=network-online.target

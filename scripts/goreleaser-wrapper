@@ -49,7 +49,8 @@ elif [[ $1 == "build" ]]; then
     if [[ -n $PROTONWIRE_COMMIT ]] && [[ -n $PROTONWIRE_VERSION ]]; then
         log "PROTONWIRE_COMMIT=$PROTONWIRE_COMMIT"
         log "PROTONWIRE_VERSION=$PROTONWIRE_VERSION"
-        sed "/#diana::dynamic:version:begin#/,/#diana::dynamic:version:end#/!b;//!d;/#diana::dynamic:version:end#/e echo 'PROTONWIRE_VERSION=\"$PROTONWIRE_VERSION\"\nPROTONWIRE_COMMIT=\"$PROTONWIRE_COMMIT\"'" \
+        # dont change spaces as it invalidates shfmt.
+        sed "/#diana::dynamic:version:begin#/,/#diana::dynamic:version:end#/!b;//!d;/#diana::dynamic:version:end#/e echo '    local PROTONWIRE_VERSION=\"$PROTONWIRE_VERSION\"\n    local PROTONWIRE_COMMIT=\"$PROTONWIRE_COMMIT\"'" \
             protonwire | install -m 755 /dev/stdin dist/protonwire
     else
         install -m 755 protonwire dist/protonwire

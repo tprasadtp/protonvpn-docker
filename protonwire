@@ -1,6 +1,7 @@
 #!/bin/bash
 # SPDX-License-Identifier: GPL-3.0
 # SPDX-FileCopyrightText: 2023 Prasad Tengse <tprasadtp@users.noreply.github.com>
+# shellcheck disable=SC2317
 
 set -o pipefail
 
@@ -47,8 +48,10 @@ function __sigabrt_handler() {
 }
 
 function __print_version() {
+    #diana::dynamic:version:begin#
     local PROTONWIRE_VERSION="dev"
     local PROTONWIRE_COMMIT="HEAD"
+    #diana::dynamic:version:end#
     printf "protonwire version %s(%s)\n" "$PROTONWIRE_VERSION" "$PROTONWIRE_COMMIT"
 }
 
@@ -163,8 +166,6 @@ function __logger_core_event_handler() {
     local lvl_prefix
     # Level name in string format with timestamp if enabled or level symbol
     local lvl_string
-    # Caller trace
-    local caller_info
 
     # Log format
     if [[ ${LOG_FMT:-pretty} == "pretty" ]] && [[ -n ${lvl_colorized} ]]; then
@@ -327,15 +328,6 @@ function has_command() {
     return 1
 }
 
-# Data validation and manipulation
-# --------------------------------------------------
-function __is_int() {
-    if [[ $1 =~ ^[1-9][0-9]+$ ]]; then
-        return 0
-    fi
-    return 1
-}
-
 # Validate IPv4 or CIDR.
 function __is_valid_ipv4() {
     local IPV4_REGEX="(([1-9]?[0-9]|1[0-9][0-9]|2([0-4][0-9]|5[0-5]))\.){3}([1-9]?[0-9]|1[0-9][0-9]|2([0-4][0-9]|5[0-5]))"
@@ -441,7 +433,7 @@ function __is_valid_ipcheck_url() {
                 log_debug "IP Check endpoint returned ${ip_check_response[0]}(IPv6)"
                 return 0
             else
-                log_error "IP Check endpoint returned invalid IP address(${entry_ips[0]})"
+                log_error "IP Check endpoint returned invalid IP address(${ip_check_response[0]})"
                 return 1
             fi
         elif [[ $curl_rc == 6 ]]; then
@@ -460,7 +452,6 @@ function __is_valid_ipcheck_url() {
         return 1
         ;;
     esac
-    return 1
 }
 
 # checks if IPv6 is enabled on the system
@@ -524,7 +515,6 @@ function __has_notify_socket() {
 function __systemd_notify() {
     local status
     local status_prefix
-    local status_lock=0
 
     while [[ ${1} != "" ]]; do
         case ${1} in
@@ -629,7 +619,6 @@ function __check_systemd_version() {
 # sd-notify and watchdog checks
 function __sd_notify_checks() {
     local errs=0
-    local sd_socket_check="false"
 
     # sd-watchdog checks
     if [[ ${WATCHDOG_USEC} =~ ^[1-9][0-9]+$ ]]; then
@@ -861,7 +850,7 @@ function __run_checks() {
         log_error "There are no interfaces with IP addresses"
         ((++errs))
     else
-        for iface_ip in ${ip_on_ifaces[@]}; do
+        for iface_ip in "${ip_on_ifaces[@]}"; do
             log_debug "Checking if IP on other interface is reserved - $iface_ip"
             if [[ $iface_ip == "10.2.0.1" ]]; then
                 log_error "One of the interfaces has IP - 10.2.0.1, which is reserved for server"
@@ -1212,7 +1201,7 @@ function protonvpn_fetch_metadata() {
         local current_ts=0
         local metadata_ts=-1
 
-        metadata_ts=$(stat -c %Y ${__PROTONWIRE_SRV_INFO_FILE})
+        metadata_ts=$(stat -c %Y "${__PROTONWIRE_SRV_INFO_FILE}")
         printf -v current_ts '%(%s)T' -1
 
         if [[ $((current_ts - metadata_ts)) -lt 7200 ]]; then
@@ -1245,7 +1234,7 @@ function protonvpn_fetch_metadata() {
     # Fetch if file is stale or forced
     if [[ $metadata_stale != "false" ]] || [[ $force_refresh == "true" ]]; then
         log_info "Refresing server metadata (for $PROTONVPN_SERVER)"
-        local api_call="${SERVER_METADATA_URL}/${api_server_name}"
+        local api_call="${METADATA_URL}/${api_server_name}"
         log_debug "API - ${api_call}"
         local curl_rc="-1"
         # we use wait to ensure the term signals can be handled properly
@@ -1368,7 +1357,8 @@ function protonvpn_healthcheck_status_file() {
 # verify connected server
 function __protonvpn_verify_connection() {
     if [[ -z ${__PROTONWIRE_SRV_INFO} ]]; then
-        declare -g __PROTONWIRE_SRV_INFO="$(<"$__PROTONWIRE_SRV_INFO_FILE")"
+        declare -g __PROTONWIRE_SRV_INFO
+        __PROTONWIRE_SRV_INFO="$(<"$__PROTONWIRE_SRV_INFO_FILE")"
     fi
 
     if [[ -z ${__PROTONWIRE_SRV_INFO} ]]; then
@@ -1401,7 +1391,6 @@ function __protonvpn_verify_connection() {
     # verify if server is correct.
     local node_name
     local node_dns
-    declare -a expected_endpoints
     declare -a allowed_exit_ips
 
     node_name="$(jq -r --arg peer "${configured_endpoints[0]}" 'select(.Nodes[].PublicKey==$peer) | .Name' <<<"${__PROTONWIRE_SRV_INFO}" 2>/dev/null)"
@@ -1428,17 +1417,12 @@ function __protonvpn_verify_connection() {
     log_debug "Allowed ExitIPs  - ${allowed_exit_ips[*]}"
 
     # check if array not empty!
-    if [[ ${#allowed_exit_ips[@]} -eq 0 ]] &&
-        [[ ${#allowed_entry_ips[@]} -eq 1 ]]; then
+    if [[ ${#allowed_exit_ips[@]} -eq 0 ]]; then
         log_error "Failed to parse allowed ExitIPs from - ${__PROTONWIRE_SRV_INFO_FILE}"
         return 1
     fi
 
-    local hc_response
-    local hc_response_with_status
-    local hc_response_code
     local hc_response_rc=-1
-
     # Invoke healthcheck API and save response
     log_debug "Checking client IP via $IPCHECK_URL"
     {
@@ -1466,7 +1450,7 @@ function __protonvpn_verify_connection() {
         return 1
 
     elif [[ $hc_response_rc != 0 ]]; then
-        log_error "curl command exited with $hc_response_rc (HTTP response code ${hc_response_code:-NA})"
+        log_error "curl command exited with $hc_response_rc"
         return 1
     fi
 
@@ -1788,6 +1772,7 @@ function __build_route_table() {
 
         if [[ $create_table == "true" ]]; then
             for route in "${desired_routes[@]}"; do
+                # shellcheck disable=SC2068
                 if ! ip "-${proto}" route add table "$table_id" ${table_action[@]} "$route" 2>&1 | log_tail "ip route"; then
                     log_error "Failed to add $table_type route(IPv$proto) - $route to table($table_id)"
                     ((++errs))
@@ -1820,13 +1805,12 @@ function __build_route_rules() {
         declare -a manual_route_p
 
         readarray -t _routes_json < <(ip "-${proto}" --json rule)
-        _routes_json=$(ip "-${proto}" --json rule)
 
         local config_rules="true"
         log_info "Configuring IP rules (IPv$proto)"
-        readarray -t wg_rule_p < <(jq '.[] | select((.fwmark=="0xca6d") and (.table=="51821") and (.src=="all")) | .priority' <<<"${_routes_json}" 2>/dev/null)
-        readarray -t ks_route_p < <(jq '.[] | select((.fwmark=="0xca6d") and (.table=="51822") and (.src=="all")) | .priority' <<<"${_routes_json}" 2>/dev/null)
-        readarray -t manual_route_p < <(jq '.[] | select((.suppress_prefixlen=0) and (.table=="main") and (.src=="all")) | .priority' <<<"${_routes_json}" 2>/dev/null)
+        readarray -t wg_rule_p < <(jq '.[] | select((.fwmark=="0xca6d") and (.table=="51821") and (.src=="all")) | .priority' <<<"${_routes_json[@]}" 2>/dev/null)
+        readarray -t ks_route_p < <(jq '.[] | select((.fwmark=="0xca6d") and (.table=="51822") and (.src=="all")) | .priority' <<<"${_routes_json[@]}" 2>/dev/null)
+        readarray -t manual_route_p < <(jq '.[] | select((.suppress_prefixlen=0) and (.table=="main") and (.src=="all")) | .priority' <<<"${_routes_json[@]}" 2>/dev/null)
 
         log_debug "Rule Wiregurad  Table - ${wg_rule_p[*]}"
         log_debug "Rule Killswitch Table - ${wg_rule_p[*]}"
@@ -1966,7 +1950,7 @@ function __protonvpn_pre_connect_get_endpoints_and_keys() {
     # we also consider all nodes as they may not be actually "offline"
     # though non-online nodes are not considered while connecting, only for verification.
     # (Yet another quirk of ProtonVPN API which metadata API cannot fix)
-    for endpoint in ${__PROTONWIRE_ENDPOINT_IPS_ALL[@]}; do
+    for endpoint in "${__PROTONWIRE_ENDPOINT_IPS_ALL[@]}"; do
         declare -a endpoint_keys
         readarray -t endpoint_keys < <(jq -r \
             --arg endpoint "$endpoint" \
@@ -1996,7 +1980,7 @@ function __protonvpn_pre_connect_get_endpoints_and_keys() {
 
     # As metadata API endpoint is customizable,
     # Verify all returned IP addresseses are valid.
-    for _server_exit_ip in ${__PROTONVPN_EXIT_IP_LIST[@]}; do
+    for _server_exit_ip in "${__PROTONVPN_EXIT_IP_LIST[@]}"; do
         if __is_valid_ipv4 "${_server_exit_ip}"; then
             log_debug "Valid Exit IP for ${PROTONVPN_SERVER} - ${_server_exit_ip}(IPv4)"
         elif __is_valid_ipv6 "${ip_check_response[0]}"; then
@@ -2615,25 +2599,17 @@ function display_usage() {
         local NC=$'\e[0m'
         local BOLD=$'\e[1m'
         local YELLOW=$'\e[38;5;220m'
-        local BLUE=$'\e[38;5;159m'
         local CYAN=$'\e[38;5;51m'
         local ORANGE=$'\e[38;5;208m'
         local TEAL=$'\e[38;5;192m'
-        local PINK=$'\e[38;5;212m'
-        local GRAY=$'\e[38;5;246m'
-        local LGRAY=$'\e[38;5;240m'
         local MAGENTA=$'\e[38;5;219m'
     else
         local NC
         local BOLD
         local YELLOW
-        local BLUE
         local CYAN
         local ORANGE
         local TEAL
-        local PINK
-        local GRAY
-        local LGRAY
         local MAGENTA
     fi
 
@@ -2659,7 +2635,7 @@ ${BOLD}${CYAN}Options:${NC}
       --check-endpoint URL      IP check endpoint URL
       --skip-dns-config         Skip configuring DNS.
                                 (Useful for Kubernetes and Nomad)
-      --killswitch              Enable killswitch (Experimental)
+      --kill-switch             Enable killswitch (Experimental)
       --p2p                     Check if server supports P2P
       --streaming               Check if server supports streaming
       --tor                     Check if server supports Tor
@@ -2682,7 +2658,7 @@ ${BOLD}${MAGENTA}Environment:${NC}
   PROTONVPN_SERVER              ProtonVPN server name
   IPCHECK_INTERVAL              Custom IP check interval in seconds
   SKIP_DNS_CONFIG               Set to '1' to skip configuring DNS
-  KILLSWITCH                    Set to '1' to enable killswitch (Experimental)
+  KILL_SWITCH                   Set to '1' to enable killswitch (Experimental)
   DEBUG                         Set to '1' to enable debug logs
 EOF
 }
@@ -2697,7 +2673,6 @@ function main() {
 
     local color_mode="auto"
     local cmd_mode="HELP"
-    local hc_status_file="false"
 
     # Toggle debug flag
     if __is_debug; then
@@ -2722,11 +2697,11 @@ function main() {
             ;;
         --color)
             shift
-            mode="${1}"
+            color_mode="${1}"
             ;;
         --metadata-url | --metadata-endpoint)
             shift
-            PROTONWIRE_METADATA_URL="$1"
+            METADATA_URL="$1"
             ;;
         --logfmt | --logformat | --log-fmt | --log-format)
             shift
@@ -2804,7 +2779,7 @@ function main() {
 
     case ${color_mode,,} in
     force | always)
-        CLIFORCE="1"
+        CLICOLOR_FORCE="1"
         ;;
     never)
         CLICOLOR="0"
@@ -2885,9 +2860,9 @@ function main() {
         log_variable "IPCHECK_URL"
     fi
 
-    if [[ -z ${SERVER_METADATA_URL} ]]; then
-        SERVER_METADATA_URL="https://protonwire-api.vercel.app/v1/server"
-        log_variable "SERVER_METADATA_URL"
+    if [[ -z ${METADATA_URL} ]]; then
+        METADATA_URL="https://protonwire-api.vercel.app/v1/server"
+        log_variable "METADATA_URL"
     fi
 
     if [[ $args_errors -gt 0 ]]; then

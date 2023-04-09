@@ -1,23 +1,12 @@
 ## FAQ
 
-## Run container as systemd unit
+## Why automatic server selection is not supported
 
-- Use `podman` instead of docker as it has better support for systemd.
-- You can run `protonwire` container as usual and the generate systemd unit for it via,
-
-    ```bash
-    podman generate systemd \
-        --new \
-        --name protonwire \
-        --after network-online.target
-    ```
-    > See [podman-generate-systemd][] for more info.
-
-## Why can't you auto-magically select a server like from older versions
-
-- This is caused by API changed on server side.
-- To do that it requires authenticating via proton account username and password and we want to avoid that(there are no scoped tokens and minted access tokens have full access to proton API including payments and Email!!).
-- Because fastest server selection depends on geo-location and latency info, it can no longer be supported.
+- This is caused by API changes ProtonVPN.
+- To automatic server selection, it requires authenticating  to proton API via username and password!.
+There are no scoped oauth tokens and minted access tokens have full access to Proton API including payments and Email!!.
+- Fastest server selection also depends on geo-location and latency info to populate server `.Score`.
+Due to lack of documentation on how `.Score` is computed, automatic server selection is not supported.
 
 ## How to check if an address is being routed via VPN via CLI
 
