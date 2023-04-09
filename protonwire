@@ -63,8 +63,8 @@ function __print_version() {
 # and all changes between markers might be ignored.
 
 function __is_stderr_colorable() {
-    # CLIFORCE is set and CLIFORCE != 0, force colors
-    if [[ -n ${CLIFORCE} ]] && [[ ${CLIFORCE} != "0" ]]; then
+    # CLICOLOR_FORCE is set and CLICOLOR_FORCE != 0, force colors
+    if [[ -n ${CLICOLOR_FORCE} ]] && [[ ${CLICOLOR_FORCE} != "0" ]]; then
         return 0
 
     # CLICOLOR == 0 or NO_COLOR is set and not empty
@@ -83,8 +83,8 @@ function __is_stderr_colorable() {
 }
 
 function __is_stdout_colorable() {
-    # CLIFORCE is set and CLIFORCE != 0, force colors
-    if [[ -n ${CLIFORCE} ]] && [[ ${CLIFORCE} != "0" ]]; then
+    # CLICOLOR_FORCE is set and CLICOLOR_FORCE != 0, force colors
+    if [[ -n ${CLICOLOR_FORCE} ]] && [[ ${CLICOLOR_FORCE} != "0" ]]; then
         return 0
 
     # CLICOLOR == 0 or NO_COLOR is set and not empty
