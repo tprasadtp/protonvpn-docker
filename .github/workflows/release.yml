@@ -43,3 +43,5 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Run GoReleaser
         run: make release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
