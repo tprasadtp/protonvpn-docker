@@ -22,7 +22,7 @@ trap __sigabrt_handler SIGABRT
 function __sigterm_handler() {
     log_warning "Received SIGTERM, exiting..."
     if __protonvpn_disconnect; then
-        log_info "Helathcheck errors - $__PROTONWIRE_HC_ERRORS"
+        log_debug "Helathcheck errors - $__PROTONWIRE_HC_ERRORS"
         if [[ $__PROTONWIRE_HC_ERRORS == "0" ]]; then
             exit 0
         fi
@@ -632,7 +632,6 @@ function __sd_notify_checks() {
     local sd_socket_check="false"
 
     # sd-watchdog checks
-    # check watchdog
     if [[ ${WATCHDOG_USEC} =~ ^[1-9][0-9]+$ ]]; then
         local ping_interval
         ping_interval="$((WATCHDOG_USEC / 2000000))"
@@ -674,18 +673,18 @@ function __detect_dns_updater() {
         if has_command systemctl; then
             if systemctl is-active --quiet systemd-resolved; then
                 if [[ -L /etc/resolv.conf ]]; then
-                    log_info "Using systemd-resolved for DNS"
+                    log_debug "Using systemd-resolved for DNS"
                     __PROTONWIRE_DNS_UPDATER="systemd-resolved"
                 else
-                    log_info "Using resolvconf(8) for DNS (/etc/resolv.conf is not a symlink)"
+                    log_debug "Using resolvconf(8) for DNS (/etc/resolv.conf is not a symlink)"
                     __PROTONWIRE_DNS_UPDATER="resolvconf"
                 fi
             else
-                log_info "Using resolvconf(8) for DNS (systemd-resolved is not running)"
+                log_debug "Using resolvconf(8) for DNS (systemd-resolved is not running)"
                 __PROTONWIRE_DNS_UPDATER="resolvconf"
             fi
         else
-            log_info "Using resolvconf(8) for DNS (systemd is not available)"
+            log_debug "Using resolvconf(8) for DNS (systemd is not available)"
             __PROTONWIRE_DNS_UPDATER="resolvconf"
         fi
     else
@@ -697,12 +696,13 @@ function __detect_dns_updater() {
 # checks capabilities
 function __check_caps() {
     if capsh --has-p=CAP_NET_ADMIN >/dev/null 2>&1; then
-        log_success "Can use CAP_NET_ADMIN capability"
+        log_debug "Can use CAP_NET_ADMIN capability"
         return 0
     else
         log_error "CAP_NET_ADMIN capability is not available!"
         log_error "If running as systemd unit ensure 'AmbientCapabilities' is set to 'CAP_NET_ADMIN'"
         log_error "If running as podman/docker use --cap-add=CAP_NET_ADMIN flag."
+        log_error "Otherwise, run as root and/or add CAP_NET_ADMIN capability"
     fi
     return 1
 }
@@ -856,15 +856,19 @@ function __run_checks() {
 
     # check if any interfaces have reserved ip addresses
     declare -a ip_on_ifaces
-    readarray -t ip_on_ifaces < <(ip -4 --json addr show | jq -r '.[] | .addr_info[] | .local' 2>/dev/null)
+    readarray -t ip_on_ifaces < <(ip -4 --json addr show | jq -r '.[] | select(.ifname!="protonwire0") | .addr_info[] | .local' 2>/dev/null)
     if [[ ${#ip_on_ifaces[@]} -lt 1 ]]; then
         log_error "There are no interfaces with IP addresses"
         ((++errs))
     else
-        for iface_ip in ${#ip_on_ifaces[@]}; do
-            log_debug "Checking if IP is reserved - $iface_ip"
+        for iface_ip in ${ip_on_ifaces[@]}; do
+            log_debug "Checking if IP on other interface is reserved - $iface_ip"
             if [[ $iface_ip == "10.2.0.1" ]]; then
                 log_error "One of the interfaces has IP - 10.2.0.1, which is reserved for server"
+                ((++errs))
+            fi
+            if [[ $iface_ip == "10.2.0.2" ]]; then
+                log_error "One of the interfaces has IP - 10.2.0.2, which is reserved for client"
                 ((++errs))
             fi
         done
@@ -879,12 +883,11 @@ function __run_checks() {
     fi
 
     if ! __check_caps; then
-        log_error "Run as root and/or add CAP_NET_ADMIN capability"
         ((++errs))
     fi
 
-    # If IPCHECK_INTERVAL is defined, and it's not
-    # 0, then ensure that WATCHDOG_USEC is not defined
+    # If IPCHECK_INTERVAL is defined, and it's not0,
+    # then ensure that WATCHDOG_USEC is not defined
     if [[ -n $IPCHECK_INTERVAL ]] &&
         [[ $IPCHECK_INTERVAL != "0" ]] &&
         [[ ${WATCHDOG_USEC} =~ ^[1-9][0-9]+$ ]]; then
@@ -905,7 +908,6 @@ function __resolvctl_up_hook() {
     # Configure search/routing domains and the
     # default-route before configuring the DNS server
     # as per systemd-resolved documentation recommendation.
-
     if resolvectl domain protonwire0 "~." 2>&1 | log_tail "resolvectl-domain"; then
         log_success "Set routing domain to ~."
     else
@@ -1021,6 +1023,7 @@ function __detect_paths() {
     log_variable "__PROTONWIRE_HCR"
 }
 
+# connect command
 function protonvpn_looper_cmd() {
     case "$__PROTONWIRE_LOOPER" in
     systemd)
@@ -1051,7 +1054,7 @@ function protonvpn_looper_cmd() {
             local max_verify_attemps="${PROTONVPN_CHECK_THRESHOLD:-3}"
             while [[ $verify_attemps -lt $max_verify_attemps ]]; do
                 ((++verify_attemps))
-                if __protonvpn_verify_server; then
+                if __protonvpn_verify_connection; then
                     log_success "Connection verified!"
                     break
                 else
@@ -1070,7 +1073,7 @@ function protonvpn_looper_cmd() {
             log_warning "Not verifying connection, as healthchecks are disabled"
         fi
     else
-        log_error "Failed to connect to ${PROTONVPN_SERVER:-Fastest-Server}"
+        log_error "Failed to connect to ${PROTONVPN_SERVER}"
         if [[ -z $(ip link show protonwire0 type wireguard 2>/dev/null) ]]; then
             log_debug "Wireguard interface for protonwire is not present."
             return 1
@@ -1157,7 +1160,7 @@ function protonvpn_looper_cmd() {
             sleep "${sleep_int:-60}" &
             wait $!
 
-            if ! __protonvpn_verify_server; then
+            if ! __protonvpn_verify_connection; then
                 log_error "Failed to verify connection ($((__PROTONWIRE_HC_ERRORS + 1))/${PROTONVPN_CHECK_THRESHOLD:-3})"
                 ((++__PROTONWIRE_HC_ERRORS))
             else
@@ -1178,22 +1181,10 @@ function protonvpn_looper_cmd() {
             fi
         done
     fi
-
-    if __has_notify_socket; then
-        log_debug "Notify to systemd disconnecting"
-        if ! __systemd_notify --stopping; then
-            log_error "Failed to notify systemd watchdog!"
-        fi
-    else
-        log_debug "No systemd notify socket found, skiping stopping notification"
-    fi
-
     return 1
 }
 
-# Metadata cmdlet
-# when running as a service, script periodically refreshes
-# the metadata.
+# when running as a service, script periodically refreshes the metadata.
 function protonvpn_fetch_metadata() {
     local metadata_stale="true"
     local force_refresh="${PROTONVPN_FORCE:-false}"
@@ -1311,13 +1302,13 @@ function protonvpn_fetch_metadata() {
     __json_tmp="$(<"${__PROTONWIRE_SRV_INFO_FILE}")"
     # ensure loaded json is parsable
     if jq --exit-status '.Nodes' <<<"$__json_tmp" >/dev/null 2>&1; then
-        log_debug "In memory JSON is valid"
+        log_debug "__PROTONWIRE_SRV_INFO_FILE JSON valid"
         # we update the json here to avoid cases where json on disk might be invalid
         # this is unlikely but has happened due to nfs mount issues.
         declare -g __PROTONWIRE_SRV_INFO="$__json_tmp"
         return 0
     else
-        log_error "In memory JSON is invalid"
+        log_error "__PROTONWIRE_SRV_INFO_FILE JSON is invalid"
     fi
 
     return 1
@@ -1330,17 +1321,13 @@ function protonvpn_healthcheck_status_file() {
         return 1
     fi
 
-    # detect valid interval
-    # If IPCHECK_INTERVAL is defined, and it's not
-    # 0, then ensure that WATCHDOG_USEC is not defined
-    # as it can conflict with the systemd watchdog
+    __detect_paths
+
     if [[ -n $IPCHECK_INTERVAL ]] &&
         [[ ${WATCHDOG_USEC} =~ ^[1-9][0-9]+$ ]]; then
         log_error "IPCHECK_INTERVAL(${IPCHECK_INTERVAL}) cannot be used with systemd watchdog WATCHDOG_USEC(${WATCHDOG_USEC})"
         return 1
     fi
-
-    __detect_paths
 
     log_debug "Checking via file timestamp (${__PROTONWIRE_HCR})"
 
@@ -1379,17 +1366,13 @@ function protonvpn_healthcheck_status_file() {
 }
 
 # verify connected server
-function __protonvpn_verify_server() {
-    local wrapper="false"
-
-    # Ensure __PROTONWIRE_SRV_INFO is defined
+function __protonvpn_verify_connection() {
     if [[ -z ${__PROTONWIRE_SRV_INFO} ]]; then
-        log_error "__PROTONWIRE_SRV_INFO is undefined!"
-        return 1
+        declare -g __PROTONWIRE_SRV_INFO="$(<"$__PROTONWIRE_SRV_INFO_FILE")"
     fi
 
-    # metadata refresh if required (wrapper to hide message)
-    if ! protonvpn_fetch_metadata --wrapper; then
+    if [[ -z ${__PROTONWIRE_SRV_INFO} ]]; then
+        log_error "__PROTONWIRE_SRV_INFO is undefined!"
         return 1
     fi
 
@@ -1411,37 +1394,44 @@ function __protonvpn_verify_server() {
         log_debug "Connected peers - ${configured_endpoints[*]}"
         log_error "WireGuard interface 'protonwire0' is connected to multiple peers(${#configured_endpoints[@]})"
         return 1
-    elif [[ -z ${configured_endpoints[0]} ]]; then
-        log_error "WireGuard interface 'protonwire0' - unknown error!"
-        return 1
     else
-        log_debug "Connected peers - ${configured_endpoints[*]}"
+        log_debug "Connected to peer - ${configured_endpoints[*]}"
     fi
 
-    log_debug "Parsing allowed ExitIPs from server metadata"
-    readarray -t allowed_exit_ips < <(jq -r \
-        --arg PEER_KEY "${configured_endpoints[0]}" \
-        '[select(.Servers[].X25519PublicKey==$PEER_KEY) | .Servers[] ] | unique_by(.ExitIP) | .[].ExitIP' \
-        "${__PROTONWIRE_SRV_INFO_FILE}" 2>/dev/null)
-    readarray -t allowed_entry_ips < <(jq -r \
-        --arg PEER_KEY "${configured_endpoints[0]}" \
-        '[select(.Servers[].X25519PublicKey==$PEER_KEY) | .Servers[] ] | unique_by(.EntryIP) | .[].EntryIP' \
-        "${__PROTONWIRE_SRV_INFO_FILE}" 2>/dev/null)
+    # verify if server is correct.
+    local node_name
+    local node_dns
+    declare -a expected_endpoints
+    declare -a allowed_exit_ips
 
+    node_name="$(jq -r --arg peer "${configured_endpoints[0]}" 'select(.Nodes[].PublicKey==$peer) | .Name' <<<"${__PROTONWIRE_SRV_INFO}" 2>/dev/null)"
+    node_dns="$(jq -r --arg peer "${configured_endpoints[0]}" 'select(.Nodes[].PublicKey==$peer) | .DNS' <<<"${__PROTONWIRE_SRV_INFO}" 2>/dev/null)"
+
+    if [[ -n $PROTONVPN_SERVER ]]; then
+        if [[ ${PROTONVPN_SERVER^^} == "${node_name^^}" ]] ||
+            [[ ${PROTONVPN_SERVER^^//#/-} == "${node_name^^}" ]] ||
+            [[ ${PROTONVPN_SERVER,,} == "${node_dns,,}" ]]; then
+            log_debug "Connected to server: ${node_name:-NA}(${node_dns:-NA})"
+            # server attributes are only validated if flags are specified
+            if ! __protonvpn_verify_server_attributes; then
+                return 1
+            fi
+        else
+            log_error "Expected to be connected to server $PROTONVPN_SERVER, but is connected to ${node_name:-NA}(${node_dns:-NA})"
+            return 1
+        fi
+    else
+        log_debug "PROTONVPN_SERVER is not specified, only validating exit IPs"
+    fi
+
+    readarray -t allowed_exit_ips < <(jq -r ".ExitIPs[]" <<<"${__PROTONWIRE_SRV_INFO}" 2>/dev/null)
     log_debug "Allowed ExitIPs  - ${allowed_exit_ips[*]}"
-    log_debug "Allowed EntryIPs - ${allowed_entry_ips[*]}"
-    declare -a allowed_client_public_ips=(
-        "${allowed_exit_ips[@]}"
-        "${allowed_entry_ips[@]}"
-    )
 
     # check if array not empty!
     if [[ ${#allowed_exit_ips[@]} -eq 0 ]] &&
         [[ ${#allowed_entry_ips[@]} -eq 1 ]]; then
-        log_error "Failed to parse allowed Client IPs from - ${__PROTONWIRE_SRV_INFO_FILE}"
+        log_error "Failed to parse allowed ExitIPs from - ${__PROTONWIRE_SRV_INFO_FILE}"
         return 1
-    else
-        log_debug "Allowed Client IPs - ${allowed_client_public_ips[*]}"
     fi
 
     local hc_response
@@ -1450,15 +1440,17 @@ function __protonvpn_verify_server() {
     local hc_response_rc=-1
 
     # Invoke healthcheck API and save response
-    log_debug "Checking client IP via api.protonvpn.ch/vpn/location"
-    curl \
-        --max-time 20 \
-        --silent \
-        --output "${__PROTONWIRE_HCR}" \
-        --fail \
-        --location \
-        --user-agent "protonwire/v7" \
-        "https://api.protonvpn.ch/vpn/location" 2>/dev/null &
+    log_debug "Checking client IP via $IPCHECK_URL"
+    {
+        curl \
+            --max-time 20 \
+            --silent \
+            --output "${__PROTONWIRE_HCR}" \
+            --fail \
+            --location \
+            --user-agent "protonwire/v7" \
+            "$IPCHECK_URL" 2>/dev/null &
+    }
     wait $!
     hc_response_rc="$?"
     log_debug "Healthcheck curl exit code - ${hc_response_rc:-NA}"
@@ -1467,10 +1459,10 @@ function __protonvpn_verify_server() {
     printf -v ts_format '%(%I:%M:%S %p)T' -1
 
     if [[ $hc_response_rc == 6 ]]; then
-        log_error "Failed to resolve DNS domain (api.protonvpn.ch)"
+        log_error "Failed to resolve DNS domain ($IPCHECK_URL)"
         return 1
     elif [[ $hc_response_rc == 28 ]]; then
-        log_error "curl failed to connect to api.protonvpn.ch (timeout)"
+        log_error "curl failed to connect to $$IPCHECK_URL (timeout)"
         return 1
 
     elif [[ $hc_response_rc != 0 ]]; then
@@ -1478,54 +1470,54 @@ function __protonvpn_verify_server() {
         return 1
     fi
 
-    # further processing via jq
     local client_ip
-    client_ip=$(jq -r '.IP' "$__PROTONWIRE_HCR" 2>/dev/null)
+    client_ip="$(<"$__PROTONWIRE_HCR")"
     log_debug "Client IP address - $client_ip"
 
     if [[ -z $client_ip ]]; then
-        log_error "Failed to parse client IP from - ${__PROTONWIRE_HCR}"
+        log_error "Failed to get client IP from - ${__PROTONWIRE_HCR}"
         return 1
     fi
 
-    for exit_ip in "${allowed_client_public_ips[@]}"; do
+    for exit_ip in "${allowed_exit_ips[@]}"; do
         if [[ $exit_ip == "${client_ip}" ]]; then
             if __has_notify_socket; then
-                log_debug "Connected to ${connected_server_name[0]} (via $client_ip)"
-                if ! __systemd_notify --status "Connected to ${connected_server_name[0]} (via $client_ip), verified at $ts_format"; then
+                log_debug "Connected to ${node_dns} (via $client_ip)"
+                if ! __systemd_notify --status "Connected to ${node_dns} (via $client_ip), verified at $ts_format UTC"; then
                     log_error "Failed to notify status to systemd"
                 fi
             else
-                log_success "Connected to ${connected_server_name[0]} (via $client_ip)"
+                log_success "Connected to ${node_dns:-NA} (via $client_ip)"
             fi
             return 0
         fi
     done
-    log_error "Your current IP address - ${client_ip} is not in the list for Server ${connected_server_name[0]}"
-    log_error "Your current IP address - ${client_ip} must belong to set (${allowed_client_public_ips[*]})"
+    log_error "Your current IP address - ${client_ip} is not in the list for server ${node_dns:-NA}"
+    log_error "Your current IP address - ${client_ip} must belong to set (${allowed_exit_ips[*]})"
 
     if __has_notify_socket; then
-        if ! __systemd_notify --status "IP Mismatch"; then
-            log_error "Failed to notify status to systemd"
+        if ! __systemd_notify --status "ExitIP mismatch for server ${node_dns:-NA} (via $client_ip)"; then
+            log_error "Failed to notify error status to systemd"
         fi
     fi
 
-    # return code 20 is used to indicate that the IP is not in the list
-    # we use this to trigger a reconnection immediately if running as systemd unit
     return 20
 }
 
 # healthcheck
-function protonvpn_healthcheck() {
-    # define paths
+function protonvpn_verify_cmd() {
     __detect_paths
+
+    if ! __check_tools; then
+        return 1
+    fi
 
     if ! __check_caps; then
         return 1
     fi
 
     local verify_rc=-1
-    __protonvpn_verify_server
+    __protonvpn_verify_connection
     verify_rc="$?"
     if [[ $verify_rc -eq 0 ]]; then
         return 0
@@ -1812,9 +1804,9 @@ function __build_route_table() {
     return 1
 }
 
+# Build route rules.
 function __build_route_rules() {
     if __is_ipv6_disabled; then
-        log_debug "IPv6 is disabled, skipping IPv6 routing rules"
         declare -ar __rt_protos=("4")
     else
         declare -ar __rt_protos=("4" "6")
@@ -1856,7 +1848,7 @@ function __build_route_rules() {
             log_debug "Cleanup old rules if any (IPv$proto)"
 
             while [[ $(ip "-${proto}" rule show 2>/dev/null) == *"lookup 51821"* ]]; do
-                log_warning "Removing (IPv$proto) WireGuard table rule"
+                log_warning "Removing WireGuard table rule (IPv$proto)"
                 if ! ip "-${proto}" rule del not fwmark 51821 table 51821 2>&1 | log_tail "ip rule"; then
                     log_error "Failed to remove rule(IPv$proto) to route traffic via WireGuard"
                     ((++errs))
@@ -2024,7 +2016,7 @@ function __protonvpn_pre_connect_get_endpoints_and_keys() {
 }
 
 # verifies server has required features.
-function __protonvpn_pre_connect_verify_server_attributes() {
+function __protonvpn_verify_server_attributes() {
     # Ensure __PROTONWIRE_SRV_INFO is defined
     if [[ -z ${__PROTONWIRE_SRV_INFO} ]]; then
         log_error "__PROTONWIRE_SRV_INFO is undefined!"
@@ -2129,7 +2121,7 @@ function __protonvpn_connect() {
         return 1
     fi
 
-    if ! __protonvpn_pre_connect_verify_server_attributes; then
+    if ! __protonvpn_verify_server_attributes; then
         return 1
     fi
 
@@ -2327,12 +2319,27 @@ function __protonvpn_connect() {
     # check if its in the available endpoints
     # if yes, continue to use it.
     # if not, select a random endpoint from list of endpoints.
+    local selected_endpoint
     local ep_reconfigure="true"
     if [[ ${#configured_endpoints[@]} -eq 0 ]]; then
         log_debug "No configured endpoints on the interface 'protonwire0'"
-        log_variable "__PROTONWIRE_ENDPOINT_IPS_ONLINE"
-        local selected_endpoint
+    elif [[ ${#configured_endpoints[@]} -eq 1 ]]; then
+        log_debug "Single peer configured with ${configured_endpoints[0]}"
+        # check if configured endpoint is in the list of online endpoints
+        if [[ ${configured_endpoints[0]} == *"${__PROTONWIRE_ENDPOINT_IPS_ONLINE[*]}"* ]]; then
+            selected_endpoint="${configured_endpoints[0]}"
+            ep_reconfigure="false"
+        else
+            log_warning "WireGuard interface is configured wrong peer - ${configured_endpoints[0]}"
+        fi
+    else
+        log_warning "WireGuard interface 'protonwire0' is connected to multiple peers(${#configured_endpoints[@]})"
+    fi
+
+    # select peer
+    if [[ $ep_reconfigure == "true" ]]; then
         local selected_endpoint_index
+        log_variable "__PROTONWIRE_ENDPOINT_IPS_ONLINE"
         if [[ ${#__PROTONWIRE_ENDPOINT_IPS_ONLINE[@]} -gt 1 ]]; then
             selected_endpoint_index="$(((RANDOM % ${#__PROTONWIRE_ENDPOINT_IPS_ONLINE[@]}) + 1))"
             selected_endpoint="${__PROTONWIRE_ENDPOINT_IPS_ONLINE["${selected_endpoint_index}"]}"
@@ -2344,35 +2351,22 @@ function __protonvpn_connect() {
             log_error "No endpoints to select"
             return 1
         fi
+    fi
 
-    elif [[ ${#configured_endpoints[@]} -eq 1 ]]; then
-        log_debug "Single peer configured with ${configured_endpoints[0]}"
-        log_variable "__PROTONWIRE_ENDPOINT_IPS_ONLINE"
-
-        # check if configured endpoint is in the list of online endpoints
-        if [[ ${configured_endpoints[0]} == *"${__PROTONWIRE_ENDPOINT_IPS_ONLINE[*]}"* ]]; then
-            selected_endpoint="${configured_endpoints[0]}"
-            ep_reconfigure="false"
-        else
-            log_error "WireGuard interface is configured wrong peer - ${configured_endpoints[0]}"
-            local selected_endpoint
-            local selected_endpoint_index
-            if [[ ${#__PROTONWIRE_ENDPOINT_IPS_ONLINE[@]} -gt 1 ]]; then
-                selected_endpoint_index="$(((RANDOM % ${#__PROTONWIRE_ENDPOINT_IPS_ONLINE[@]}) + 1))"
-                selected_endpoint="${__PROTONWIRE_ENDPOINT_IPS_ONLINE["${selected_endpoint_index}"]}"
-                log_debug "Selected endpoint($selected_endpoint_index) $selected_endpoint"
-            elif [[ ${#__PROTONWIRE_ENDPOINT_IPS_ONLINE[@]} -eq 1 ]]; then
-                selected_endpoint="${__PROTONWIRE_ENDPOINT_IPS_ONLINE[0]}"
-                log_debug "Selected endpoint $selected_endpoint"
+    # Cleanup peers on interfaces
+    local errs=0
+    if [[ $ep_reconfigure != "false" ]]; then
+        for stale_peer in "${configured_endpoints[@]}"; do
+            if wg set protonwire0 peer "${stale_peer%%	*}" remove 2>&1 | log_tail "wg-peer-remove"; then
+                log_warning "Removed peer - $stale_peer"
             else
-                log_error "No endpoints to select"
-                return 1
+                log_error "Failed to remove peer - $stale_peer"
+                ((++errs))
             fi
-        fi
-    else
-        log_debug "Connected peers - ${configured_endpoints[*]}"
-        log_error "WireGuard interface 'protonwire0' is connected to multiple endpoints"
-        log_error "Please run protonwire disconnect and try again!"
+        done
+    fi
+
+    if [[ $errs -gt 0 ]]; then
         return 1
     fi
 
@@ -2411,7 +2405,7 @@ function __protonvpn_connect() {
     if [[ $(wg show protonwire0 fwmark) == "0xca6d" ]]; then
         log_success "WireGuard interface fwmark is already set to - 0xca6d"
     else
-        if wg set protonwire0 fwmark 0xca6c 2>&1 | log_tail "wg-set-fwmark"; then
+        if wg set protonwire0 fwmark 0xca6d 2>&1 | log_tail "wg-set-fwmark"; then
             log_success "Setting fwmark on WireGuard interface to - 0xca6d"
         else
             log_error "Setting fwmark on WireGuard interface to - 0xca6d failed!"
@@ -2454,10 +2448,10 @@ function __protonvpn_connect() {
         done
     fi
 
-    # if ! __build_route_rules; then
-    #     log_error "Failed to configure routing rules!"
-    #     return 1
-    # fi
+    if ! __build_route_rules; then
+        log_error "Failed to configure routing rules!"
+        return 1
+    fi
 
     # DNS
     if __is_skip_cfg_dns; then
@@ -2508,6 +2502,14 @@ function __protonvpn_disconnect() {
     __PROTONWIRE_DISCONNECTING="true"
 
     local errs=0
+
+    if __has_notify_socket; then
+        log_debug "Notify to systemd that vpn is disconnecting"
+        __systemd_notify --stopping
+    else
+        log_debug "No systemd notify socket found, skiping stopping notification"
+    fi
+
     if [[ $__PROTONWIRE_DNS_UPDATER == "systemd-resolved" ]]; then
         if __resolvctl_down_hook; then
             log_success "Successfully restored DNS(systemd-resolved)"
@@ -2782,7 +2784,7 @@ function main() {
             cmd_mode="DISCONNECT"
             ((++cmd_lock))
             ;;
-        check | healthcheck | health-check | status | s)
+        check | healthcheck | health-check | status | s | verify)
             cmd_mode="HEALTHCHECK"
             ((++cmd_lock))
             ;;
@@ -2896,7 +2898,7 @@ function main() {
     # shellcheck disable=SC2119
     case "${cmd_mode^^}" in
     HEALTHCHECK)
-        protonvpn_healthcheck
+        protonvpn_verify_cmd
         exit $?
         ;;
     HEALTHCHECK_CONTAINER)

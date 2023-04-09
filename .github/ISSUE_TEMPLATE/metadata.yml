@@ -7,6 +7,7 @@ body:
     attributes:
       value: |
         - Thanks for taking the time to fill out this bug report!
+        - If reporting a security issue please report it privately via [Security Advisories](https://github.com/tprasadtp/protonvpn-docker/security/advisories).
 
   - type: input
     id: metadata-api-release-version

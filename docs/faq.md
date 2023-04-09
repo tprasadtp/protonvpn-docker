@@ -19,6 +19,12 @@
 - To do that it requires authenticating via proton account username and password and we want to avoid that(there are no scoped tokens and minted access tokens have full access to proton API including payments and Email!!).
 - Because fastest server selection depends on geo-location and latency info, it can no longer be supported.
 
+## How to check if an address is being routed via VPN via CLI
+
+- Run `ip route get <ip-address>`
+- If response is something like `<ip-address> dev protonwire0 table 51821 src 10.2.0.2 uid 0`,
+then the IP address will be routed via VPN.
+
 ## How to check if systemd-resolved is in use
 
 - If you are using Ubuntu/Fedora with defaults you are most likely using systemd-resolved for local DNS.
@@ -171,3 +177,8 @@ It also applies some workarounds to API quirks or bugs. Usually it should be aut
 But Proton API and libraries are in constant state of ~~chaos~~ flux
 and documentation is virtually non-existent or incorrect. So stuff might break.
 Bulk of the work is done via `scripts/generate-server-metadata`
+
+
+## Multiple instances is unsupported.
+
+Running multiple instances of this outside of docker/network namespace is not supported.

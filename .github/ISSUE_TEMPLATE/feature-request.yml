@@ -6,7 +6,8 @@ body:
   - type: markdown
     attributes:
       value: |
-        - Thanks for taking the time to fill out this request!
+        - Thanks for taking the time to fill out this feature request!
+        - If reporting a security issue please report it privately via [Security Advisories](https://github.com/tprasadtp/protonvpn-docker/security/advisories).
 
   # version
   - type: input

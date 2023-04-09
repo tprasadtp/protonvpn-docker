@@ -7,8 +7,8 @@ body:
     attributes:
       value: |
         - Thanks for taking the time to fill out this bug report!
+        - If reporting a security issue please report it privately via [Security Advisories](https://github.com/tprasadtp/protonvpn-docker/security/advisories).
 
-  # version
   - type: input
     id: version
     attributes:
@@ -28,7 +28,6 @@ body:
         - label: I have verified that the servers I am trying to connect to are available under my plan.
           required: true
 
-  # Arch
   - type: input
     id: arch
     attributes:
@@ -110,6 +109,8 @@ body:
       description: |
         - Check common troubleshooting steps.
       options:
+        - label: I have read [FAQ](./docs/faq.md) and [Troubleshooting](./docs/help.md).
+          required: true
         - label: I am **NOT** using container runtime which use user-mode networking, [Docker Rootless](https://docs.docker.com/engine/security/rootless/), [gVisor](https://gvisor.dev), [Podman Rootless](https://github.com/containers/podman/blob/main/rootless.md) etc.
           required: true
         - label: I am using latest stable version

@@ -65,13 +65,7 @@ User namespaces can cause file permission issues. If you have problem accessing 
 
 - Turn off `DynamicUser` and `RemoveIPC` from you unit configuration and reload systemd.
 
-## Disabling Kill-Switch
-
-```bash
-protonwire disable-ks
-```
-
-## Manually Disabling Kill-Switch and disconnecting from
+## Manually Disabling Kill-Switch
 
 ```bash
 ip -4 route flush table 51822
@@ -82,12 +76,11 @@ ip -6 rule | grep 51822 | cut -f 1 -d ':' | xargs ip rule del priority
 
 ## Manually Disconnecting from VPN
 
-> Please use `protonwire disconnect`
-as it handles things properly. If not possible, try the following.
+Please use `protonwire disconnect` as it handles things properly. If not possible, try the following.
 
 ```bash
-resolvectl revert protonwire0   # only if using systemd-resolved and not in container
-resolvconf -f -d protonwire0.wg # only if not using systemd-resolved and in container
+resolvectl revert protonwire0   # only if using systemd-resolved
+resolvconf -f -d protonwire0.wg # only if not using systemd-resolved
 ip -4 rule del not fwmark 51821 table 51821
 ip -6 rule del not fwmark 51821 table 51821
 ip -4 route flush table 51821

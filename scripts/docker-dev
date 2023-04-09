@@ -26,6 +26,7 @@ function main() {
         shift
     done
 
+    # For local testing - socat UNIX-RECV:./notify.sock,mode=777 -
     if [[ -S ./notify.sock ]]; then
         extra_args+=(
             "-e" "NOTIFY_SOCKET=/tmp/notify.sock"
