@@ -1,0 +1,13 @@
+#!/usr/bin/bash
+# SPDX-License-Identifier: GPL-3.0
+# SPDX-FileCopyrightText: 2023 Prasad Tengse <tprasadtp@users.noreply.github.com>
+
+set -e
+
+case "$1" in
+    configure)
+	systemd-sysusers protonwire.conf
+    systemd-sysctl protonwire.conf
+    systemd-tmpfiles --create protonwire.conf
+    ;;
+esac

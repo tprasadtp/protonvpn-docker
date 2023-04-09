@@ -1,0 +1,62 @@
+name: metadata
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "*"
+  schedule:
+    - cron: "30 * * * *"
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout project repo
+        uses: actions/checkout@v3 # ratchet:exclude
+        with:
+          persist-credentials: false
+      - name: Install
+        run: |
+          sudo apt-get install -y \
+          python3-gnupg \
+          python3-requests \
+          python3-bcrypt \
+          python3-coloredlogs
+      - name: Generate metadata
+        run: ./scripts/generate-server-metadata --generate-list --output ./metadata
+        env:
+          PROTON_USERNAME: ${{ secrets.PROTON_USERNAME }}
+          PROTON_PASSWORD: ${{ secrets.PROTON_PASSWORD }}
+      - name: Generate bot token
+        id: bot-token
+        uses: tibdex/github-app-token@f717b5ecd4534d3c4df4ce9b5c1c2214f0f7cd06 # ratchet:tibdex/github-app-token@v1.8.0
+        with:
+          repository: ${{ vars.METADATA_REPO }}
+          app_id: ${{ vars.METADATA_BOT_APP_ID }}
+          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+      - name: Checkout metadata repo to protonwire-api-deploy
+        uses: actions/checkout@v3 # ratchet:exclude
+        with:
+          repository: ${{ vars.METADATA_REPO }}
+          path: protonwire-api-deploy
+          token: ${{ steps.bot-token.outputs.token }}
+          persist-credentials: true
+      - name: Configure git and Remove stale data
+        working-directory: protonwire-api-deploy
+        run: |
+          git config user.name ${{ vars.METADATA_BOT_GIT_USERNAME }}
+          git config user.email ${{ vars.METADATA_BOT_GIT_EMAIL }}
+          rm -rf ./v1/
+      - name: Sync metadata
+        run: |
+          rsync \
+            --archive \
+            --human-readable \
+            --verbose \
+            ./metadata/ \
+            ${GITHUB_WORKSPACE}/protonwire-api-deploy/
+      - name: Push Metadata
+        working-directory: protonwire-api-deploy
+        run: |
+          git add --all
+          git commit -m "Updated at - $(date)"
+          git push -u origin master

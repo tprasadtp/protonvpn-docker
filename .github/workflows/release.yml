@@ -1,97 +1,36 @@
 name: release
 on:
+  workflow_dispatch:
   push:
     tags:
-      - "*"
+      - "v*"
 jobs:
-  checks:
+  shellcheck:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-
-      - name: Make Variables for Debugging
-        run: |
-          make show-vars-base
-          make show-vars-docker
-
-      - uses: actions/cache@v2
-        with:
-          path: .trivy
-          key: ${{ runner.os }}-trivy-${{ github.run_id }}
-          restore-keys: |
-            ${{ runner.os }}-trivy-
-
-      - name: Build Image
-        run: make docker
-
-      - name: Run Trivy vulnerability scanner
-        id: trivy
-        uses: aquasecurity/trivy-action@a7a829a4345428ddd92ca57b18257440f6a18c90
-        with:
-          scan-type: 'image'
-          vuln-type: os
-          severity: HIGH,CRITICAL
-          ignore-unfixed: true
-          exit-code: 1
-          image-ref: 'ghcr.io/tprasadtp/protonvpn:${{ github.sha }}-dev'
-          cache-dir: .trivy
-
-      - name: Correct Trivy cache permissions
-        run: sudo chown -R $USER:$GROUP .trivy
-        if: always()
-
-  goreleaser:
-    needs: [checks]
-    permissions:
-      contents: write
-      repository-projects: write
-      packages: write
-
+      - uses: actions/checkout@v3 # ratchet:exclude
+      - name: Shellcheck
+        run: make shellcheck
+  build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v3 # ratchet:exclude
         with:
           fetch-depth: 0
           persist-credentials: false
-
-      - name: Make Variables for Debugging
-        run: |
-          make show-vars-base
-          make show-vars-docker
-
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v1
-
+        uses: docker/setup-qemu-action@e81a89b1732b9c48d79cd809d8d81d79c4647a18 # ratchet:docker/setup-qemu-action@v2
       - name: Set up Docker Buildx
-        id: buildx
-        uses: docker/setup-buildx-action@v1
-
+        uses: docker/setup-buildx-action@4b4e9c3e2d4531116a6f8ba8e71fc6e2cb6e6c8c # ratchet:docker/setup-buildx-action@v2
       - name: Install GoReleaser
-        uses: goreleaser/goreleaser-action@b953231f81b8dfd023c58e0854a721e35037f28b
-        with:
-          version: latest
-          install-only: true
-
-      - name: Install git-chglog
-        run: |
-          brew tap git-chglog/git-chglog
-          brew install git-chglog
-        env:
-          HOMEBREW_NO_AUTO_UPDATE: 1
-
-      - name: Generate Release notes
-        run: |
-          make release-notes
-          cat RELEASE_NOTES.md
-
+        uses: goreleaser/goreleaser-action@b508e2e3ef3b19d4e4146d4f8fb3ba9db644a757 # ratchet:goreleaser/goreleaser-action@v4
+      - name: Install help2man
+        run: sudo apt-get install -y help2man
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v1
+        uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a # ratchet:docker/login-action@v2
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Run GoReleaser
-        run: make release-prod
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: make release

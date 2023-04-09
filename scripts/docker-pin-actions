@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+info() {
+    local msg="$*"
+    printf "==> %s \n" "$msg"
+}
+
+for workflow in build metadata release security; do
+info "Pinning workflow/$workflow.yml"
+docker run \
+    --rm \
+    -v $(pwd)/.github/workflows:/workflows:rw \
+    --userns=host \
+    ghcr.io/sethvargo/ratchet:latest \
+    pin "/workflows/$workflow.yml"
+done
