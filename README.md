@@ -219,7 +219,7 @@ Same can be used as liveness probe and readiness probe for Kubernetes.
         --port 8000:80 \
         --name protonwire \
         --cap-add NET_ADMIN \
-        --env PROTONVPN_SERVER=FREE \
+        --env PROTONVPN_SERVER=<server-name-or-dns> \
         --sysctl net.ipv4.conf.all.rp_filter=2 \
         --sysctl net.ipv6.conf.all.disable_ipv6=0 \
         --mount type=tmpfs,dst=/tmp \

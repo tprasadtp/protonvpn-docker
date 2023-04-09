@@ -2817,7 +2817,7 @@ function main() {
             cmd_mode="HEALTHCHECK"
             ((++cmd_lock))
             ;;
-        *-)
+        -*)
             log_error "Invalid argument - $1. See usage below."
             display_usage
             exit 1

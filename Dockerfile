@@ -28,4 +28,4 @@ COPY --chown=root:root \
 # Provide a symlink
 RUN ln -s /usr/bin/protonwire /usr/bin/protonvpn
 
-CMD [ "/usr/bin/protonwire", "--container" ]
+CMD [ "/usr/bin/protonwire", "connect", "--container" ]
