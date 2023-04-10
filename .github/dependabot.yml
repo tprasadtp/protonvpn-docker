@@ -14,3 +14,18 @@ updates:
       day: "saturday"
     pull-request-branch-name:
       separator: "-"
+
+  - package-ecosystem: github-actions
+    labels:
+      - "dependabot"
+      - "dependencies"
+      - "dep/github-actions"
+      - "luna/autoupdate"
+    commit-message:
+      prefix: "ci(deps):"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "saturday"
+    pull-request-branch-name:
+      separator: "-"
