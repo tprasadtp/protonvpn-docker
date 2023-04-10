@@ -1,0 +1,17 @@
+daysUntilStale: 180
+daysUntilClose: 30
+exemptLabels:
+  - s/keep-open
+  - s/wip
+  - s/review-required
+  - api/upstream
+  - security
+  - luna
+  - help
+  - question
+staleLabel: s/stale
+markComment: >
+  This issue has been automatically marked as stale because it has not had
+  recent activity. It will be closed if no further activity occurs. Thank you
+  for your contributions.
+closeComment: false
