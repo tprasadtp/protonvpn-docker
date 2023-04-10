@@ -1,0 +1,18 @@
+name: docs
+on:
+  push:
+    branches:
+      - "*"
+  pull_request:
+  workflow_dispatch:
+jobs:
+  update-readme:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+      - name: Run GoReleaser
+        run: make update-readme
+      - name: Check if README is up-to date
+        run: git diff --exit-code README.md

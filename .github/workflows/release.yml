@@ -8,7 +8,7 @@ jobs:
   shellcheck:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3 # ratchet:exclude
+      - uses: actions/checkout@v3
       - name: Shellcheck
         run: make shellcheck
   build:
@@ -18,25 +18,25 @@ jobs:
       packages: write
       id-token: write
     steps:
-      - uses: actions/checkout@v3 # ratchet:exclude
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
           persist-credentials: false
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@e81a89b1732b9c48d79cd809d8d81d79c4647a18 # ratchet:docker/setup-qemu-action@v2
+        uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@4b4e9c3e2d4531116a6f8ba8e71fc6e2cb6e6c8c # ratchet:docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v2
       - name: Install GoReleaser
-        uses: goreleaser/goreleaser-action@b508e2e3ef3b19d4e4146d4f8fb3ba9db644a757 # ratchet:goreleaser/goreleaser-action@v4
+        uses: goreleaser/goreleaser-action@v4
         with:
           version: latest
           install-only: true
       - name: Install Cosign
-        uses: sigstore/cosign-installer@9e9de2292db7abb3f51b7f4808d98f0d347a8919 # ratchet:sigstore/cosign-installer@v3.0.2
+        uses: sigstore/cosign-installer@v3.0.2
       - name: Install help2man
         run: sudo apt-get install -y help2man
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a # ratchet:docker/login-action@v2
+        uses: docker/login-action@v2
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
