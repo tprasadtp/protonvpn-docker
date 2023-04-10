@@ -15,13 +15,17 @@
   <a href="https://github.com/tprasadtp/protonvpn-docker/actions/workflows/release.yml" target="_blank" rel="noreferrer">
     <img src="https://github.com/tprasadtp/protonvpn-docker/actions/workflows/release.yml/badge.svg" height="24" alt="badge-release">
   </a>
-  <a href="https://github.com/tprasadtp/protonvpn-docker/releases/latest" target="_blank" rel="noreferrer">
+  <a href="https://github.com/tprasadtp/protonvpn-docker/releases" target="_blank" rel="noreferrer">
     <img src="https://img.shields.io/github/v/tag/tprasadtp/protonvpn-docker?label=version&sort=semver&logo=semver&labelColor=3a3a3a&include_prereleases" height="24" alt="badge-release">
   </a>
   <a href="https://github.com/tprasadtp/protonvpn-docker/blob/master/LICENSE" target="_blank" rel="noreferrer">
     <img src="https://img.shields.io/github/license/tprasadtp/protonvpn-docker?logo=github&labelColor=3A3A3A" height="24" alt="badge-license">
   </a>
+  <a href="https://github.com/tprasadtp/protonvpn-docker/stargazers/" target="_blank" rel="noreferrer">
+    <img src="https://img.shields.io/github/stars/tprasadtp/protonvpn-docker?logo=github&labelColor=3a3a3a" height="24" alt="badge-stars">
+  </a>
 </p>
+
 
 
 <p align="center">
@@ -33,6 +37,9 @@
   </a>
   <a href="https://protonwire-api.vercel.app/" target="_blank" rel="noreferrer">
     <img src="https://img.shields.io/badge/dynamic/json?label=servers&query=server_count&url=https%3A%2F%2Fprotonwire-api.vercel.app&logo=protonvpn&labelColor=3a3a3a&logoColor=white&color=7f50a6" height="24" alt="badge-server-count">
+  </a>
+  <a href="https://github.com/tprasadtp/protonwire-api" target="_blank" rel="noreferrer">
+    <img src="https://img.shields.io/badge/dynamic/json?label=commit&query=commit&url=https%3A%2F%2Fprotonwire-api.vercel.app%2Fcommit.json&logo=git&labelColor=3a3a3a&logoColor=white&color=7f50a6" height="24" alt="badge-server-count">
   </a>
 </p>
 
