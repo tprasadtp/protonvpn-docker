@@ -28,10 +28,10 @@
   <a href="https://github.com/tprasadtp/protonvpn-docker/actions/workflows/metadata.yml" target="_blank" rel="noreferrer">
     <img src="https://github.com/tprasadtp/protonvpn-docker/actions/workflows/metadata.yml/badge.svg" height="24" alt="metadata-build">
   </a>
-  <a href="https://github.com/tprasadtp/protonvpn-docker/actions/workflows/metadata.yml" target="_blank" rel="noreferrer">
+  <a href="https://protonwire-api.vercel.app/" target="_blank" rel="noreferrer">
     <img src="https://img.shields.io/badge/dynamic/json?label=metadata&query=timestamp&url=https%3A%2F%2Fprotonwire-api.vercel.app&logo=protonvpn&labelColor=3a3a3a&logoColor=white&color=7f50a6" height="24" alt="badge-metadata">
   </a>
-  <a href="https://github.com/tprasadtp/protonvpn-docker/actions/workflows/metadata.yml" target="_blank" rel="noreferrer">
+  <a href="https://protonwire-api.vercel.app/" target="_blank" rel="noreferrer">
     <img src="https://img.shields.io/badge/dynamic/json?label=servers&query=server_count&url=https%3A%2F%2Fprotonwire-api.vercel.app&logo=protonvpn&labelColor=3a3a3a&logoColor=white&color=7f50a6" height="24" alt="badge-server-count">
   </a>
 </p>
