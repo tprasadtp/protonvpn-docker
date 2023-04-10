@@ -7,11 +7,13 @@ on:
   schedule:
     - cron: "30 * * * *"
 jobs:
-  update:
+  metadata:
     runs-on: ubuntu-latest
+    # exclude dependabot from running this workflow.
+    if: ${{ github.actor != 'dependabot[bot]' }}
     steps:
       - name: Checkout project repo
-        uses: actions/checkout@v3 # ratchet:exclude
+        uses: actions/checkout@v3
         with:
           persist-credentials: false
       - name: Install
@@ -28,13 +30,13 @@ jobs:
           PROTON_PASSWORD: ${{ secrets.PROTON_PASSWORD }}
       - name: Generate bot token
         id: bot-token
-        uses: tibdex/github-app-token@f717b5ecd4534d3c4df4ce9b5c1c2214f0f7cd06 # ratchet:tibdex/github-app-token@v1.8.0
+        uses: tibdex/github-app-token@b62528385c34dbc9f38e5f4225ac829252d1ea92
         with:
           repository: ${{ vars.METADATA_REPO }}
           app_id: ${{ vars.METADATA_BOT_APP_ID }}
           private_key: ${{ secrets.APP_PRIVATE_KEY }}
       - name: Checkout metadata repo to protonwire-api-deploy
-        uses: actions/checkout@v3 # ratchet:exclude
+        uses: actions/checkout@v3
         with:
           repository: ${{ vars.METADATA_REPO }}
           path: protonwire-api-deploy
@@ -54,8 +56,9 @@ jobs:
             --verbose \
             ./metadata/ \
             ${GITHUB_WORKSPACE}/protonwire-api-deploy/
-      - name: Push Metadata
+      - name: Push Metadata (if on master)
         working-directory: protonwire-api-deploy
+        if: github.ref == 'refs/heads/master'
         run: |
           git add --all
           git commit -m "Updated at - $(date)"
