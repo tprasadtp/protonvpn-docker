@@ -54,7 +54,11 @@ No special configuration required!
 >
 > [Docker Rootless](https://docs.docker.com/engine/security/rootless/), [gVisor](https://gvisor.dev), [Podman Rootless](https://github.com/containers/podman/blob/main/rootless.md) or any other container runtime using **user mode networking** are **NOT** supported!
 
-Images are published at [ghcr.io/tprasadtp/protonvpn][ghcr].
+Images are published at [ghcr.io/tprasadtp/protonwire][ghcr].
+
+> **Note**
+>
+> Use `unstable` or use `7.0-unstable` tags for Wireguard support.
 
 ## Linux Kernel Requirements
 
@@ -208,7 +212,7 @@ Same can be used as liveness probe and readiness probe for Kubernetes.
 
 - Pull docker image (if required)
     ```bash
-    docker pull ghcr.io/tprasadtp/protonwire:latest
+    docker pull ghcr.io/tprasadtp/protonwire:unstable
     ```
 - Run VPN Container. Assuming that you have have a container which needs to be routed via VPN, listening on container port `80` and you wish to map it to host port `8000`,
     ```console
@@ -221,10 +225,9 @@ Same can be used as liveness probe and readiness probe for Kubernetes.
         --cap-add NET_ADMIN \
         --env PROTONVPN_SERVER=<server-name-or-dns> \
         --sysctl net.ipv4.conf.all.rp_filter=2 \
-        --sysctl net.ipv6.conf.all.disable_ipv6=0 \
         --mount type=tmpfs,dst=/tmp \
         --mount type=bind,src=<absolute-path-to-key-file>,dst=/etc/protonwire/private-key,readonly \
-        ghcr.io/tprasadtp/protonwire:latest
+        ghcr.io/tprasadtp/protonwire:unstable
     ```
     > **Warning**
     >
@@ -264,7 +267,7 @@ For example, we can run caddy to proxy `https://api.ipify.org/` via VPN. Visitin
     services:
         protonwire:
             container_name: protonwire
-            image: ghcr.io/tprasadtp/protonwire:latest
+            image: ghcr.io/tprasadtp/protonwire:unstable
             init: true
             restart: unless-stopped
             environment:
@@ -281,10 +284,10 @@ For example, we can run caddy to proxy `https://api.ipify.org/` via VPN. Visitin
                   source: PATH_TO_PRIVATE_KEY_FILE
                   target: /etc/protonwire/private-key
                   read_only: true
-            # You MUST also publish
+            # You MUST also include
             # ALL other connected
             # container's ports here!
-            port:
+            ports:
                 - 8000:80
 
             # Your app using the VPN
@@ -300,8 +303,9 @@ For example, we can run caddy to proxy `https://api.ipify.org/` via VPN. Visitin
                         --to api.ipify.org:443
     ```
 
-- It is **essential** to expose/publish port(s) on protonwire container, instead of your application.
-- You **SHOULD NOT** run the container as privileged. Adding capability `CAP_NET_ADMIN` **AND** defined `sysctls` should be sufficient.
+> **Note**
+> - It is **essential** to expose/publish port(s) _on protonwire container_, instead of your application.
+> - You **SHOULD NOT** run the container as privileged. Adding capability `CAP_NET_ADMIN` **AND** defined `sysctls` should be sufficient.
 
 ## Podman
 
@@ -315,6 +319,8 @@ For example, we can run caddy to proxy `https://api.ipify.org/` via VPN. Visitin
     ```bash
     sudo podman create secret protonwire-private-key <PRIVATE_KEY>
     ```
+    > **Warning**
+    >
     > podman secrets are **NOT** encrypted at rest!
 
 - Run protonwire container
@@ -331,25 +337,23 @@ For example, we can run caddy to proxy `https://api.ipify.org/` via VPN. Visitin
     --env PROTONVPN_SERVER=<SERVER-NAME> \
     --secret protonwire-private-key \
     --sysctl net.ipv4.conf.all.rp_filter=2 \
-    --sysctl net.ipv6.conf.all.disable_ipv6=0 \
-    ghcr.io/tprasadtp/protonwire:latest
+    ghcr.io/tprasadtp/protonwire:unstable
     ```
 
     * If you wish to publish additional ports from other containers using this VPN (usually done via argument `-p host_port:container_port`), you will need to do it here on the `protonwire` container!
     * `--sysctl` and `--cap-add` flags are important! without these, container cannot create/manage WireGuard interface.
 
-## Run container as systemd unit
+## Run podman container as systemd unit
 
 - Use `podman` instead of docker as it has better support for systemd.
 - You can run `protonwire` container as usual and the generate systemd unit for it via,
-
     ```bash
     podman generate systemd \
         --new \
         --name protonwire \
         --after network-online.target
     ```
-    > See [podman-generate-systemd][] for more info.
+- See [podman-generate-systemd](https://docs.podman.io/en/latest/markdown/podman-generate-systemd.1.html) for more info.
 
 ## Dependencies
 
@@ -360,18 +364,18 @@ See https://www.wireguard.com/install/ for more info.
 
     - If using `systemd-resolved` (default),
         ```console
-        sudo apt-get install curl jq procps iproute2 libcap2-bin util-linux socat wireguard-tools
+        sudo apt-get install curl jq procps iproute2 libcap2-bin util-linux wireguard-tools
         ```
     - Otherwise,
         ```console
-        sudo apt-get install curl jq procps iproute2 libcap2-bin util-linux socat wireguard-tools openresolv
+        sudo apt-get install curl jq procps iproute2 libcap2-bin util-linux wireguard-tools openresolv
         ```
 
 - If running on Debian, Raspberry Pi OS, and other **Debian** based derivatives etc
 
     - If using `systemd-resolved` (**NOT** default),
         ```console
-        sudo apt-get install curl jq procps iproute2 libcap2-bin util-linux socat wireguard-tools
+        sudo apt-get install curl jq procps iproute2 libcap2-bin util-linux wireguard-tools
         ```
     - Otherwise,
         ```console
@@ -382,36 +386,36 @@ See https://www.wireguard.com/install/ for more info.
 
     - If using `systemd-resolved`  (default),
         ```console
-        sudo dnf install curl jq procps-ng libcap iproute util-linux socat wireguard-tools
+        sudo dnf install curl jq procps-ng libcap iproute util-linux wireguard-tools
         ```
 
     - Otherwise,
         ```console
-        sudo dnf install curl jq procps-ng libcap iproute util-linux socat wireguard-tools openresolv
+        sudo dnf install curl jq procps-ng libcap iproute util-linux wireguard-tools openresolv
         ```
 
 - If running on  CentOS 8, RHEL 8, Rocky Linux 8, Alma Linux 8
 
     - If using `systemd-resolved` (NOT default),
         ```console
-        sudo dnf install curl jq procps-ng libcap iproute util-linux socat wireguard-tools
+        sudo dnf install curl jq procps-ng libcap iproute util-linux wireguard-tools
         ```
 
     - Otherwise,
         ```console
-        sudo dnf install curl jq procps-ng libcap iproute util-linux socat wireguard-tools openresolv
+        sudo dnf install curl jq procps-ng libcap iproute util-linux wireguard-tools openresolv
         ```
 
 - If running on ArchLinux, Manjaro and other ArchLinux based distribution,
 
     - If using `systemd-resolved`,
         ```console
-        sudo pacman -S curl jq procps-ng libcap iproute2 util-linux socat wireguard-tools systemd-resolvconf
+        sudo pacman -S curl jq procps-ng libcap iproute2 util-linux wireguard-tools systemd-resolvconf
         ```
 
     - Otherwise,
         ```console
-        sudo pacman -S curl jq procps-ng libcap iproute2 util-linux socat wireguard-tools openresolv
+        sudo pacman -S curl jq procps-ng libcap iproute2 util-linux wireguard-tools openresolv
         ```
 
 ## Installation

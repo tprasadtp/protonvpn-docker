@@ -27,6 +27,8 @@ body:
       options:
         - label: I have verified that the servers I am trying to connect to are available under my plan.
           required: true
+        - label: I have verified that my generated Wireguard private keys are valid and have required features (Netshield Ad-blocker, VPN accelerator etc) are enabled.
+          required: true
 
   - type: input
     id: arch
@@ -109,7 +111,7 @@ body:
       description: |
         - Check common troubleshooting steps.
       options:
-        - label: I have read [FAQ](./docs/faq.md) and [Troubleshooting](./docs/help.md).
+        - label: I have read [FAQ](https://github.com/tprasadtp/protonvpn-docker/blob/master/docs/faq.md) and [Troubleshooting](https://github.com/tprasadtp/protonvpn-docker/blob/master/docs/help.md).
           required: true
         - label: I am **NOT** using container runtime which use user-mode networking, [Docker Rootless](https://docs.docker.com/engine/security/rootless/), [gVisor](https://gvisor.dev), [Podman Rootless](https://github.com/containers/podman/blob/main/rootless.md) etc.
           required: true
@@ -119,7 +121,7 @@ body:
   - type: textarea
     id: logs
     attributes:
-      label: Container/Pod/systemd Log output
+      label: Container/Pod/systemd log output
       description: |
         - What do you see when you run the script with debug logs enabled
           - Set env variable `DEBUG` to 1
