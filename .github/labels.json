@@ -278,5 +278,10 @@
     "color": "fbca04",
     "description": "Pending Upstream support",
     "name": "s/upstream-support"
+  },
+  {
+    "color": "B23EAF",
+    "description": "Bot Config and updates",
+    "name": "bot"
   }
 ]
