@@ -64,10 +64,6 @@ No special configuration required!
 
 Images are published at [ghcr.io/tprasadtp/protonwire][ghcr].
 
-> **Note**
->
-> Use `unstable` or use `7.0-unstable` tags for Wireguard support.
-
 ## Linux Kernel Requirements
 
 - If using Debian 11 (Buster) or later, Raspberry Pi OS (Buster) or later, Fedora, ArchLinux, Linux Mint 20.x or later, RHEL 9 or later, Alma Linux 9 or later, CentOS 9 Stream, Ubuntu 20.04 or later you have the required kernel module built-in.
@@ -146,9 +142,9 @@ This should be server name like `NL-FREE#1`(or `NL-FREE-1`) or domain name like,
 > This Feature is experimental.
 
 Kill-Switch is not a hard kill-switch but more of an "internet" kill-switch.
-Your LAN addresses, Link-Local addresses and CGNAT remain reachable. Unlike
-most VPN containers, kill-switch is implemented via IP routing policies than
-firewall rules.
+Your LAN addresses, Link-Local addresses and CGNAT(also Tailscale) addresses
+remain reachable. Unlike most VPN containers, kill-switch is implemented via
+routing policies, rather than firewall rules.
 
 ## Usage
 
@@ -220,7 +216,7 @@ Same can be used as liveness probe and readiness probe for Kubernetes.
 
 - Pull docker image (if required)
     ```bash
-    docker pull ghcr.io/tprasadtp/protonwire:unstable
+    docker pull ghcr.io/tprasadtp/protonwire:latest
     ```
 - Run VPN Container. Assuming that you have have a container which needs to be routed via VPN, listening on container port `80` and you wish to map it to host port `8000`,
     ```console
@@ -235,7 +231,7 @@ Same can be used as liveness probe and readiness probe for Kubernetes.
         --sysctl net.ipv4.conf.all.rp_filter=2 \
         --mount type=tmpfs,dst=/tmp \
         --mount type=bind,src=<absolute-path-to-key-file>,dst=/etc/protonwire/private-key,readonly \
-        ghcr.io/tprasadtp/protonwire:unstable
+        ghcr.io/tprasadtp/protonwire:latest
     ```
     > **Warning**
     >
@@ -275,7 +271,7 @@ For example, we can run caddy to proxy `https://api.ipify.org/` via VPN. Visitin
     services:
         protonwire:
             container_name: protonwire
-            image: ghcr.io/tprasadtp/protonwire:unstable
+            image: ghcr.io/tprasadtp/protonwire:latest
             init: true
             restart: unless-stopped
             environment:
@@ -345,7 +341,7 @@ For example, we can run caddy to proxy `https://api.ipify.org/` via VPN. Visitin
     --env PROTONVPN_SERVER=<SERVER-NAME> \
     --secret protonwire-private-key \
     --sysctl net.ipv4.conf.all.rp_filter=2 \
-    ghcr.io/tprasadtp/protonwire:unstable
+    ghcr.io/tprasadtp/protonwire:latest
     ```
 
     * If you wish to publish additional ports from other containers using this VPN (usually done via argument `-p host_port:container_port`), you will need to do it here on the `protonwire` container!

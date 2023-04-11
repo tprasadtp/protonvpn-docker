@@ -2,7 +2,6 @@ name: security
 on:
   workflow_dispatch:
   schedule:
-    # Every Friday at 2100
     - cron: "0 21 * * FRI"
 permissions:
   contents: read
@@ -43,7 +42,7 @@ jobs:
           vuln-type: os
           severity: HIGH,CRITICAL
           ignore-unfixed: true
-          image-ref: 'ghcr.io/tprasadtp/protonvpn:latest'
+          image-ref: 'ghcr.io/tprasadtp/protonwire:latest'
           format: 'sarif'
           output: 'trivy-results.sarif'
       - name: Correct Trivy cache permissions
