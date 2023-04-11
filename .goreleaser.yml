@@ -145,6 +145,7 @@ changelog:
     exclude:
       - '^.*doc(s)?[(\\w)]*:+.*$'
       - '^.*release(s)?[(\\w)]*:+.*$'
+      - '^.*bot(s)?[(\\w)]*:+.*$'
 
 checksum:
   name_template: checksums.txt
@@ -289,6 +290,8 @@ docker_manifests:
 
 release:
   mode: replace
+  ids:
+    - linux-packages
   prerelease: auto
   extra_files:
     - glob: dist/protonwire

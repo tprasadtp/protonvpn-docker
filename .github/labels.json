@@ -283,5 +283,10 @@
     "color": "B23EAF",
     "description": "Bot Config and updates",
     "name": "bot"
+  },
+  {
+    "color": "fef2c0",
+    "description": "",
+    "name": "ci"
   }
 ]
