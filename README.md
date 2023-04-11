@@ -182,7 +182,7 @@ Options:
       --version                 Display version and exit
 
 Examples:
-  protonwire connect SERVER     Connect to server NL#17
+  protonwire connect nl-1       Connect to server nl-1
   protonwire disconnect         Disconnect from current server
   protonwire verify [SERVER]    Check if connected to a server
 

@@ -70,7 +70,6 @@ nfpms:
           postremove: rpm/protonwire.postremove
           preremove: rpm/protonwire.preremove
 
-    release: 1
     section: default
     priority: extra
     contents:

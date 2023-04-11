@@ -2550,7 +2550,7 @@ function __protonvpn_disconnect() {
         skip_ipv6="true"
     fi
 
-    log_info "Removing IP rules"
+    log_info "Removing IP routing rules"
     while [[ $(ip -4 rule show 2>/dev/null) == *"lookup 51821"* ]]; do
         if ! ip -4 rule del not fwmark 51821 table 51821 2>&1 | log_tail "ip rule"; then
             log_error "Failed to remove rule(IPv4) to route traffic via WireGuard"
@@ -2569,9 +2569,9 @@ function __protonvpn_disconnect() {
 
     # delete table
     if ip -4 route list table 51821 >/dev/null 2>&1; then
-        log_debug "Flushing routing table 51820 (IPv4)"
+        log_debug "Flushing routing table 51821 (IPv4)"
         if ! ip -4 route flush table 51821 2>&1 | log_tail "ip route"; then
-            log_error "Failed to flush table 51820"
+            log_error "Failed to flush table 51821"
             ((++errs))
         fi
     else
@@ -2582,7 +2582,7 @@ function __protonvpn_disconnect() {
         if ip -6 route list table 51821 >/dev/null 2>&1; then
             log_debug "Flushing routing table 51821 (IPv6)"
             if ! ip -6 route flush table 51821 2>&1 | log_tail "ip route"; then
-                log_error "Failed to flush table 51820"
+                log_error "Failed to flush table 51821"
                 ((++errs))
             fi
         fi
@@ -2607,6 +2607,8 @@ function __protonvpn_disconnect() {
 function protonvpn_disconnect_cmd() {
     __detect_paths
 
+    local errs=0
+
     # Check if all required commands are available
     if ! __check_tools; then
         return 1
@@ -2618,28 +2620,29 @@ function protonvpn_disconnect_cmd() {
     fi
 
     if __protonvpn_disconnect; then
-        return 0
+        ((++errs))
     fi
 
-    if __is_ipv6_disabled; then
-        declare -ar __rt_protos=("4")
-    else
-        declare -ar __rt_protos=("4" "6")
-    fi
+    if __is_enable_killswitch; then
+        log_warning "Disabling killswitch (if any)"
+        if __is_ipv6_disabled; then
+            declare -ar __rt_protos=("4")
+        else
+            declare -ar __rt_protos=("4" "6")
+        fi
 
-    local errs=0
-    for proto in "${__rt_protos[@]}"; do
-        if __is_enable_killswitch; then
-            log_warning "Disabling killswitch (if any)"
-            while [[ $(ip "-${proto}" rule show 2>/dev/null) == *"lookup 51821"* ]]; do
-                log_warning "Removing WireGuard table rule (IPv$proto)"
-                if ! ip "-${proto}" rule del not fwmark 51821 table 51821 2>&1 | log_tail "ip-rule-wireguard"; then
-                    log_error "Failed to remove rule(IPv$proto) to route traffic via WireGuard"
+        for proto in "${__rt_protos[@]}"; do
+            while [[ $(ip "-${proto}" rule show 2>/dev/null) == *"lookup 51822"* ]]; do
+                log_warning "Removing Killswitch table rule (IPv$proto)"
+                if ! ip "-${proto}" rule del not fwmark 51821 table 51822 2>&1 | log_tail "ip-rule-ks"; then
+                    log_error "Failed to remove killswitch IP rule(IPv$proto) "
                     ((++errs))
                 fi
             done
-        fi
-    done
+        done
+    else
+        log_debug "Killswitch not enabled (IPv$proto)"
+    fi
 
     if [[ $errs -eq 0 ]]; then
         return 0
@@ -2700,7 +2703,7 @@ ${BOLD}${CYAN}Options:${NC}
       --version                 Display version and exit
 
 ${BOLD}${TEAL}Examples:${NC}
-  protonwire connect SERVER     Connect to server NL#17
+  protonwire connect nl-1       Connect to server nl-1
   protonwire disconnect         Disconnect from current server
   protonwire verify [SERVER]    Check if connected to a server
 
