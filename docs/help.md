@@ -8,9 +8,9 @@ Script should take care of that by adding IPs of servers in the same pool to lis
 - However, ProtonVPN API is **inconsistent**. Sometimes, Node's `ExitIP` is **NOT** listed at all! _Sigh!_ in case that happens, disable IP checks with `--check-interval 0` or set `IPCHECK_INTERVAL` environment variable to `0`. Only ProtonVPN can fix this as it happens on server side!
 
     ```log
+    [ERROR] Retry (3/3) after 8 seconds
     [ERROR] Your current IP address - 92.119.179.XX is not in the list for Server NL-FREE#27
     [ERROR] Your current IP address - 92.119.179.XX must belong to set (92.119.179.83 92.119.179.84 92.119.179.85 92.119.179.86 92.119.179.82)
-    [ERROR] Retry (3/3) after 8 seconds
     [ERROR] Failed to verify connection!
     ```
 
@@ -19,8 +19,8 @@ Script should take care of that by adding IPs of servers in the same pool to lis
 Please use `tmpfs` mounts for `/tmp`
 
 - For docker use `--mount type=tmpfs,destination=/tmp`
-- For docker-compose see [docker-compse-volumes][].
-- For Kubernetes pods, use `emptyDir` with `emptyDir.medium` field to `Memory` See [emptyDir][] for more info.
+- For docker-compose see [docker-compse-volumes].
+- For Kubernetes pods, use `emptyDir` with `emptyDir.medium` field to `Memory` See [emptyDir] for more info.
 
 ## DNS leak protection and Kubernetes
 

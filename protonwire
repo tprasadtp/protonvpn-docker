@@ -717,25 +717,6 @@ function __check_systemd() {
         if ! __sd_notify_checks; then
             ((++errs))
         fi
-    elif [[ $__PROTONWIRE_LOOPER == "container" ]]; then
-        if ! __sd_notify_checks; then
-            ((++errs))
-        fi
-
-        # containers cannot change sysctls so check it now
-        if [[ $(sysctl -n net.ipv4.conf.all.rp_filter) != "2" ]] &&
-            [[ $(sysctl -n net.ipv4.conf.all.src_valid_mark) != "1" ]]; then
-            log_error "net.ipv4.conf.all.rp_filter!=2 && net.ipv4.conf.all.src_valid_mark!=1"
-            ((++errs))
-            log_error "Set one of the sysctls to expected value,"
-            log_error "If using docker/podman add --sysctl net.ipv4.conf.all.rp_filter=2 flag to your run command"
-            log_error "If using docker-compose add 'net.ipv4.conf.all.rp_filter: 2' under 'sysctls' section for protonvpn service."
-            log_error "If using Kubernetes see https://kubernetes.io/docs/tasks/administer-cluster/sysctl-cluster/ to set sysctl values."
-        fi
-    fi
-
-    # If check systemd variables
-    if [[ $__PROTONWIRE_LOOPER == "systemd" ]]; then
         declare -ar systemd_populated_vars=(
             "RUNTIME_DIRECTORY"
             "STATE_DIRECTORY"
@@ -750,6 +731,21 @@ function __check_systemd() {
                 log_variable "$var"
             fi
         done
+    elif [[ $__PROTONWIRE_LOOPER == "container" ]]; then
+        if ! __sd_notify_checks; then
+            ((++errs))
+        fi
+
+        # containers cannot change sysctls so check it now
+        if [[ $(sysctl -n net.ipv4.conf.all.rp_filter) != "2" ]]; then
+            ((++errs))
+            log_error "Invalid sysctl, net.ipv4.conf.all.rp_filter!=2"
+            log_error "If using docker/podman add --sysctl net.ipv4.conf.all.rp_filter=2 flag to your run command"
+            log_error "If using docker-compose add 'net.ipv4.conf.all.rp_filter: 2' under 'sysctls' section for protonvpn service."
+            log_error "If using Kubernetes see https://kubernetes.io/docs/tasks/administer-cluster/sysctl-cluster/ to set sysctl values."
+        fi
+    else
+        log_debug "--systemd/--container both are not specified"
     fi
 
     if [[ $errs -eq 0 ]]; then
@@ -799,15 +795,6 @@ function __check_tools() {
         ((++errs))
         ;;
     esac
-
-    # systemctl is required for checking systemd version,
-    # and systemd-resolved status.
-    if [[ ${__PROTONWIRE_LOOPER,,} == "systemd" ]] ||
-        [[ $__PROTONWIRE_DNS_UPDATER == "systemd-resolved" ]]; then
-        commands+=(
-            "systemctl" # systemd
-        )
-    fi
 
     # Check if all commands are available
     declare -a missing_commands
@@ -898,23 +885,23 @@ function __resolvctl_up_hook() {
     # default-route before configuring the DNS server
     # as per systemd-resolved documentation recommendation.
     if resolvectl domain protonwire0 "~." 2>&1 | log_tail "resolvectl-domain"; then
-        log_success "Set routing domain to ~."
+        log_success "Set routing domain to ~. (via resolvectl)"
     else
-        log_error "Failed to set routing domain to ~."
+        log_error "Failed to set routing domain to ~. (via resolvectl)"
         ((++errs))
     fi
 
     if resolvectl default-route protonwire0 "true" 2>&1 | log_tail "resolvectl-default-route"; then
         log_success "Set default route"
     else
-        log_error "Failed to set default route"
+        log_error "Failed to set default DNS route (via resolvectl)"
         ((++errs))
     fi
 
     if resolvectl dns protonwire0 "10.2.0.1" 2>&1 | log_tail "resolvectl-dns"; then
-        log_success "Set DNS server to 10.2.0.1"
+        log_success "Set DNS server to 10.2.0.1 (via resolvectl)"
     else
-        log_error "Failed to set DNS server to 10.2.0.1"
+        log_error "Failed to set DNS server to 10.2.0.1 (via resolvectl)"
         ((++errs))
     fi
 
@@ -940,34 +927,27 @@ function __resolvctl_down_hook() {
 # resolvconf hook
 function __resolvconf_up_hook() {
     local errs=0
-    if has_command resolvconf; then
-        if printf "nameserver 10.2.0.1" | timeout 5s resolvconf -a protonwire0.wg 2>&1 | log_tail "resolvconf set"; then
-            log_debug "Successfully updated /etc/resolv.conf"
-        else
-            log_error "Failed to update /etc/resolv.conf!"
-            ((++errs))
-        fi
+    if printf "nameserver 10.2.0.1" | timeout 5s resolvconf -a protonwire0.wg 2>&1 | log_tail "resolvconf set"; then
+        log_debug "Successfully updated /etc/resolv.conf (via resolvconf)"
     else
-        log_error "resolvconf is not installed!"
+        log_error "Failed to update /etc/resolv.conf! (via resolvconf)"
         ((++errs))
     fi
 
     if [[ $errs -eq 0 ]]; then
         return 0
+    else
+        __resolvconf_down_hook # ignore errors
     fi
     return 1
 }
 
 function __resolvconf_down_hook() {
-    if has_command resolvconf; then
-        if timeout 5s resolvconf -f -d protonwire0.wg 2>&1 | log_tail "resolvconf restore"; then
-            log_debug "Successfully restored /etc/resolv.conf"
-            return 0
-        else
-            log_error "Failed to restore /etc/resolv.conf"
-        fi
+    if timeout 5s resolvconf -f -d protonwire0.wg 2>&1 | log_tail "resolvconf restore"; then
+        log_debug "Successfully restored /etc/resolv.conf (via resolvconf)"
+        return 0
     else
-        log_error "resolvconf is not installed!"
+        log_error "Failed to restore /etc/resolv.conf (via resolvconf)"
     fi
     return 1
 }
@@ -1016,10 +996,10 @@ function __detect_paths() {
 function protonvpn_looper_cmd() {
     case "$__PROTONWIRE_LOOPER" in
     systemd)
-        log_debug "Running as systemd unit, IDENTITY=$(id)"
+        log_debug "Running as systemd unit, IDENTITY=$(id 2>&1)"
         ;;
     container)
-        log_debug "Running as container"
+        log_debug "Running as container IDENTITY=$(id 2>&1)"
         ;;
     *)
         log_error "Invalid __PROTONWIRE_LOOPER - $__PROTONWIRE_LOOPER"
@@ -1038,6 +1018,9 @@ function protonvpn_looper_cmd() {
     if __protonvpn_connect; then
         if [[ $IPCHECK_INTERVAL != "0" ]]; then
             log_info "Verifying connection"
+            # This can be a bit race-y. A short sleep interval fixes things
+            sleep 2 &
+            wait $!
 
             local verify_attemps=0
             local max_verify_attemps="${PROTONVPN_CHECK_THRESHOLD:-3}"
@@ -1089,10 +1072,13 @@ function protonvpn_looper_cmd() {
             sleep_int="$((WATCHDOG_USEC / 2000000))"
             log_debug "Watchdog enabled, ping interval $sleep_int seconds"
             watchdog_pings="true"
+        else
+            log_debug "Using default check interval 120s"
+            sleep_int="120"
         fi
     fi
 
-    # Notify ready if socket is available
+    # Initial ready and watchdog notification.
     if __has_notify_socket; then
         log_debug "Notifying systemd that we are ready"
         if ! __systemd_notify --ready; then
@@ -1101,13 +1087,15 @@ function protonvpn_looper_cmd() {
             return 1
         fi
 
-        if ! __systemd_notify --watchdog; then
-            log_error "Failed to notify systemd!"
-            __protonvpn_disconnect
-            return 1
+        if [[ $watchdog_pings == "true" ]]; then
+            if ! __systemd_notify --watchdog; then
+                log_error "Failed to notify systemd!"
+                __protonvpn_disconnect
+                return 1
+            fi
         fi
     else
-        log_debug "No systemd notify socket found, skiping READY notification"
+        log_debug "No systemd notify socket found, skiping READY/WATCHDOG notification"
     fi
 
     if [[ $IPCHECK_INTERVAL == "0" ]]; then
@@ -1128,11 +1116,11 @@ function protonvpn_looper_cmd() {
                 fi
             fi
 
-            sleep "${sleep_int:-60}" &
+            sleep "${sleep_int:-120}" &
             wait $!
         done
     else
-        log_info "Checking status - every ${sleep_int:-60} seconds"
+        log_info "Checking status - every ${sleep_int:-120} seconds"
 
         declare -g __PROTONWIRE_HC_ERRORS=0
         while :; do
@@ -1141,17 +1129,29 @@ function protonvpn_looper_cmd() {
                 break
             fi
 
-            if [[ $__PROTONWIRE_HC_ERRORS -ge ${PROTONVPN_CHECK_THRESHOLD:-3} ]]; then
-                log_error "Connection verification #{$__PROTONWIRE_CHECK_ERRS} failed"
+            if [[ $__PROTONWIRE_HC_ERRORS -ge ${max_verify_attemps} ]]; then
+                log_error "Connection verification ($((__PROTONWIRE_HC_ERRORS))/${PROTONVPN_CHECK_THRESHOLD:-3}) failed"
                 break
             fi
 
-            sleep "${sleep_int:-60}" &
+            sleep "${sleep_int:-120}" &
             wait $!
 
             if ! __protonvpn_verify_connection; then
                 log_error "Failed to verify connection ($((__PROTONWIRE_HC_ERRORS + 1))/${PROTONVPN_CHECK_THRESHOLD:-3})"
                 ((++__PROTONWIRE_HC_ERRORS))
+                log_warning "Attempting to re-connect to ${PROTONVPN_SERVER}"
+                if __protonvpn_connect; then
+                    sleep 2 & # avoid transient errors
+                    wait $!
+                    if ! __protonvpn_verify_connection; then
+                        log_error "Failed to verify after re-connect"
+                    else
+                        log_notice "Successfully reconnected to ${PROTONVPN_SERVER}"
+                    fi
+                else
+                    log_error "Failed to re-connect to ${PROTONVPN_SERVER}"
+                fi
             else
                 if [[ $__PROTONWIRE_HC_ERRORS -gt 0 ]]; then
                     log_warning "Connection re-established"

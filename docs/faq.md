@@ -19,10 +19,10 @@ then the IP address will be routed via VPN.
 - If you are using Ubuntu/Fedora with defaults you are most likely using systemd-resolved for local DNS.
 - Run `resolvectl status --no-pager`. If it has `resolv.conf mode: stub`.  you are using `systemd-resolved`.
 
-## What with route table 51821 and 51821
+## What with route table 51821 and 51822
 
-- We keep WireGuard route table separate (`51821` and `51822` for killswitch).
-- By default we _include_ following subnets to be routed over VPN
+- We keep route table separate (`51821` for wireguard routing and `51822` for killswitch).
+- By default we _include_ following subnets in the route table.
     - `10.2.0.1/32` (_DNS server_)
     - `0.0.0.0/5`
     - `8.0.0.0/7`
@@ -132,7 +132,7 @@ wg show
 ## Non reachable LAN hosts
 
 Following addresses on local network or other VPNs **cannot** be reached when ProtonVPN is active. This is the way ProtonVPN is setup on server side and **CANNOT** be changed!
-Also these addresses cannot belong to machine running protonwire.
+Also these addresses cannot belong to any __other__ interfaces on the machine/container running protonwire.
 - 10.2.0.1 (used by server and as DNS server)
 - 10.2.0.2 (used by client)
 
@@ -168,6 +168,6 @@ and documentation is virtually non-existent or incorrect. So stuff might break.
 Bulk of the work is done via `scripts/generate-server-metadata`
 
 
-## Multiple instances is unsupported.
+## Known Issues
 
-Running multiple instances of this outside of docker/network namespace is not supported.
+- Running multiple instances of this __outside of containers__ is not supported.

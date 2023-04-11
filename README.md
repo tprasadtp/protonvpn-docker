@@ -129,8 +129,8 @@ in following locations.
 
 ## PROTONVPN_SERVER
 
-This should server name like `NL-FREE#1`(or `NL-FREE-1`) or domain name like,
-`nl-free-01.protonvpn.net`(recommended).
+This should be server name like `NL-FREE#1`(or `NL-FREE-1`) or domain name like,
+`nl-free-01.protonvpn.net` (recommended).
 
 > **Warning**
 >
@@ -351,7 +351,7 @@ For example, we can run caddy to proxy `https://api.ipify.org/` via VPN. Visitin
     * If you wish to publish additional ports from other containers using this VPN (usually done via argument `-p host_port:container_port`), you will need to do it here on the `protonwire` container!
     * `--sysctl` and `--cap-add` flags are important! without these, container cannot create/manage WireGuard interface.
 
-## Run podman container as systemd unit
+## Run container as systemd unit
 
 - Use `podman` instead of docker as it has better support for systemd.
 - You can run `protonwire` container as usual and the generate systemd unit for it via,
