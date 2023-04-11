@@ -1,0 +1,32 @@
+version: '2.3'
+services:
+  protonwire:
+    container_name: protonwire
+    image: ghcr.io/tprasadtp/protonwire:latest
+    init: true
+    restart: unless-stopped
+    environment:
+      PROTONVPN_SERVER: nl-free-127.protonvpn.net
+    cap_add:
+      - NET_ADMIN
+    sysctls:
+      net.ipv4.conf.all.rp_filter: 2
+      net.ipv6.conf.all.disable_ipv6: 1
+    volumes:
+      - type: tmpfs
+        target: /tmp
+      - type: bind
+        source: private.key
+        target: /etc/protonwire/private-key
+        read_only: true
+    ports:
+      - 8000:80
+
+  caddy_proxy:
+    image: caddy:latest
+    network_mode: service:protonwire
+    command: |
+      caddy reverse-proxy \
+          --change-host-header \
+          --from :80 \
+          --to https://ip.me:443

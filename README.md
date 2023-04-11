@@ -224,7 +224,7 @@ Same can be used as liveness probe and readiness probe for Kubernetes.
         -it \
         --rm \
         --init \
-        --port 8000:80 \
+        --publish 8000:80 \
         --name protonwire \
         --cap-add NET_ADMIN \
         --env PROTONVPN_SERVER=<server-name-or-dns> \
@@ -246,14 +246,12 @@ For example, we can run caddy to proxy `https://api.ipify.org/` via VPN. Visitin
     ```console
     docker run \
         -it \
-        --rm \
-        --name caddy-protonwire  \
         --net=container:protonwire \
-        caddy:2-alpine \
+        caddy:latest \
         caddy reverse-proxy \
-        --change-host-header \
-        --from :80 \
-        --to api.ipify.org:443
+            --change-host-header \
+            --from :80 \
+            --to https://ip.me:443
     ```
 
     > **Note**
@@ -269,42 +267,36 @@ For example, we can run caddy to proxy `https://api.ipify.org/` via VPN. Visitin
     ```yaml
     version: '2.3'
     services:
-        protonwire:
-            container_name: protonwire
-            image: ghcr.io/tprasadtp/protonwire:latest
-            init: true
-            restart: unless-stopped
-            environment:
-                PROTONVPN_SERVER: <SERVER_NAME>
-            cap_add:
-                - NET_ADMIN
-            sysctls:
-                net.ipv4.conf.all.rp_filter: 2
-                net.ipv6.conf.all.disable_ipv6: 1
-            volumes:
-                - type: tmpfs
-                  target: /tmp
-                - type: bind
-                  source: PATH_TO_PRIVATE_KEY_FILE
-                  target: /etc/protonwire/private-key
-                  read_only: true
-            # You MUST also include
-            # ALL other connected
-            # container's ports here!
-            ports:
-                - 8000:80
+    protonwire:
+        container_name: protonwire
+        image: ghcr.io/tprasadtp/protonwire:latest
+        init: true
+        restart: unless-stopped
+        environment:
+        PROTONVPN_SERVER: nl-free-127.protonvpn.net
+        cap_add:
+        - NET_ADMIN
+        sysctls:
+        net.ipv4.conf.all.rp_filter: 2
+        volumes:
+        - type: tmpfs
+            target: /tmp
+        - type: bind
+            source: private.key
+            target: /etc/protonwire/private-key
+            read_only: true
+        # MUST include all the ports of other containers as well.
+        ports:
+        - 8000:80
 
-            # Your app using the VPN
-            # Here we are using caddy to proxy
-            # api.ipify.org
-            caddy_proxy:
-                image: caddy:2-alpine
-                network_mode: service:protonwire
-                command: |
-                    caddy reverse-proxy \
-                        --change-host-header \
-                        --from :80 \
-                        --to api.ipify.org:443
+    caddy_proxy:
+        image: caddy:latest
+        network_mode: service:protonwire
+        command: |
+        caddy reverse-proxy \
+            --change-host-header \
+            --from :80 \
+            --to https://ip.me:443
     ```
 
 > **Note**

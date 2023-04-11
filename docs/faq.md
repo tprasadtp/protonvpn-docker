@@ -167,7 +167,9 @@ But Proton API and libraries are in constant state of ~~chaos~~ flux
 and documentation is virtually non-existent or incorrect. So stuff might break.
 Bulk of the work is done via `scripts/generate-server-metadata`
 
-
 ## Known Issues
 
 - Running multiple instances of this __outside of containers__ is not supported.
+- Some servers appear to change their names regularly or rename themselves and flip flop
+between two names or appear and disappear randomly. This is yet another quirk of
+ProtonVPN API (sigh!).
