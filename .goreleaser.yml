@@ -253,6 +253,7 @@ docker_manifests:
     - 'ghcr.io/tprasadtp/{{.ProjectName}}:{{ .Version }}-amd64'
     - 'ghcr.io/tprasadtp/{{.ProjectName}}:{{ .Version }}-arm64'
 
+  # Full Version
   - name_template: 'ghcr.io/tprasadtp/protonvpn:{{ .Version }}'
     image_templates:
     - 'ghcr.io/tprasadtp/protonvpn:{{ .Version }}-amd64'
