@@ -62,6 +62,7 @@ install: ## Install protonwire
 	@if [[ ! -e /usr/local/bin ]]; then install -g root -o root -m 755 -d /usr/local/bin; fi
 	install -g root -o root -m 755 protonwire /usr/local/bin/protonwire
 
+	@if [[ ! -e /etc/polkit-1/localauthority/10-vendor.d ]]; then install -g root -o root -m 755 -d /etc/polkit-1/localauthority/10-vendor.d; fi
 	install -g root -o root -m 644 systemd/polkit/protonwire.pkla /etc/polkit-1/localauthority/10-vendor.d/protonwire.pkla
 
 	@if [[ ! -e /usr/local/lib/sysctl.d ]]; then install -g root -o root -m 755 -d /usr/local/lib/sysctl.d; fi
@@ -73,8 +74,8 @@ install: ## Install protonwire
 	@if [[ ! -e /usr/local/lib/sysusers.d ]]; then install -g root -o root -m 755 -d /usr/local/lib/sysusers.d; fi
 	install -g root -o root -m 644 systemd/sysusers.d/protonwire.conf /usr/local/lib/sysusers.d/protonwire.conf
 
-	@if [[ ! -e /usr/local/man/man1 ]]; then install -g root -o root -m 755 /usr/local/man/man1; fi
-	install -g root -o root -m 644 protonwire.1 /usr/local/man/man1/protonwire.1
+	@if [[ ! -e /usr/local/man/man1 ]]; then install -g root -o root -m 755 -d /usr/local/man/man1; fi
+	help2man --no-info --manual="ProtonWire - ProtonVPN Wireguard Client" ./protonwire | install -g root -o root -m 644 /dev/stdin /usr/local/man/man1/protonwire.1
 
 	systemctl restart systemd-sysusers.service
 	systemctl daemon-reload

@@ -17,6 +17,7 @@ After=systemd-resolved.service
 # Service Type
 # ----------------------------------------
 Type=notify
+NotifyAccess=all
 
 # Service Identity
 # ----------------------------------------
