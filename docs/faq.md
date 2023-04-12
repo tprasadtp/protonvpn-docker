@@ -2,11 +2,11 @@
 
 ## Why automatic server selection is not supported
 
-- This is caused by API changes ProtonVPN.
-- To automatic server selection, it requires authenticating  to proton API via username and password!.
-There are no scoped oauth tokens and minted access tokens have full access to Proton API including payments and Email!!.
+- This is caused by changes to ProtonVPN API.
+- To perform automatic server selection, it requires authenticating  to proton API via username and password!. There are no scoped OAuth tokens and minted access tokens have full access to Proton API including payments and Email!!.
 - Fastest server selection also depends on geo-location and latency info to populate server `.Score`.
-Due to lack of documentation on how `.Score` is computed, automatic server selection is not supported.
+Due to lack of documentation on how `.Score` is computed and it depending on geo-location,
+automatic server selection is not supported.
 
 ## How to check if an address is being routed via VPN via CLI
 
