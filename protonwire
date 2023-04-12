@@ -1856,19 +1856,11 @@ function __build_route_rules() {
                 fi
             done
 
-            while [[ $(ip "-${proto}" rule show 2>/dev/null) == *"from all lookup main suppress_prefixlength 0"* ]]; do
-                log_warning "Removing (IPv$proto) Manual route rule"
-                if ! ip "-${proto}" rule delete table main suppress_prefixlength 0 2>&1 | log_tail "ip-rule-manual"; then
-                    log_error "Failed to remove rule for manual routes"
-                    ((++errs))
-                fi
-            done
-
             # from all not fwmark 0xca6d lookup 51822
             if __is_enable_killswitch; then
                 log_debug "Adding IP rule for Killswitch Table (51822)"
                 if ! ip "-${proto}" rule add not fwmark 0xca6d table 51822 2>&1 | log_tail "ip-rule-wireguard"; then
-                    log_error "Failed to add rule to Killswitch table 51822 (IPv$proto) "
+                    log_error "Failed to add rule to Killswitch table 51822 (IPv$proto)"
                     ((++errs))
                 fi
             else
@@ -1881,10 +1873,17 @@ function __build_route_rules() {
                 fi
             fi
 
-            # from all not fwmark 51821 lookup 51821
+            # from all not fwmark 0xca6d lookup 51821
             log_debug "Adding IP rule for Wireguard Table (51821)"
-            if ! ip "-${proto}" rule add not fwmark 51821 table 51821 2>&1 | log_tail "ip-rule-ks"; then
-                log_error "Failed to add rule to route traffic via WireGuard table 51821 (IPv$proto) "
+            if ! ip "-${proto}" rule add not fwmark 0xca6d table 51821 2>&1 | log_tail "ip-rule-ks"; then
+                log_error "Failed to add rule to route traffic via WireGuard table 51821 (IPv$proto)"
+                ((++errs))
+            fi
+
+            # flush FIB cache
+            log_debug "Flushing FIB cache"
+            if ! ip -4 route flush cache 2>&1 | log_tail "ip-route-flush-cache"; then
+                log_error "Failed to flush IP routing cache (IPv$proto)"
                 ((++errs))
             fi
         fi
@@ -2514,6 +2513,20 @@ function protonvpn_connect_cmd() {
         return 1
     fi
 
+    if has_command systemctl; then
+        if systemctl is-active --quiet protonwire; then
+            log_error "systemd unit protonwire.service is running"
+            log_error "Use systemctl to manage this unit or disable, this unit to manually connect"
+            return 1
+        elif systemctl is-failed --quiet protonwire; then
+            log_error "systemd unit protonwire.service is enabled, but is in failed state"
+            log_error "You should wither fix the unit and manage it via systemctl or disable it to manually connect"
+            return 1
+        fi
+    else
+        log_debug "command systemctl not found, not checking if there are conflicts with systemd units"
+    fi
+
     if __protonvpn_connect; then
         return 0
     fi
@@ -2565,7 +2578,7 @@ function __protonvpn_disconnect() {
 
     log_info "Removing IP routing rules"
     while [[ $(ip -4 rule show 2>/dev/null) == *"lookup 51821"* ]]; do
-        if ! ip -4 rule del not fwmark 51821 table 51821 2>&1 | log_tail "ip rule"; then
+        if ! ip -4 rule del not fwmark 0xca6d table 51821 2>&1 | log_tail "ip rule"; then
             log_error "Failed to remove rule(IPv4) to route traffic via WireGuard"
             ((++errs))
         fi
@@ -2573,7 +2586,7 @@ function __protonvpn_disconnect() {
 
     if [[ $skip_ipv6 != "true" ]]; then
         while [[ $(ip -6 rule show 2>/dev/null) == *"lookup 51821"* ]]; do
-            if ! ip -6 rule del not fwmark 51821 table 51821 2>&1 | log_tail "ip rule"; then
+            if ! ip -6 rule del not fwmark 0xca6d table 51821 2>&1 | log_tail "ip rule"; then
                 log_error "Failed to remove rule(IPv4) to route traffic via WireGuard"
                 ((++errs))
             fi
@@ -2608,7 +2621,7 @@ function __protonvpn_disconnect() {
             ((++errs))
         fi
     else
-        log_warning "WireGuard interface 'protonwire0' does not exist"
+        log_notice "WireGuard interface 'protonwire0' does not exist"
     fi
 
     if [[ $errs -eq 0 ]]; then
@@ -2637,7 +2650,7 @@ function protonvpn_disconnect_cmd() {
     fi
 
     if __is_enable_killswitch; then
-        log_warning "Disabling killswitch (if any)"
+        log_notice "Disabling killswitch (if any)"
         if __is_ipv6_disabled; then
             declare -ar __rt_protos=("4")
         else
@@ -2646,15 +2659,25 @@ function protonvpn_disconnect_cmd() {
 
         for proto in "${__rt_protos[@]}"; do
             while [[ $(ip "-${proto}" rule show 2>/dev/null) == *"lookup 51822"* ]]; do
-                log_warning "Removing Killswitch table rule (IPv$proto)"
-                if ! ip "-${proto}" rule del not fwmark 51821 table 51822 2>&1 | log_tail "ip-rule-ks"; then
+                log_debug "Removing Killswitch table rule (IPv$proto)"
+                if ! ip "-${proto}" rule del not fwmark 0xca6d table 51822 2>&1 | log_tail "ip-rule-ks"; then
                     log_error "Failed to remove killswitch IP rule(IPv$proto) "
                     ((++errs))
                 fi
             done
+
+            if ip -4 route list table 51822 >/dev/null 2>&1; then
+                log_debug "Flushing routing table 51822 (IPv4)"
+                if ! ip -4 route flush table 51822 2>&1 | log_tail "ip route"; then
+                    log_error "Failed to flush table 51822"
+                    ((++errs))
+                fi
+            else
+                log_debug "Table 51822 does not exist (IPv4)"
+            fi
         done
     else
-        log_debug "Killswitch not enabled (IPv$proto)"
+        log_debug "Killswitch state is left unchanged"
     fi
 
     if [[ $errs -eq 0 ]]; then
