@@ -1045,6 +1045,9 @@ function protonvpn_looper_cmd() {
 
             if [[ $verify_attemps -ge $max_verify_attemps ]]; then
                 log_error "Failed to verify connection!"
+                if __has_notify_socket; then
+                    __systemd_notify --status "Failed to verify connection - ${PROTONVPN_SERVER}"
+                fi
                 __protonvpn_disconnect
                 return 1
             fi
@@ -1056,6 +1059,9 @@ function protonvpn_looper_cmd() {
         if [[ -z $(ip link show protonwire0 type wireguard 2>/dev/null) ]]; then
             log_debug "Wireguard interface for protonwire is not present."
             return 1
+        fi
+        if __has_notify_socket; then
+            __systemd_notify --status "Failed to connect to - ${PROTONVPN_SERVER}"
         fi
         __protonvpn_disconnect
         return 1
