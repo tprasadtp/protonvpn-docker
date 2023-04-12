@@ -170,6 +170,16 @@ Bulk of the work is done via `scripts/generate-server-metadata`
 ## Known Issues
 
 - Running multiple instances of this __outside of containers__ is not supported.
-- Some servers appear to change their names regularly or rename themselves and flip flop
-between two names or appear and disappear randomly. This is yet another quirk of
-ProtonVPN API (sigh!).
+
+## Known Bugs in Upstream API/libraries
+
+> Proton API and libraries are in constant state of ~~chaos~~ ~~broken~~ ~~borderline usable~~
+~~evolution~~ ~~upgrade~~ ~~development~~ ~~buggy~~ ~~flux~~ ~~inconsistency~~
+unstability and documentation is ~~virtually~~ actually non-existent or incorrect.
+
+- Some servers appear to  rename themselves and flip flop between ONLINE and OFFLINE state in loop (like every hour), appear and disappear randomly (sometimes just two servers weirdly appearing and disappearing every hour or so).
+- Server's Entry IP sometimes appears to be its ExitIP and sometimes Exit IP of some other
+server is the assigned public IP.
+- Some ExitIPs do not appear **anywhere** in the response returned by `/logicals` (Yes, this is after authenticating)
+- Proton libraries use all sorts of weird things like weird singletons, deeply nested wrappers
+for simplest of things and are incredibly inconsistent. The auth library is is just useless.

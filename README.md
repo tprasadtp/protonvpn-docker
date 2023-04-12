@@ -33,13 +33,13 @@
     <img src="https://github.com/tprasadtp/protonvpn-docker/actions/workflows/metadata.yml/badge.svg" height="24" alt="metadata-build">
   </a>
   <a href="https://protonwire-api.vercel.app/" target="_blank" rel="noreferrer">
-    <img src="https://img.shields.io/badge/dynamic/json?label=metadata&query=timestamp&url=https%3A%2F%2Fprotonwire-api.vercel.app&logo=protonvpn&labelColor=3a3a3a&logoColor=white&color=7f50a6" height="24" alt="badge-metadata">
+    <img src="https://img.shields.io/badge/dynamic/json?label=metadata&query=timestamp&url=https%3A%2F%2Fprotonwire-api.vercel.app&logo=protonvpn&labelColor=3a3a3a&logoColor=white&color=7f50a6&cacheSeconds=300" height="24" alt="badge-metadata">
   </a>
   <a href="https://protonwire-api.vercel.app/" target="_blank" rel="noreferrer">
-    <img src="https://img.shields.io/badge/dynamic/json?label=servers&query=server_count&url=https%3A%2F%2Fprotonwire-api.vercel.app&logo=protonvpn&labelColor=3a3a3a&logoColor=white&color=7f50a6" height="24" alt="badge-server-count">
+    <img src="https://img.shields.io/badge/dynamic/json?label=servers&query=server_count&url=https%3A%2F%2Fprotonwire-api.vercel.app&logo=protonvpn&labelColor=3a3a3a&logoColor=white&color=7f50a6&cacheSeconds=300" height="24" alt="badge-server-count">
   </a>
   <a href="https://github.com/tprasadtp/protonwire-api" target="_blank" rel="noreferrer">
-    <img src="https://img.shields.io/badge/dynamic/json?label=commit&query=commit&url=https%3A%2F%2Fprotonwire-api.vercel.app%2Fcommit.json&logo=git&labelColor=3a3a3a&logoColor=white&color=7f50a6" height="24" alt="badge-server-count">
+    <img src="https://img.shields.io/badge/dynamic/json?label=commit&query=commit&url=https%3A%2F%2Fprotonwire-api.vercel.app%2Fcommit.json&logo=git&labelColor=3a3a3a&logoColor=white&color=7f50a6&cacheSeconds=300" height="24" alt="badge-metadata-commit">
   </a>
 </p>
 
@@ -354,28 +354,29 @@ For example, we can run caddy to proxy `https://api.ipify.org/` via VPN. Visitin
 ## Dependencies
 
 Following dependencies are **in addition** to WireGuard support in Kernel.
-See https://www.wireguard.com/install/ for more info.
+See https://www.wireguard.com/install/ for more info. This step is only required
+if running as systemd unit outside of containers.
 
 - If running on Ubuntu, Linux Mint, Elementary OS and other **Ubuntu** based derivatives etc.
 
     - If using `systemd-resolved` (default),
         ```console
-        sudo apt-get install curl jq procps iproute2 libcap2-bin util-linux wireguard-tools
+        sudo apt-get install curl jq procps iproute2 libcap2-bin policykit-1 util-linux wireguard-tools
         ```
     - Otherwise,
         ```console
-        sudo apt-get install curl jq procps iproute2 libcap2-bin util-linux wireguard-tools openresolv
+        sudo apt-get install curl jq procps iproute2 libcap2-bin policykit-1 util-linux wireguard-tools openresolv
         ```
 
 - If running on Debian, Raspberry Pi OS, and other **Debian** based derivatives etc
 
     - If using `systemd-resolved` (**NOT** default),
         ```console
-        sudo apt-get install curl jq procps iproute2 libcap2-bin util-linux wireguard-tools
+        sudo apt-get install curl jq procps iproute2 libcap2-bin policykit-1 util-linux wireguard-tools
         ```
     - Otherwise,
         ```console
-        sudo apt-get install curl jq procps iproute2 libcap2-bin wireguard-tools openresolv
+        sudo apt-get install curl jq procps iproute2 libcap2-bin policykit-1 wireguard-tools openresolv
         ```
 
 - If running on  CentOS-Stream, Fedora 34+, Amazon Linux 2022, RHEL 9, Rocky Linux 9, Alma Linux 9
@@ -440,14 +441,21 @@ See https://www.wireguard.com/install/ for more info.
 
 Provides rich systemd integration. Connected server and last verification time is displayed with `systemctl status protonwire`,
 
-<pre><font color="#B8BB26"><b>●</b></font> protonwire.service - ProtonVPN Wireguard Client
-     Loaded: loaded (/etc/systemd/system/protonwire.service; enabled; vendor preset: enabled)
-     Active: <font color="#B8BB26"><b>active (running)</b></font> since Fri 2022-04-22 18:05:39 UTC; 1min 22s ago
+<pre><font color="#B8BB26"><b>vagrant@debian-minimal</b></font>:<font color="#83A598"><b>~</b></font>$ systemctl status protonwire.service --no-pager
+<font color="#B8BB26"><b>●</b></font> protonwire.service - ProtonVPN Wireguard Client
+     Loaded: loaded (/usr/lib/systemd/system/protonwire.service; enabled; vendor preset: enabled)
+     Active: <font color="#B8BB26"><b>active (running)</b></font> since Wed 2023-04-12 17:55:07 UTC; 425ms ago
        Docs: man:protonwire(1)
-             https://tprasadtp.github.io/protonwire
-   Main PID: 9451 (bash)
-     Status: &quot;Connected to NL-FREE#65 (via 109.236.81.160), verified at 18:26:28 UTC&quot;
-         IP: 1.3M in, 54.8K out
+             https://github.com/tprasadtp/protonvpn-docker
+   Main PID: 21659 (protonwire)
+     Status: &quot;Connected to nl-free-127.protonvpn.net (via 185.107.56.83, with KillSwitch)&quot;
+         IP: 16.4K in, 5.1K out
+      Tasks: 2 (limit: 2336)
+     Memory: 2.4M
+        CPU: 2.939s
+     CGroup: /system.slice/protonwire.service
+             ├─21659 /bin/bash /usr/bin/protonwire c --systemd
+             └─22085 sleep 10
 </pre>
 
 ### Requirements

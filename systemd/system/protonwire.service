@@ -23,6 +23,7 @@ NotifyAccess=all
 # ----------------------------------------
 User=protonwire
 Group=protonwire
+SupplementaryGroups=systemd-network
 
 # Service Settings and Environment
 # ----------------------------------------
@@ -66,10 +67,9 @@ RestrictSUIDSGID=true
 # Sandboxing (Filesystem)
 # ----------------------------------------
 ProtectSystem=full
-ProtectHome=tmpfs
 PrivateTmp=yes
 
-# Create cache directory for metadata cache
+StateDirectory=protonwire
 CacheDirectory=protonwire
 RuntimeDirectory=protonwire
 RuntimeDirectoryPreserve=restart
@@ -77,10 +77,10 @@ RuntimeDirectoryPreserve=restart
 # Other Settings
 # ----------------------------------------
 IPAccounting=true
-CPUAccounting = true
-BlockIOAccounting = true
-MemoryAccounting = true
-TasksAccounting = true
+CPUAccounting=true
+BlockIOAccounting=true
+MemoryAccounting=true
+TasksAccounting=true
 
 # Service commands
 # ----------------------------------------
