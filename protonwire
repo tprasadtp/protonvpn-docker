@@ -915,12 +915,19 @@ function __resolvctl_up_hook() {
 }
 
 function __resolvctl_down_hook() {
-    if resolvectl revert protonwire0 2>&1 | log_tail "resolvectl-revert"; then
-        log_success "Reverted systemd-resolved configuration for protonwire0"
-        return 0
+    local errs=0
+    declare wg_iface
+    wg_iface="$(ip --json link | jq -r '.[] | select(.ifname=="protonwire0") | .ifname' 2>/dev/null)"
+    if [[ -n $wg_iface ]]; then
+        if resolvectl revert protonwire0 2>&1 | log_tail "resolvectl-revert"; then
+            log_success "Reverted systemd-resolved configuration for protonwire0"
+            return 0
+        else
+            log_error "Failed to revert systemd-resolved configuration for protonwire0"
+            return 1
+        fi
     else
-        log_error "Failed to revert systemd-resolved configuration for protonwire0"
-        return 1
+        log_notice "Wireguard interface 'protonwire0' has already been deleted"
     fi
 }
 
