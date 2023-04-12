@@ -130,10 +130,13 @@ This should be server name like `NL-FREE#1`(or `NL-FREE-1`) or domain name like,
 
 > **Warning**
 >
-> Script cannot validate if specified server is available under your plan.
+> - Script cannot validate if specified server is available under your plan.
 > Its user's responsibility to ensure that server specified is available
 > under your subscription and supports required features, like P2P, Streaming etc.
 > Use `--p2p`, `--streaming`, `--secure-core` flags to enable client side validations.
+> - Automatic server selection for `P2P`, `RANDOM` and other shortcuts are not supported.
+> Use a fully qualified DNS name (as shown in ProtonVPN website) or a server name like `NL-#1`.
+> See [this](https://github.com/tprasadtp/protonvpn-docker/blob/master/docs/faq.md#why-automatic-server-selection-is-not-supported) for more info.
 
 ## KillSwitch
 
