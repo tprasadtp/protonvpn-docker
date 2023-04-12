@@ -260,44 +260,50 @@ For example, we can run caddy to proxy `https://api.ipify.org/` via VPN. Visitin
 
 ## Docker Compose
 
-- If you have your entire stack in a single compose file, then `network_mode: service:protonwire` on the services which should be routed via VPN. If your VPN stack is **NOT** in same compose file use `network_mode: container:<protonwire-container-name>`.
+If you have your entire stack in a single compose file, then `network_mode: service:protonwire` on the services which should be routed via VPN. If your VPN stack is **NOT** in same compose file use `network_mode: container:<protonwire-container-name>`.
 
-- As an example, run caddy web-server, proxying `api.ipify.org` via VPN is shown below. Visiting http://localhost:8000, or `curl -s http://localhost:8000` should show your VPN's country and IP address.
+As an example, run caddy web-server, proxying `api.ipify.org` via VPN is shown below. Visiting http://localhost:8000, or `curl -s http://localhost:8000` should show your VPN's country and IP address.
 
-    ```yaml
-    version: '2.3'
-    services:
-    protonwire:
-        container_name: protonwire
-        image: ghcr.io/tprasadtp/protonwire:latest
-        init: true
-        restart: unless-stopped
-        environment:
-        PROTONVPN_SERVER: nl-free-127.protonvpn.net
-        cap_add:
-        - NET_ADMIN
-        sysctls:
-        net.ipv4.conf.all.rp_filter: 2
-        volumes:
-        - type: tmpfs
-            target: /tmp
-        - type: bind
-            source: private.key
-            target: /etc/protonwire/private-key
-            read_only: true
-        # MUST include all the ports of other containers as well.
-        ports:
-        - 8000:80
 
-    caddy_proxy:
-        image: caddy:latest
-        network_mode: service:protonwire
-        command: |
-        caddy reverse-proxy \
-            --change-host-header \
-            --from :80 \
-            --to https://ip.me:443
-    ```
+<!--diana::dynamic:protonwire-sample-compose-file:begin-->
+```yaml
+version: '2.3'
+services:
+  protonwire:
+    container_name: protonwire
+    image: ghcr.io/tprasadtp/protonwire:latest
+    init: true
+    restart: unless-stopped
+    environment:
+      PROTONVPN_SERVER: nl-free-127.protonvpn.net
+    # NET_ADMIN capability is mandatory!
+    cap_add:
+      - NET_ADMIN
+    # sysctl net.ipv4.conf.all.rp_filter is mandatory!
+    sysctls:
+      net.ipv4.conf.all.rp_filter: 2
+      net.ipv6.conf.all.disable_ipv6: 1
+    volumes:
+      - type: tmpfs
+        target: /tmp
+      - type: bind
+        source: private.key
+        target: /etc/protonwire/private-key
+        read_only: true
+    ports:
+      - 8000:80
+
+  caddy_proxy:
+    image: caddy:latest
+    network_mode: service:protonwire
+    command: |
+      caddy reverse-proxy \
+          --change-host-header \
+          --from :80 \
+          --to https://ip.me:443
+```
+<!--diana::dynamic:protonwire-sample-compose-file:end-->
+
 
 > **Note**
 > - It is **essential** to expose/publish port(s) _on protonwire container_, instead of your application.

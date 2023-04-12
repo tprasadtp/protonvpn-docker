@@ -97,3 +97,4 @@ clean: ## clean
 .PHONY: update-readme
 update-readme: ## Update README
 	sed -i '/<!--diana::dynamic:protonwire-help:begin-->/,/<!--diana::dynamic:protonwire-help:end-->/!b;//!d;/<!--diana::dynamic:protonwire-help:end-->/e echo "<pre>" && ./protonwire --help && echo "</pre>"' README.md
+	sed -i '/<!--diana::dynamic:protonwire-sample-compose-file:begin-->/,/<!--diana::dynamic:protonwire-sample-compose-file:end-->/!b;//!d;/<!--diana::dynamic:protonwire-sample-compose-file:end-->/e echo "\\\`\\\`\\\`yaml" && cat docs/examples/docker-compose-demo.yml && echo "\\\`\\\`\\\`"' README.md
