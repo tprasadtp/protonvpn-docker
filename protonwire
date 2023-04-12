@@ -37,9 +37,8 @@ function __sigint_handler() {
     exit 1
 }
 
-# SIGABRT is not supported on containers
-# It will never be trapped as tini or catatonit
-# will never forward the signal to the process
+# SIGABRT is not supported on containers.
+# It will never be trapped as tini or catatonit will never forward the signal to the process.
 # Its here for systemd watchdog compatibility
 function __sigabrt_handler() {
     log_warning "Received SIGABRT, exiting..."
@@ -54,16 +53,6 @@ function __print_version() {
     #diana::dynamic:version:end#
     printf "protonwire version %s(%s)\n" "$PROTONWIRE_VERSION" "$PROTONWIRE_COMMIT"
 }
-
-#diana::snippet:bashlib-logger:begin#
-# shellcheck shell=bash
-# shellcheck disable=SC3043
-
-# SHELL LOGGING LIBRARY
-# See https://github.com/tprasadtp/shlibs/logger/README.md
-# If included in other files, contents between snippet markers
-# might automatically be updated (depending on who manages it)
-# and all changes between markers might be ignored.
 
 function __is_stderr_colorable() {
     # CLICOLOR_FORCE is set and CLICOLOR_FORCE != 0, force colors
@@ -288,12 +277,6 @@ function log_kv_pair() {
     __logger_core_event_handler "debug" "${__msg_string}"
 }
 
-# For logging command outputs
-# Pipe output of your command to this function
-# This is EXPERIMENTAL FEATURE!!
-# If used without a pipe causes script to hang!
-# - Accepts optional arguments.
-#  ARG 1 (str) - msg prefix, this will be prefixed with every line of output
 function log_tail() {
     local line prefix
     [[ -n $1 ]] && prefix="($1) "
@@ -301,7 +284,6 @@ function log_tail() {
         __logger_core_event_handler "trace" "$prefix$line"
     done
 }
-#diana::snippet:bashib-logger:end#
 
 # cleanup background tasks
 function __cleanup_bg_tasks() {
@@ -701,9 +683,7 @@ function __check_systemd() {
     local errs=0
 
     # check systemd requirements
-    # Triggered by using
-    # - systemd-resolved or
-    # - running as a systemd unit
+    # Triggered by using systemd-resolved or running as a systemd unit
     if [[ $__PROTONWIRE_LOOPER == "systemd" ]] ||
         [[ $__PROTONWIRE_DNS_UPDATER == "systemd-resolved" ]]; then
         if ! __check_systemd_version; then
@@ -711,8 +691,7 @@ function __check_systemd() {
         fi
     fi
 
-    # If running as loop via --systemd or --container
-    # then check if NOTIFY_SOCKET is set
+    # If running as loop via --systemd or --container then check if NOTIFY_SOCKET is set
     if [[ $__PROTONWIRE_LOOPER == "systemd" ]]; then
         if ! __sd_notify_checks; then
             ((++errs))
@@ -726,7 +705,7 @@ function __check_systemd() {
 
         for var in "${systemd_populated_vars[@]}"; do
             if [[ -z ${!var} ]]; then
-                log_warning "$var is not defined!"
+                log_debug "$var is not defined!"
             else
                 log_variable "$var"
             fi
@@ -877,7 +856,7 @@ function __run_checks() {
     return 1
 }
 
-# resolvectl wrapper
+# resolvectl hook
 function __resolvctl_up_hook() {
     local errs=0
 
@@ -1268,7 +1247,7 @@ function protonvpn_fetch_metadata() {
         if [[ $curl_rc == "0" ]]; then
             # ensure file is json formatted and valid
             if jq --exit-status '.Nodes' "${__PROTONWIRE_SRV_INFO_FILE}.bak" >/dev/null 2>&1; then
-                if mv "${__PROTONWIRE_SRV_INFO_FILE}.bak" "${__PROTONWIRE_SRV_INFO_FILE}"; then
+                if mv --force "${__PROTONWIRE_SRV_INFO_FILE}.bak" "${__PROTONWIRE_SRV_INFO_FILE}"; then
                     log_success "Successfully refreshed server metadata"
                 else
                     log_error "Refreshing server metadata failed (trampoline error)"
@@ -1306,7 +1285,6 @@ function protonvpn_fetch_metadata() {
     if jq --exit-status '.Nodes' <<<"$__json_tmp" >/dev/null 2>&1; then
         log_debug "__PROTONWIRE_SRV_INFO_FILE JSON valid"
         # we update the json here to avoid cases where json on disk might be invalid
-        # this is unlikely but has happened due to nfs mount issues.
         declare -g __PROTONWIRE_SRV_INFO="$__json_tmp"
         return 0
     else
@@ -1452,9 +1430,6 @@ function __protonvpn_verify_connection() {
     hc_response_rc="$?"
     log_debug "Healthcheck curl exit code - ${hc_response_rc:-NA}"
 
-    local ts_format
-    printf -v ts_format '%(%I:%M:%S %p)T' -1
-
     if [[ $hc_response_rc == 6 ]]; then
         log_error "Failed to resolve DNS domain ($IPCHECK_URL)"
         return 1
@@ -1479,8 +1454,14 @@ function __protonvpn_verify_connection() {
     for exit_ip in "${allowed_exit_ips[@]}"; do
         if [[ $exit_ip == "${client_ip}" ]]; then
             if __has_notify_socket; then
-                log_debug "Connected to ${node_dns} (via $client_ip)"
-                if ! __systemd_notify --status "Connected to ${node_dns} (via $client_ip), verified at $ts_format UTC"; then
+                local status_msg
+                if __is_enable_killswitch; then
+                    status_msg="Connected to ${node_dns} (via $client_ip, with KillSwitch)"
+                else
+                    status_msg="Connected to ${node_dns} (via $client_ip)"
+                fi
+                log_debug "$status_msg"
+                if ! __systemd_notify --status "$status_msg"; then
                     log_error "Failed to notify status to systemd"
                 fi
             else
@@ -2503,7 +2484,7 @@ function __protonvpn_connect() {
     fi
 
     if __has_notify_socket; then
-        __systemd_notify --status "Connected to ${__PROTONWIRE_SELECTED_SERVER}"
+        __systemd_notify --status "Connected to ${PROTONVPN_SERVER}"
     fi
 }
 
@@ -2514,14 +2495,16 @@ function protonvpn_connect_cmd() {
     fi
 
     if has_command systemctl; then
-        if systemctl is-active --quiet protonwire; then
-            log_error "systemd unit protonwire.service is running"
-            log_error "Use systemctl to manage this unit or disable, this unit to manually connect"
-            return 1
-        elif systemctl is-failed --quiet protonwire; then
-            log_error "systemd unit protonwire.service is enabled, but is in failed state"
-            log_error "You should wither fix the unit and manage it via systemctl or disable it to manually connect"
-            return 1
+        if systemctl is-enabled --quiet protonwire; then
+            if systemctl is-active --quiet protonwire; then
+                log_error "systemd unit protonwire.service is running"
+                log_error "Use systemctl to manage this unit or disable, this unit to manually connect"
+                return 1
+            elif systemctl is-failed --quiet protonwire; then
+                log_error "systemd unit protonwire.service is enabled, but is in failed state"
+                log_error "You should wither fix the unit and manage it via systemctl or disable it to manually connect"
+                return 1
+            fi
         fi
     else
         log_debug "command systemctl not found, not checking if there are conflicts with systemd units"
@@ -2534,10 +2517,8 @@ function protonvpn_connect_cmd() {
 }
 
 function __protonvpn_disconnect() {
-    # Order in which we do ensures that we dont have
-    # broken dns on the machine/container during disconnect.
-    # This is prone to dns leakage during this
-    # short disconnect window.
+    # Order in which we do ensures that we dont have broken dns during disconnect.
+    # This is prone to dns leakage during this short disconnect window.
     __PROTONWIRE_DISCONNECTING="true"
 
     local errs=0
@@ -2926,8 +2907,7 @@ function main() {
     fi
 
     if [[ $cmd_mode == "CONNECT" ]]; then
-        if [[ $__PROTONWIRE_LOOPER == "container" ]] &&
-            [[ $__PROTONWIRE_LOOPER == "container" ]]; then
+        if [[ $__PROTONWIRE_LOOPER == "container" ]] || [[ $__PROTONWIRE_LOOPER == "systemd" ]]; then
             cmd_mode="LOOPER"
         fi
     fi
