@@ -4,7 +4,6 @@
 # Do not modify this file manually
 # This file is part of protonwire package.
 
-# Used to set per link DNS.
 [Allow protonwire to change DNS]
 Identity=unix-user:protonwire
 Action=org.freedesktop.resolve1.set-dns-servers
@@ -12,7 +11,6 @@ ResultAny=yes
 ResultInactive=yes
 ResultActive=yes
 
-# Used to set default routing domain.
 [Allow protonwire to change routing domains]
 Identity=unix-user:protonwire
 Action=org.freedesktop.resolve1.set-domains
@@ -20,7 +18,13 @@ ResultAny=yes
 ResultInactive=yes
 ResultActive=yes
 
-# Not really used.
+[Allow protonwire to change DNS]
+Identity=unix-user:protonwire
+Action=org.freedesktop.resolve1.set-default-route
+ResultAny=yes
+ResultInactive=yes
+ResultActive=yes
+
 [Allow protonwire to set set-dnssec]
 Identity=unix-user:protonwire
 Action=org.freedesktop.resolve1.set-dnssec
@@ -28,7 +32,6 @@ ResultAny=yes
 ResultInactive=yes
 ResultActive=yes
 
-# This is strictly not necessary as systemd will remove it, once the link is down.
 [Allow protonwire to reset links]
 Identity=unix-user:protonwire
 Action=org.freedesktop.resolve1.revert

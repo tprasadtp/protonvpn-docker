@@ -54,6 +54,64 @@ User namespaces can cause file permission issues. If you have problem accessing 
 
 - Turn off `DynamicUser` and `RemoveIPC` from you unit configuration and reload systemd.
 
+## Systemd unit failed with some error
+
+- Disable systemd unit `protonwire.service` for debugging.
+- Run transient unit via `systemd-run`
+    ```
+    sudo systemd-run \
+        --pty \
+        --same-dir \
+        --wait \
+        --collect \
+        --unit=protonwire-run.service \
+        --service-type=notify \
+        --property="Description=ProtonVPN Wireguard Client" \
+        --property="Documentation=man:protonwire(1)" \
+        --property="Documentation=https://github.com/tprasadtp/protonvpn-docker" \
+        --property="SupplementaryGroups=systemd-network" \
+        --property="NotifyAccess=all" \
+        --property="User=protonwire" \
+        --property="Group=protonwire" \
+        --property="SupplementaryGroups=systemd-network" \
+        --property="Environment=HOME=/var/lib/protonwire" \
+        --property="Environment=LANG=C.UTF-8" \
+        --property="EnvironmentFile=-/etc/defaults/protonwire" \
+        --property="EnvironmentFile=-/etc/protonwire/*.env" \
+        --property="AmbientCapabilities=CAP_NET_ADMIN" \
+        --property="CapabilityBoundingSet=CAP_NET_ADMIN" \
+        --property="SystemCallFilter=@system-service" \
+        --property="SystemCallArchitectures=native" \
+        --property="ProtectProc=invisible" \
+        --property="ProtectHostname=true" \
+        --property="PrivateTmp=yes" \
+        --property="ProtectControlGroups=true" \
+        --property="ProtectKernelModules=true" \
+        --property="ProtectKernelTunables=true" \
+        --property="ProtectKernelLogs=true" \
+        --property="KeyringMode=private" \
+        --property="RestrictNamespaces=true" \
+        --property="LockPersonality=true" \
+        --property="MemoryDenyWriteExecute=true" \
+        --property="RestrictSUIDSGID=true" \
+        --property="PrivateTmp=yes" \
+        --property="ProtectSystem=full" \
+        --property="StateDirectory=protonwire" \
+        --property="CacheDirectory=protonwire" \
+        --property="RuntimeDirectory=protonwire" \
+        --property="RuntimeDirectoryPreserve=restart" \
+        --property="IPAccounting=true" \
+        --property="CPUAccounting=true" \
+        --property="BlockIOAccounting=true" \
+        --property="MemoryAccounting=true" \
+        --property="TasksAccounting=true" \
+        --property="WatchdogSec=20" \
+        --property="TimeoutAbortSec=30" \
+        --property="TimeoutStopSec=30" \
+        --property="TimeoutStartSec=180" \
+        protonwire connect --debug <server-name>
+    ```
+
 ## Manually Disabling Kill-Switch
 
 ```bash
