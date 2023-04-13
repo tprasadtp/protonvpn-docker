@@ -33,13 +33,13 @@
     <img src="https://github.com/tprasadtp/protonvpn-docker/actions/workflows/metadata.yml/badge.svg" height="24" alt="metadata-build">
   </a>
   <a href="https://protonwire-api.vercel.app/" target="_blank" rel="noreferrer">
-    <img src="https://img.shields.io/badge/dynamic/json?label=metadata&query=timestamp&url=https%3A%2F%2Fprotonwire-api.vercel.app&logo=protonvpn&labelColor=3a3a3a&logoColor=white&color=7f50a6&cacheSeconds=300" height="24" alt="badge-metadata">
+    <img src="https://img.shields.io/badge/dynamic/json?label=metadata&query=timestamp&url=https%3A%2F%2Fprotonwire-api.vercel.app&logo=protonvpn&labelColor=3a3a3a&logoColor=white&color=7f50a6" height="24" alt="badge-metadata">
   </a>
   <a href="https://protonwire-api.vercel.app/" target="_blank" rel="noreferrer">
-    <img src="https://img.shields.io/badge/dynamic/json?label=servers&query=server_count&url=https%3A%2F%2Fprotonwire-api.vercel.app&logo=protonvpn&labelColor=3a3a3a&logoColor=white&color=7f50a6&cacheSeconds=300" height="24" alt="badge-server-count">
+    <img src="https://img.shields.io/badge/dynamic/json?label=servers&query=server_count&url=https%3A%2F%2Fprotonwire-api.vercel.app&logo=protonvpn&labelColor=3a3a3a&logoColor=white&color=7f50a6" height="24" alt="badge-server-count">
   </a>
   <a href="https://github.com/tprasadtp/protonwire-api" target="_blank" rel="noreferrer">
-    <img src="https://img.shields.io/badge/dynamic/json?label=commit&query=commit&url=https%3A%2F%2Fprotonwire-api.vercel.app%2Fcommit.json&logo=git&labelColor=3a3a3a&logoColor=white&color=7f50a6&cacheSeconds=300" height="24" alt="badge-metadata-commit">
+    <img src="https://img.shields.io/badge/dynamic/json?label=commit&query=commit&url=https%3A%2F%2Fprotonwire-api.vercel.app%2Fcommit.json&logo=git&labelColor=3a3a3a&logoColor=white&color=7f50a6" height="24" alt="badge-metadata-commit">
   </a>
 </p>
 
@@ -125,8 +125,13 @@ in following locations.
 
 ## PROTONVPN_SERVER
 
-This should be server name like `NL-FREE#1`(or `NL-FREE-1`) or domain name like,
-`nl-free-01.protonvpn.net` (recommended).
+This should be server name like `NL#1`(or `NL-1`) or domain name like,
+`node-nl-01.protonvpn.net` (recommended). Automatic server selection
+by setting `PROTONVPN_SERVER` to `P2P`, `RANDOM` and other methods are
+**NOT SUPPORTED**. Use a fully qualified DNS name (as shown in ProtonVPN website)
+or a server name like `NL-#1`.
+
+See [this](https://github.com/tprasadtp/protonvpn-docker/blob/master/docs/faq.md#why-automatic-server-selection-is-not-supported) for more info.
 
 > **Warning**
 >
@@ -134,9 +139,7 @@ This should be server name like `NL-FREE#1`(or `NL-FREE-1`) or domain name like,
 > Its user's responsibility to ensure that server specified is available
 > under your subscription and supports required features, like P2P, Streaming etc.
 > Use `--p2p`, `--streaming`, `--secure-core` flags to enable client side validations.
-> - Automatic server selection for `P2P`, `RANDOM` and other shortcuts are not supported.
-> Use a fully qualified DNS name (as shown in ProtonVPN website) or a server name like `NL-#1`.
-> See [this](https://github.com/tprasadtp/protonvpn-docker/blob/master/docs/faq.md#why-automatic-server-selection-is-not-supported) for more info.
+
 
 ## KillSwitch
 
@@ -149,6 +152,17 @@ Your LAN addresses, Link-Local addresses and CGNAT(also Tailscale) addresses
 remain reachable. Unlike most VPN containers, kill-switch is implemented via
 routing policies, rather than firewall rules.
 
+- Kill-switch will not be disabled during reconnects or disconnect unless `--ks`
+flag is also specified.
+- Using kill-switch with systemd unit **AND** using `protonwire` CLI manually
+in some edge cases create duplicate kill-switch routing policies.
+- Using kill-switch with systemd unit **AND** using `protonwire` to manually
+disable kill-switch will lead to kill-switch being re-created during service restarts.
+- Using kill-switch with systemd unit **AND** using `protonwire` to manually
+disable kill-switch can lead to unit-errors as conflicting route priorities
+can be created.
+
+
 ## Usage
 
 <!--diana::dynamic:protonwire-help:begin-->
@@ -160,6 +174,7 @@ Usage: protonwire [OPTIONS...]
 or: protonwire [OPTIONS...] c|connect [SERVER]
 or: protonwire [OPTIONS...] d|disconnect
 or: protonwire [OPTIONS...] check
+or: protonwire [OPTIONS...] disable-killswitch
 or: protonwire [OPTIONS...] help
 
 Options:
@@ -175,18 +190,18 @@ Options:
       --skip-dns-config         Skip configuring DNS.
                                 (Useful for Kubernetes and Nomad)
       --kill-switch             Enable killswitch (Experimental)
-      --p2p                     Check if server supports P2P
-      --streaming               Check if server supports streaming
-      --tor                     Check if server supports Tor
-      --secure-core             Check if server supports secure core
+      --p2p                     Verify if server supports P2P
+      --streaming               Verify if server supports streaming
+      --tor                     Verify if server supports Tor
+      --secure-core             Verify if server supports secure core
   -q, --quiet                   Show only errors
-  -v, --verbose,                Show debug logs
+  -v, --verbose                 Show debug logs
   -h, --help                    Display this help and exit
       --version                 Display version and exit
 
 Examples:
   protonwire connect nl-1       Connect to server nl-1
-  protonwire disconnect         Disconnect from current server
+  protonwire d --kill-switch    Disconnect from current server and disable kill-switch
   protonwire verify [SERVER]    Check if connected to a server
 
 Files:
@@ -392,36 +407,31 @@ if running as systemd unit outside of containers.
 
     - If using `systemd-resolved`  (default),
         ```console
-        sudo dnf install curl jq procps-ng libcap iproute util-linux wireguard-tools
+        sudo dnf install curl jq procps-ng libcap iproute polkit util-linux wireguard-tools
         ```
 
     - Otherwise,
         ```console
-        sudo dnf install curl jq procps-ng libcap iproute util-linux wireguard-tools openresolv
+        sudo dnf install curl jq procps-ng libcap iproute polkit util-linux wireguard-tools openresolv
         ```
 
 - If running on  CentOS 8, RHEL 8, Rocky Linux 8, Alma Linux 8
 
     - If using `systemd-resolved` (NOT default),
         ```console
-        sudo dnf install curl jq procps-ng libcap iproute util-linux wireguard-tools
+        sudo dnf install curl jq procps-ng libcap iproute polkit util-linux wireguard-tools
         ```
 
     - Otherwise,
         ```console
-        sudo dnf install curl jq procps-ng libcap iproute util-linux wireguard-tools openresolv
+        sudo dnf install curl jq procps-ng libcap iproute polkit util-linux wireguard-tools openresolv
         ```
 
 - If running on ArchLinux, Manjaro and other ArchLinux based distribution,
 
     - If using `systemd-resolved`,
         ```console
-        sudo pacman -S curl jq procps-ng libcap iproute2 util-linux wireguard-tools systemd-resolvconf
-        ```
-
-    - Otherwise,
-        ```console
-        sudo pacman -S curl jq procps-ng libcap iproute2 util-linux wireguard-tools openresolv
+        sudo pacman -S curl jq procps-ng libcap iproute2 polkit util-linux wireguard-tools systemd-resolvconf
         ```
 
 ## Installation
@@ -448,23 +458,24 @@ if running as systemd unit outside of containers.
 
 ## Systemd Integrations
 
-Provides rich systemd integration. Connected server and last verification time is displayed with `systemctl status protonwire`,
+Provides rich systemd integration. Connected server kill-switch state is displayed with
+`systemctl status protonwire`.
 
-<pre><font color="#B8BB26"><b>vagrant@debian-minimal</b></font>:<font color="#83A598"><b>~</b></font>$ systemctl status protonwire.service --no-pager
+<pre><font color="#B8BB26"><b>vagrant@debian-minimal</b></font>:<font color="#83A598"><b>~</b></font>$ systemctl status protonwire --no-pager
 <font color="#B8BB26"><b>●</b></font> protonwire.service - ProtonVPN Wireguard Client
-     Loaded: loaded (/usr/lib/systemd/system/protonwire.service; enabled; vendor preset: enabled)
-     Active: <font color="#B8BB26"><b>active (running)</b></font> since Wed 2023-04-12 17:55:07 UTC; 425ms ago
+     Loaded: loaded (/usr/local/lib/systemd/system/protonwire.service; disabled; vendor preset: enabled)
+     Active: <font color="#B8BB26"><b>active (running)</b></font> since Wed 2023-04-12 21:17:31 UTC; 2min 47s ago
        Docs: man:protonwire(1)
              https://github.com/tprasadtp/protonvpn-docker
-   Main PID: 21659 (protonwire)
+   Main PID: 7298 (protonwire)
      Status: &quot;Connected to nl-free-127.protonvpn.net (via 185.107.56.83, with KillSwitch)&quot;
-         IP: 16.4K in, 5.1K out
+         IP: 36.4K in, 11.6K out
       Tasks: 2 (limit: 2336)
-     Memory: 2.4M
-        CPU: 2.939s
+     Memory: 2.3M
+        CPU: 2.302s
      CGroup: /system.slice/protonwire.service
-             ├─21659 /bin/bash /usr/bin/protonwire c --systemd
-             └─22085 sleep 10
+             ├─7298 /bin/bash /usr/local/bin/protonwire connect --systemd --logfmt journald
+             └─8236 sleep 60
 </pre>
 
 ### Requirements

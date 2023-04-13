@@ -38,8 +38,6 @@ function __sigint_handler() {
 }
 
 # SIGABRT is not supported on containers.
-# It will never be trapped as tini or catatonit will never forward the signal to the process.
-# Its here for systemd watchdog compatibility
 function __sigabrt_handler() {
     log_warning "Received SIGABRT, exiting..."
     __protonvpn_disconnect
@@ -54,17 +52,14 @@ function __print_version() {
     printf "protonwire version %s(%s)\n" "$PROTONWIRE_VERSION" "$PROTONWIRE_COMMIT"
 }
 
+
 function __is_stderr_colorable() {
     # CLICOLOR_FORCE is set and CLICOLOR_FORCE != 0, force colors
     if [[ -n ${CLICOLOR_FORCE} ]] && [[ ${CLICOLOR_FORCE} != "0" ]]; then
         return 0
 
-    # CLICOLOR == 0 or NO_COLOR is set and not empty
-    # TERM is dumb or linux
-    elif [[ -n ${NO_COLOR} ]] ||
-        [[ ${CLICOLOR} == "0" ]] ||
-        [[ ${TERM} == "dumb" ]] ||
-        [[ ${TERM} == "linux" ]]; then
+    # CLICOLOR == 0 or NO_COLOR is set and not empty or TERM is dumb or linux
+    elif [[ -n ${NO_COLOR} ]] || [[ ${CLICOLOR} == "0" ]] || [[ ${TERM} == "dumb" ]] || [[ ${TERM} == "linux" ]]; then
         return 1
     fi
 
@@ -79,12 +74,8 @@ function __is_stdout_colorable() {
     if [[ -n ${CLICOLOR_FORCE} ]] && [[ ${CLICOLOR_FORCE} != "0" ]]; then
         return 0
 
-    # CLICOLOR == 0 or NO_COLOR is set and not empty
-    # TERM is dumb or linux
-    elif [[ -n ${NO_COLOR} ]] ||
-        [[ ${CLICOLOR} == "0" ]] ||
-        [[ ${TERM} == "dumb" ]] ||
-        [[ ${TERM} == "linux" ]]; then
+    # CLICOLOR == 0 or NO_COLOR is set and not empty or TERM is dumb or linux
+    elif [[ -n ${NO_COLOR} ]] || [[ ${CLICOLOR} == "0" ]] || [[ ${TERM} == "dumb" ]] || [[ ${TERM} == "linux" ]]; then
         return 1
     fi
 
@@ -100,8 +91,6 @@ function __logger_core_event_handler() {
     [[ $# -lt 2 ]] && return 1
 
     local lvl_caller="${1:-info}"
-
-    # Logging levels are similar to python's logging levels
     case ${lvl_caller} in
     trace)
         level="0"
@@ -123,9 +112,6 @@ function __logger_core_event_handler() {
         ;;
     error)
         level="40"
-        ;;
-    critical)
-        level="50"
         ;;
     *)
         level="100"
@@ -212,11 +198,6 @@ function __logger_core_event_handler() {
         # shellcheck disable=SC2155
         [[ -n "${lvl_colorized}" ]] && lvl_color="\e[38;5;197m"
         ;;
-    critical)
-        [[ -z ${lvl_string} ]] && lvl_string="${lvl_prefix}[CRITICAL]"
-        # shellcheck disable=SC2155
-        [[ -n "${lvl_colorized}" ]] && lvl_color="\e[38;5;196m"
-        ;;
     *)
         [[ -z ${lvl_string} ]] && lvl_string="${lvl_prefix}[UNKNOWN ]"
         # Avoid printing color reset sequence as this level is not colored
@@ -248,20 +229,12 @@ function log_warning() {
     __logger_core_event_handler "warning" "$@"
 }
 
-function log_warn() {
-    __logger_core_event_handler "warning" "$@"
-}
-
 function log_notice() {
     __logger_core_event_handler "notice" "$@"
 }
 
 function log_error() {
     __logger_core_event_handler "error" "$@"
-}
-
-function log_critical() {
-    __logger_core_event_handler "critical" "$@"
 }
 
 function log_variable() {
@@ -304,8 +277,6 @@ function __cleanup_bg_tasks() {
 function has_command() {
     if command -v "$1" >/dev/null; then
         return 0
-    else
-        return 1
     fi
     return 1
 }
@@ -314,7 +285,6 @@ function has_command() {
 function __is_valid_ipv4() {
     local IPV4_REGEX="(([1-9]?[0-9]|1[0-9][0-9]|2([0-4][0-9]|5[0-5]))\.){3}([1-9]?[0-9]|1[0-9][0-9]|2([0-4][0-9]|5[0-5]))"
     local IPV4_REGEX_SUBNET="([0-9]|[12][0-9]|3[012])"
-
     local address
 
     while [[ ${1} != "" ]]; do
@@ -374,7 +344,6 @@ function __is_valid_ipv6() {
 
 function __is_valid_ipcheck_url() {
     log_info "Verifying IPCHECK_URL - ${IPCHECK_URL}"
-
     if [[ -e ${__PROTONWIRE_HCR} ]]; then
         if ! rm -f "${__PROTONWIRE_HCR}" 2>&1 | log_tail "rm ipcheck-response"; then
             log_error "Failed to remove existing IP chck response file - ${__PROTONWIRE_HCR}"
@@ -436,7 +405,6 @@ function __is_valid_ipcheck_url() {
     esac
 }
 
-# checks if IPv6 is enabled on the system
 function __is_ipv6_disabled() {
     if [[ $(sysctl -n net.ipv6.conf.all.disable_ipv6) == "1" ]]; then
         return 0
@@ -446,7 +414,6 @@ function __is_ipv6_disabled() {
     return 1
 }
 
-# Check if DEBUG is set
 function __is_debug() {
     case "${DEBUG,,}" in
     true | yes | enable | enabled | on | 1)
@@ -470,7 +437,6 @@ function __is_skip_dns_config() {
     return 1
 }
 
-# Check if killswitch is enabled
 function __is_enable_killswitch() {
     case ${KILL_SWITCH,,} in
     yes | true | enable | enabled | on | 1)
@@ -480,7 +446,6 @@ function __is_enable_killswitch() {
     return 1
 }
 
-# Checks if NOTIFY_SOCKET is defined and valid
 function __has_notify_socket() {
     if [[ -n $NOTIFY_SOCKET ]]; then
         if [[ -S ${NOTIFY_SOCKET} ]]; then
@@ -797,7 +762,6 @@ function __check_tools() {
 function __run_checks() {
     local errs=0
 
-    # Check if all required commands are available
     if ! __check_tools; then
         return 1
     fi
@@ -840,8 +804,7 @@ function __run_checks() {
         ((++errs))
     fi
 
-    # If IPCHECK_INTERVAL is defined, and it's not0,
-    # then ensure that WATCHDOG_USEC is not defined
+    # If IPCHECK_INTERVAL is defined, and it's not 0, then ensure that WATCHDOG_USEC is not defined
     if [[ -n $IPCHECK_INTERVAL ]] &&
         [[ $IPCHECK_INTERVAL != "0" ]] &&
         [[ ${WATCHDOG_USEC} =~ ^[1-9][0-9]+$ ]]; then
@@ -888,7 +851,6 @@ function __resolvctl_up_hook() {
     else
         __resolvctl_down_hook # ignore errors
     fi
-
     return 1
 }
 
@@ -966,9 +928,8 @@ function __detect_paths() {
         fi
     fi
 
-    # fallback to tmp
     if [[ -z ${runtime_dir} ]]; then
-        runtime_dir="/tmp"
+        runtime_dir="/tmp" # fallback to tmp
     fi
 
     declare -g __PROTONWIRE_SRV_INFO_FILE="${runtime_dir%/}/protonwire.server.json"
@@ -1164,6 +1125,24 @@ function protonvpn_looper_cmd() {
     return 1
 }
 
+function __load_srvinfo_json_to_var() {
+    if [[ -f ${__PROTONWIRE_SRV_INFO_FILE} ]]; then
+        local __json_tmp
+        __json_tmp="$(<"${__PROTONWIRE_SRV_INFO_FILE}")"
+        if jq --exit-status '.Nodes' <<<"$__json_tmp" >/dev/null 2>&1; then
+            log_debug "__PROTONWIRE_SRV_INFO_FILE JSON valid"
+            declare -g __PROTONWIRE_SRV_INFO="$__json_tmp"
+            return 0
+        else
+            log_error "JSON file ${__PROTONWIRE_SRV_INFO_FILE:-NA} is invalid!"
+        fi
+    else
+        log_error "Missing server info json file - ${__PROTONWIRE_SRV_INFO_FILE:-NA}"
+        log_error "Either specify PROTONVPN_SERVER or connect first and try agian!"
+    fi
+    return 1
+}
+
 # when running as a service, script periodically refreshes the metadata.
 function protonvpn_fetch_metadata() {
     local metadata_stale="true"
@@ -1256,14 +1235,17 @@ function protonvpn_fetch_metadata() {
                 log_error "Refreshing server metadata failed (invalid json)"
                 return 1
             fi
-        elif [[ $hc_response_rc == 6 ]]; then
+        elif [[ $curl_rc -eq 6 ]]; then
             log_error "Failed to refresh ProtonVPN server metadata (failed to resolve domain)"
             return 1
-        elif [[ $hc_response_rc == 28 ]]; then
+        elif [[ $curl_rc -eq 28 ]]; then
             log_error "Failed to refresh ProtonVPN server metadata (timeout)"
             return 1
-        elif [[ $hc_response_rc == 32 ]]; then
+        elif [[ $curl_rc -eq 32 ]]; then
             log_error "Failed to refresh ProtonVPN server metadata (flock timeout/conflict)"
+            return 1
+        elif [[ $curl_rc -eq 22 ]]; then
+            log_error "Failed to refresh ProtonVPN server metadata (server name is invalid or not found)"
             return 1
         else
             log_error "Failed to refresh ProtonVPN server metadata (curl exit code: ${curl_rc})"
@@ -1277,19 +1259,7 @@ function protonvpn_fetch_metadata() {
         fi
     fi
 
-    # Load entire JSON to memory
-    local __json_tmp
-    __json_tmp="$(<"${__PROTONWIRE_SRV_INFO_FILE}")"
-    # ensure loaded json is parsable
-    if jq --exit-status '.Nodes' <<<"$__json_tmp" >/dev/null 2>&1; then
-        log_debug "__PROTONWIRE_SRV_INFO_FILE JSON valid"
-        # we update the json here to avoid cases where json on disk might be invalid
-        declare -g __PROTONWIRE_SRV_INFO="$__json_tmp"
-        return 0
-    else
-        log_error "__PROTONWIRE_SRV_INFO_FILE JSON is invalid"
-    fi
-
+    __load_srvinfo_json_to_var && return 0
     return 1
 }
 
@@ -1339,7 +1309,7 @@ function protonvpn_healthcheck_status_file() {
         fi
     else
         log_error "Healthcheck response file (${__PROTONWIRE_HCR}) does not exist!"
-        log_error "Perhaps Healthchecks are disabled?"
+        log_error "Either ProtonVPN is not connected or healthchecks are disabled."
         return 1
     fi
 }
@@ -1493,6 +1463,16 @@ function protonvpn_verify_cmd() {
         return 1
     fi
 
+    if [[ -n ${PROTONVPN_SERVER} ]]; then
+        if ! __fetch_metadata_with_retries; then
+            return 1
+        fi
+    else
+        if ! __load_srvinfo_json_to_var; then
+            return 1
+        fi
+    fi
+
     local verify_rc=-1
     __protonvpn_verify_connection
     verify_rc="$?"
@@ -1502,16 +1482,9 @@ function protonvpn_verify_cmd() {
         return 20
     fi
     return 1
-
 }
 
-# checks if keyfile is usuable
-# Verifies - input is a file
-#          - follow symlinks
-#          - file is readable
-#          - file is not empty
-#          - file has correct permissions (660 or better)
-#          - file is a valid key
+# Verifies input is a file, readable, has correct permissions (660 or better) & a valid key
 function __is_usable_keyfile() {
     local file_path="$1"
 
@@ -1682,7 +1655,6 @@ function __build_subnets() {
     fi
 }
 
-# Build route table
 function __build_route_table() {
     local table_type="$1"
     declare -a table_action
@@ -1716,8 +1688,7 @@ function __build_route_table() {
             declare -a desired_routes=("${__PROTONWIRE_SUBNET_6[@]}")
         fi
 
-        # These bools are false by default as it makes things
-        # easier when tracking individual routes easier.
+        # These bools are false by default as it makes things easier when tracking individual routes.
         local create_table="false"
         local flush_table="false"
         log_info "Configuring $table_type table $table_id (IPv$proto)"
@@ -1740,9 +1711,7 @@ function __build_route_table() {
             log_info "Verifying $table_type table $table_id (IPv$proto)"
 
             for route in "${desired_routes[@]}"; do
-                # special handling of /32 route
-                __route_regex="(${route}|${route///32/})"
-
+                __route_regex="(${route}|${route///32/})" # special handling of /32 route
                 if [[ "$existing_routes" =~ ${__route_regex} ]]; then
                     log_debug "Route - $route already present in $table_type table $table_id (IPv$proto)"
                 else
@@ -1782,7 +1751,6 @@ function __build_route_table() {
     return 1
 }
 
-# Build route rules.
 function __build_route_rules() {
     if __is_ipv6_disabled; then
         declare -ar __rt_protos=("4")
@@ -1830,7 +1798,7 @@ function __build_route_rules() {
 
             while [[ $(ip "-${proto}" rule show 2>/dev/null) == *"lookup 51821"* ]]; do
                 log_warning "Removing WireGuard table rule (IPv$proto)"
-                if ! ip "-${proto}" rule del not fwmark 51821 table 51821 2>&1 | log_tail "ip-rule-wireguard"; then
+                if ! ip "-${proto}" rule del not fwmark 0xca6d table 51821 2>&1 | log_tail "ip-rule-wireguard"; then
                     log_error "Failed to remove rule(IPv$proto) to route traffic via WireGuard"
                     ((++errs))
                 fi
@@ -1859,13 +1827,6 @@ function __build_route_rules() {
                 log_error "Failed to add rule to route traffic via WireGuard table 51821 (IPv$proto)"
                 ((++errs))
             fi
-
-            # flush FIB cache
-            log_debug "Flushing FIB cache"
-            if ! ip -4 route flush cache 2>&1 | log_tail "ip-route-flush-cache"; then
-                log_error "Failed to flush IP routing cache (IPv$proto)"
-                ((++errs))
-            fi
         fi
     done
 
@@ -1875,8 +1836,6 @@ function __build_route_rules() {
     return 1
 }
 
-# This is protonvpn_fetch_metadata with retries
-# This is used in connect command.
 function __fetch_metadata_with_retries() {
     local metadata_fetch_tries=0
     local metadata_fetch_max_tries=3
@@ -1893,8 +1852,7 @@ function __fetch_metadata_with_retries() {
         fi
     done
 
-    # Use cached file if failed to fetch metadata,
-    # this is most likely due to a network issue
+    # Use cached file if failed to fetch metadata, this is most likely due to a network issue
     log_debug "metadata_fetch_tries=${metadata_fetch_tries}"
     log_debug "metadata_fetch_max_tries=${metadata_fetch_max_tries}"
     if [[ $metadata_fetch_tries -ge $metadata_fetch_max_tries ]]; then
@@ -1909,8 +1867,7 @@ function __fetch_metadata_with_retries() {
     fi
 }
 
-# Get Wireguard endpoint IPs and public keys
-# This also verifies server is online.
+# Get Wireguard endpoint IPs and public keys. This also verifies server is online.
 function __protonvpn_pre_connect_get_endpoints_and_keys() {
     # Ensure __PROTONWIRE_SRV_INFO is defined
     if [[ -z ${__PROTONWIRE_SRV_INFO} ]]; then
@@ -1970,7 +1927,6 @@ function __protonvpn_pre_connect_get_endpoints_and_keys() {
     # and save it in an associative array mapping endpoint to public keys.
     # we also consider all nodes as they may not be actually "offline"
     # though non-online nodes are not considered while connecting, only for verification.
-    # (Yet another quirk of ProtonVPN API which metadata API cannot fix)
     for endpoint in "${__PROTONWIRE_ENDPOINT_IPS_ALL[@]}"; do
         declare -a endpoint_keys
         readarray -t endpoint_keys < <(jq -r \
@@ -1999,8 +1955,7 @@ function __protonvpn_pre_connect_get_endpoints_and_keys() {
         return 1
     fi
 
-    # As metadata API endpoint is customizable,
-    # Verify all returned IP addresseses are valid.
+    # As metadata API endpoint is customizable, verify all returned IP addresseses are valid.
     for _server_exit_ip in "${__PROTONVPN_EXIT_IP_LIST[@]}"; do
         if __is_valid_ipv4 "${_server_exit_ip}"; then
             log_debug "Valid Exit IP for ${PROTONVPN_SERVER} - ${_server_exit_ip}(IPv4)"
@@ -2020,7 +1975,6 @@ function __protonvpn_pre_connect_get_endpoints_and_keys() {
     return 1
 }
 
-# verifies server has required features.
 function __protonvpn_verify_server_attributes() {
     # Ensure __PROTONWIRE_SRV_INFO is defined
     if [[ -z ${__PROTONWIRE_SRV_INFO} ]]; then
@@ -2028,7 +1982,6 @@ function __protonvpn_verify_server_attributes() {
         return 1
     fi
 
-    # Validate server attributes
     local errs=0
 
     local server_country
@@ -2105,7 +2058,6 @@ function __protonvpn_verify_server_attributes() {
     return 1
 }
 
-# Connects to ProtonVPN.
 function __protonvpn_connect() {
     local errs=0
 
@@ -2164,9 +2116,6 @@ function __protonvpn_connect() {
         fi
     else
         log_debug "WIREGUARD_PRIVATE_KEY is not set"
-
-        # Secrets and other variables
-        # files in /etc/protonwire always takes precedence
         declare -a lookup_paths=(
             "/etc/protonwire/private-key"
             "/etc/protonwire/protonwire-private-key"
@@ -2272,7 +2221,7 @@ function __protonvpn_connect() {
         if [[ -n $wg_existing_ip ]]; then
             log_info "Flushing all exiting addresses on WireGuard Interface"
             if ! ip address flush "protonwire0" 2>&1 | log_tail "ip-addr"; then
-                log_error "Failed to flush addresses on WireGuard interface 'protowire0'"
+                log_error "Failed to flush addresses ip -4on WireGuard interface 'protowire0'"
                 return 1
             fi
         fi
@@ -2294,8 +2243,7 @@ function __protonvpn_connect() {
         fi
     fi
 
-    # Private key
-    # check if public key
+    # Private key, check via public key
     if [[ $(wg show protonwire0 public-key) == "${wg_client_pubkey:-none}" ]]; then
         log_success "WireGuard interface already has private key configured"
     else
@@ -2322,8 +2270,7 @@ function __protonvpn_connect() {
     # peers and endpoints
     # If interface already has a peer,
     # check if its in the available endpoints
-    # if yes, continue to use it.
-    # if not, select a random endpoint from list of endpoints.
+    # if yes, continue to use it. if not, select a random endpoint from list of endpoints.
     local selected_endpoint
     local ep_reconfigure="true"
     if [[ ${#configured_endpoints[@]} -eq 0 ]]; then
@@ -2515,9 +2462,36 @@ function protonvpn_connect_cmd() {
     return 1
 }
 
+function __protonvpn_disable_ks() {
+    log_notice "Disabling killswitch (if any)"
+    if __is_ipv6_disabled; then
+        declare -ar __rt_protos=("4")
+    else
+        declare -ar __rt_protos=("4" "6")
+    fi
+    for proto in "${__rt_protos[@]}"; do
+        while [[ $(ip "-${proto}" rule show 2>/dev/null) == *"lookup 51822"* ]]; do
+            log_notice "Removing Killswitch table rule (IPv$proto)"
+            if ! ip "-${proto}" rule del not fwmark 0xca6d table 51822 2>&1 | log_tail "ip-rule-ks"; then
+                log_error "Failed to remove killswitch IP rule (IPv$proto) "
+                ((++errs))
+            fi
+        done
+
+        if ip "-${proto}" route list table 51822 >/dev/null 2>&1; then
+            log_notice "Flushing routing table 51822 (IPv4)"
+            if ! ip "-${proto}" route flush table 51822 2>&1 | log_tail "ip-route-flush"; then
+                log_error "Failed to flush table 51822 (IPv4)"
+                ((++errs))
+            fi
+        else
+            log_success "Table 51822 does not exist (IPv4)"
+        fi
+    done
+}
+
 function __protonvpn_disconnect() {
     # Order in which we do ensures that we dont have broken dns during disconnect.
-    # This is prone to dns leakage during this short disconnect window.
     __PROTONWIRE_DISCONNECTING="true"
 
     local errs=0
@@ -2577,7 +2551,7 @@ function __protonvpn_disconnect() {
     if ip -4 route list table 51821 >/dev/null 2>&1; then
         log_debug "Flushing routing table 51821 (IPv4)"
         if ! ip -4 route flush table 51821 2>&1 | log_tail "ip route"; then
-            log_error "Failed to flush table 51821"
+            log_error "Failed to flush table 51821 (IPv4)"
             ((++errs))
         fi
     else
@@ -2588,7 +2562,7 @@ function __protonvpn_disconnect() {
         if ip -6 route list table 51821 >/dev/null 2>&1; then
             log_debug "Flushing routing table 51821 (IPv6)"
             if ! ip -6 route flush table 51821 2>&1 | log_tail "ip route"; then
-                log_error "Failed to flush table 51821"
+                log_error "Failed to flush table 51821 (IPv6)"
                 ((++errs))
             fi
         fi
@@ -2610,12 +2584,27 @@ function __protonvpn_disconnect() {
     return 1
 }
 
+function protonvpn_disable_ks_cmd() {
+    __detect_paths
+    if ! __check_tools; then
+        return 1
+    fi
+
+    if ! __check_caps; then
+        log_error "Run as root and/or add CAP_NET_ADMIN capability"
+        return 1
+    fi
+
+    if __protonvpn_disable_ks; then
+        return 0
+    fi
+    return 1
+}
+
 function protonvpn_disconnect_cmd() {
     __detect_paths
-
     local errs=0
 
-    # Check if all required commands are available
     if ! __check_tools; then
         return 1
     fi
@@ -2630,32 +2619,9 @@ function protonvpn_disconnect_cmd() {
     fi
 
     if __is_enable_killswitch; then
-        log_notice "Disabling killswitch (if any)"
-        if __is_ipv6_disabled; then
-            declare -ar __rt_protos=("4")
-        else
-            declare -ar __rt_protos=("4" "6")
+        if ! __protonvpn_disable_ks; then
+            ((++errs))
         fi
-
-        for proto in "${__rt_protos[@]}"; do
-            while [[ $(ip "-${proto}" rule show 2>/dev/null) == *"lookup 51822"* ]]; do
-                log_debug "Removing Killswitch table rule (IPv$proto)"
-                if ! ip "-${proto}" rule del not fwmark 0xca6d table 51822 2>&1 | log_tail "ip-rule-ks"; then
-                    log_error "Failed to remove killswitch IP rule(IPv$proto) "
-                    ((++errs))
-                fi
-            done
-
-            if ip -4 route list table 51822 >/dev/null 2>&1; then
-                log_debug "Flushing routing table 51822 (IPv4)"
-                if ! ip -4 route flush table 51822 2>&1 | log_tail "ip route"; then
-                    log_error "Failed to flush table 51822"
-                    ((++errs))
-                fi
-            else
-                log_debug "Table 51822 does not exist (IPv4)"
-            fi
-        done
     else
         log_debug "Killswitch state is left unchanged"
     fi
@@ -2663,7 +2629,6 @@ function protonvpn_disconnect_cmd() {
     if [[ $errs -eq 0 ]]; then
         return 0
     fi
-
     return 1
 }
 
@@ -2685,7 +2650,6 @@ function display_usage() {
         local TEAL
         local MAGENTA
     fi
-
     cat <<EOF
 
 ${BOLD}ProtonVPN WireGuard Client${NC}
@@ -2694,6 +2658,7 @@ ${BOLD}${YELLOW}Usage:${NC} protonwire [OPTIONS...]
 ${BOLD}${YELLOW}or:${NC} protonwire [OPTIONS...] c|connect [SERVER]
 ${BOLD}${YELLOW}or:${NC} protonwire [OPTIONS...] d|disconnect
 ${BOLD}${YELLOW}or:${NC} protonwire [OPTIONS...] check
+${BOLD}${YELLOW}or:${NC} protonwire [OPTIONS...] disable-killswitch
 ${BOLD}${YELLOW}or:${NC} protonwire [OPTIONS...] help
 
 ${BOLD}${CYAN}Options:${NC}
@@ -2709,18 +2674,18 @@ ${BOLD}${CYAN}Options:${NC}
       --skip-dns-config         Skip configuring DNS.
                                 (Useful for Kubernetes and Nomad)
       --kill-switch             Enable killswitch (Experimental)
-      --p2p                     Check if server supports P2P
-      --streaming               Check if server supports streaming
-      --tor                     Check if server supports Tor
-      --secure-core             Check if server supports secure core
+      --p2p                     Verify if server supports P2P
+      --streaming               Verify if server supports streaming
+      --tor                     Verify if server supports Tor
+      --secure-core             Verify if server supports secure core
   -q, --quiet                   Show only errors
-  -v, --verbose,                Show debug logs
+  -v, --verbose                 Show debug logs
   -h, --help                    Display this help and exit
       --version                 Display version and exit
 
 ${BOLD}${TEAL}Examples:${NC}
   protonwire connect nl-1       Connect to server nl-1
-  protonwire disconnect         Disconnect from current server
+  protonwire d --kill-switch    Disconnect from current server and disable kill-switch
   protonwire verify [SERVER]    Check if connected to a server
 
 ${BOLD}${ORANGE}Files:${NC}
@@ -2737,7 +2702,6 @@ EOF
 }
 
 function main() {
-    # exclusive option locks, these only validate cli args not env vars
     declare -i log_lvl_v_lock=0
     declare -i log_lvl_q_lock=0
     declare -i cmd_lock=0
@@ -2836,6 +2800,10 @@ function main() {
             cmd_mode="HEALTHCHECK"
             ((++cmd_lock))
             ;;
+        disable-ks | disable-killswitch | disable-kill-switch)
+            cmd_mode="DISABLE_KILLSWITCH"
+            ((++cmd_lock))
+            ;;
         -*)
             log_error "Invalid argument - $1. See usage below."
             display_usage
@@ -2891,7 +2859,6 @@ function main() {
         fi
     fi
 
-    # check if countey code is valid
     if [[ -n $__PROTONWIRE_FEATURE_COUNTRY ]]; then
         if [[ $__PROTONWIRE_FEATURE_COUNTRY =~ ^[a-zA-Z]{2}$ ]]; then
             log_variable "__PROTONWIRE_FEATURE_COUNTRY"
@@ -2911,7 +2878,6 @@ function main() {
         fi
     fi
 
-    # check if IPCHECK_INTERVAL
     if [[ -n ${IPCHECK_INTERVAL} ]]; then
         log_variable "IPCHECK_INTERVAL"
         if [[ $IPCHECK_INTERVAL =~ ^[0-9]+$ ]]; then
@@ -2937,12 +2903,19 @@ function main() {
         log_variable "METADATA_URL"
     fi
 
+    case "${PROTONVPN_SERVER,,}" in
+    free | *-free | pro | p2p | random | secure-core | secure_core | sc | tor | streaming)
+        log_error "Automatic server selection for (${PROTONVPN_SERVER}) is not supported due to upstream API changes."
+        log_error "Specify a valid server DNS name like node-nl-01.protonvpn.net or server name like NL#1."
+        log_error "Please see https://github.com/tprasadtp/protonvpn-docker/blob/master/docs/faq.md for more info."
+        ((++args_errors))
+        ;;
+    esac
     if [[ $args_errors -gt 0 ]]; then
         log_error "See protonwire(1) or protonwire --help for more information."
         exit 1
     fi
 
-    # shellcheck disable=SC2119
     case "${cmd_mode^^}" in
     HEALTHCHECK)
         protonvpn_verify_cmd
@@ -2962,6 +2935,10 @@ function main() {
         ;;
     DISCONNECT)
         protonvpn_disconnect_cmd
+        exit $?
+        ;;
+    DISABLE_KILLSWITCH)
+        protonvpn_disable_ks_cmd
         exit $?
         ;;
     HELP)
