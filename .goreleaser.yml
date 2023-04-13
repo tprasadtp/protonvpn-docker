@@ -1,7 +1,8 @@
 project_name: protonwire
 
 snapshot:
-  name_template: "{{.ShortCommit}}-dev"
+  # This should be semver otherwise triggers https://github.com/goreleaser/goreleaser/issues/2081
+  name_template: "{{ incpatch .Version }}-devel"
 
 builds:
   - id: build-binary
