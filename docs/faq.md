@@ -2,11 +2,12 @@
 
 ## Why automatic server selection is not supported
 
-- This is caused by changes to ProtonVPN API.
-- To perform automatic server selection, it requires authenticating  to proton API via username and password!. There are no scoped OAuth tokens and minted access tokens have full access to Proton API including payments and Email!!.
-- Fastest server selection also depends on geo-location and latency info to populate server `.Score`.
-Due to lack of documentation on how `.Score` is computed and it depending on geo-location,
-automatic server selection is not supported.
+- This is caused by changes to ProtonVPN API, which now requires authentication.
+- Upstream API uses geo-location/latency to select "best" server with least amount of load. This information is returned via API (via field `.Score` and `.Load` on every `LogicalNode`) to the caller. Because v7 and later do not make API requests to ProtonVPN directly and use a global cache, This geo-location/latency based automatic server selection is not supported.
+- It might be possible to cache server load, but if the cache becomes stale fails to update,
+it might result in a single VPN server to be selected as "best" and might cause issues upstream.
+- You can however validate that a server supports features like P2P, steaming etc by using
+`--p2p`, `--streaming`, `--secure-core` flags during connect/healthcheck command.
 
 ## How to check if an address is being routed via VPN via CLI
 
@@ -121,7 +122,14 @@ Please ensure to use stub resolver mode as many statically built programs (Espec
 
 ## Use with corporate/other VPN
 
-- If other VPN routes only private subnets you don't need to do anything! It just works! Just make sure there search domain/routing domains are set on your corporate/other VPN interface (`resolvectl domain`) so that DNS queries for those domains will be resolved correctly.
+- If other VPN routes only private subnets you don't need to do anything! It just works!
+- Just make sure there search domain/routing domains are set on your corporate/other VPN interface (`resolvectl domain`) so that DNS queries for those domains will be resolved correctly.
+
+## Use with Tailscale
+
+Tailscale uses its own fwmark, routing table and routing rules.
+Because Tailscale addresses are CGNAT addresses and have fwmark on the packets
+passing via tailscale interface, it just works. Zero configuration changes required!
 
 ## How can I see WireGuard settings
 
@@ -140,13 +148,13 @@ Also these addresses cannot belong to any __other__ interfaces on the machine/co
 
 You can use any of the following services for verification as they return your _public_ IP address.
   * https://icanhazip.com/
-  * https://api.ipify.org/
   * https://checkip.amazonaws.com/
 
 > **Warning**
 >
-> Do not use ip.me, as they seem to do user agent whitelisting and return html page
-> when user agent does not contain `curl` or `wget` or `requests`. (Sigh!)
+> Do not use ip.me as health-check endpoint, as they seem to do
+> user agent whitelisting and return html page, when user agent
+> does not contain `curl` or `wget` or `requests`.
 >
 > ```console
 > curl -si -H "User-Agent: Go-http-client/1.1" https://ip.me/ -o /dev/null -D -
@@ -173,13 +181,9 @@ Bulk of the work is done via `scripts/generate-server-metadata`
 
 ## Known Bugs in Upstream API/libraries
 
-> Proton API and libraries are in constant state of ~~chaos~~ ~~broken~~ ~~borderline usable~~
-~~evolution~~ ~~upgrade~~ ~~development~~ ~~buggy~~ ~~flux~~ ~~inconsistency~~
-unstability and documentation is ~~virtually~~ actually non-existent or incorrect.
+> Proton API and libraries are in constant state of ~~chaos~~ ~~development~~ ~~buggy~~ ~~flux~~ ~~inconsistency~~ instability and documentation is ~~virtually~~ actually non-existent.
 
-- Some servers appear to  rename themselves and flip flop between ONLINE and OFFLINE state in loop (like every hour), appear and disappear randomly (sometimes just two servers weirdly appearing and disappearing every hour or so).
+- Some servers appear to flip flop between ONLINE and OFFLINE state in loop (like every hour), appear and disappear randomly (sometimes just two servers weirdly appearing and disappearing every hour or so).
 - Server's Entry IP sometimes appears to be its ExitIP and sometimes Exit IP of some other
 server is the assigned public IP.
-- Some ExitIPs do not appear **anywhere** in the response returned by `/logicals` (Yes, this is after authenticating)
-- Proton libraries use all sorts of weird things like weird singletons, deeply nested wrappers
-for simplest of things and are incredibly inconsistent. The auth library is is just useless.
+- Some ExitIPs do not appear **anywhere** in the response returned by `/vpn/logicals`
