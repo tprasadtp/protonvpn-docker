@@ -2119,17 +2119,23 @@ function __protonvpn_connect() {
         declare -a lookup_paths=(
             "/etc/protonwire/private-key"
             "/etc/protonwire/protonwire-private-key"
+            "/etc/protonwire/protonvpn-private-key"
             "/etc/protonwire/wireguard-private-key"
             "/run/secrets/private-key"
+            "/run/secrets/protonwire-private-key"
+            "/run/secrets/protonvpn-private-key"
+            "/run/secrets/wireguard-private-key"
             "/run/secrets/protonwire/private-key"
             "/run/secrets/protonwire/protonwire-private-key"
-            "/run/secrets/protonwire/wireguard-private-key"
+            "/run/secrets/protonwire/protonvpn-private-key"
+            "/run/secrets/protonwire/protonvpn-private-key"
         )
 
         # CREDENTIALS_DIRECTORY is defined if using systemd-creds
         if [[ -n $CREDENTIALS_DIRECTORY ]]; then
             lookup_paths+=("${CREDENTIALS_DIRECTORY%/}/private-key")
             lookup_paths+=("${CREDENTIALS_DIRECTORY%/}/protonwire-private-key")
+            lookup_paths+=("${CREDENTIALS_DIRECTORY%/}/protonvpn-private-key")
             lookup_paths+=("${CREDENTIALS_DIRECTORY%/}/wireguard-private-key")
         fi
 
