@@ -4,21 +4,23 @@
 # Do not modify this file manually
 # This file is part of protonwire package.
 
-[Allow protonwire to change DNS]
+# Referece: https://github.com/systemd/systemd/blob/main/src/resolve/org.freedesktop.resolve1.policy
+
+[Allow protonwire to set-dns-servers]
 Identity=unix-user:protonwire
 Action=org.freedesktop.resolve1.set-dns-servers
 ResultAny=yes
 ResultInactive=yes
 ResultActive=yes
 
-[Allow protonwire to change routing domains]
+[Allow protonwire to change set-domains]
 Identity=unix-user:protonwire
 Action=org.freedesktop.resolve1.set-domains
 ResultAny=yes
 ResultInactive=yes
 ResultActive=yes
 
-[Allow protonwire to change DNS]
+[Allow protonwire to set-default-route]
 Identity=unix-user:protonwire
 Action=org.freedesktop.resolve1.set-default-route
 ResultAny=yes
@@ -32,7 +34,14 @@ ResultAny=yes
 ResultInactive=yes
 ResultActive=yes
 
-[Allow protonwire to reset links]
+[Allow protonwire to set-dns-over-tls]
+Identity=unix-user:protonwire
+Action=org.freedesktop.resolve1.set-dns-over-tls
+ResultAny=yes
+ResultInactive=yes
+ResultActive=yes
+
+[Allow protonwire to revert links]
 Identity=unix-user:protonwire
 Action=org.freedesktop.resolve1.revert
 ResultAny=yes
