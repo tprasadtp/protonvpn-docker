@@ -456,13 +456,12 @@ function __is_debug() {
     return 1
 }
 
-# Check if DNS configuration is disbaled
-function __is_skip_cfg_dns() {
+function __is_skip_dns_config() {
     if [[ ${__PROTONWIRE_DNS_UPDATER,,} == "none" ]]; then
         return 0
     fi
 
-    case ${SKIP_DNS,,} in
+    case ${SKIP_DNS_CONFIG,,} in
     yes | true | enable | enabled | on | 1)
         return 0
         ;;
@@ -640,7 +639,7 @@ function __detect_dns_updater() {
         return 0
     fi
 
-    if ! __is_skip_cfg_dns; then
+    if ! __is_skip_dns_config; then
         if has_command systemctl; then
             if systemctl is-active --quiet systemd-resolved; then
                 if [[ -L /etc/resolv.conf ]]; then
@@ -2460,7 +2459,7 @@ function __protonvpn_connect() {
     fi
 
     # DNS
-    if __is_skip_cfg_dns; then
+    if __is_skip_dns_config; then
         log_info "Skipping DNS configuration"
     else
         if [[ $__PROTONWIRE_DNS_UPDATER == "systemd-resolved" ]]; then
@@ -2791,7 +2790,7 @@ function main() {
             IPCHECK_URL="${1}"
             ;;
         --skip-dns | --skip-dns-config)
-            SKIP_DNS="false"
+            SKIP_DNS_CONFIG="true"
             ;;
         -k | --key | --private-key)
             shift
