@@ -12,6 +12,7 @@ polkit.addRule(function (action, subject) {
         action.id == 'org.freedesktop.resolve1.set-domains' ||
         action.id == 'org.freedesktop.resolve1.set-default-route' ||
         action.id == 'org.freedesktop.resolve1.revert' ||
+        action.id == 'org.freedesktop.resolve1.set-dns-over-tls' ||
         action.id == 'org.freedesktop.resolve1.set-dnssec') {
 
         // Allow protonwire user to use
