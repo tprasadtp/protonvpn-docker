@@ -29,6 +29,8 @@ body:
           required: true
         - label: I have verified that my generated Wireguard private keys are valid and have required features (Netshield Ad-blocker, VPN accelerator etc) are enabled.
           required: true
+        - label: I am using a valid server name (either fully qualified DNS name like `nl-free-127.protonvpn.net` or server name like `NL#1`) as mentioned in the docs.
+          required: true
 
   - type: input
     id: arch
@@ -36,8 +38,6 @@ body:
       label: System Architecture
       description: |
         - Output of `uname -m` command.
-        - If unable to detect or not applicable, leave the field as is.
-      value: NA
     validations:
       required: true
 
@@ -47,8 +47,6 @@ body:
       label: Kernel Version
       description: |
         - Output of `uname -r` command.
-        - If unable to detect or not applicable, leave the field as is.
-      value: NA
     validations:
       required: true
 
@@ -101,8 +99,9 @@ body:
           - For docker-compose, include your docker-compose file.
           - For kubernetes, include your Pod/Deployment, Service and Network configurations.
           - For systemd include your systemd unit files.
-      value: NA
       render: markdown
+    validations:
+      required: true
 
   - type: checkboxes
     id: troubleshooting
@@ -128,6 +127,8 @@ body:
           - Use `--debug` cli flag
           - Add drop-in unit to enable DEBUG or run with `systemd-run --env DEBUG=1`
       render: log
+    validations:
+      required: true
 
   - type: textarea
     id: additional-info
@@ -145,7 +146,7 @@ body:
         Please also ensure that you remove or redact any sensitive personally identifying information
         like IP addresses and secrets like your API keys from logs and report included here.
       options:
-        - label: I agree to follow this project's Code of Conduct
+        - label: I agree to follow this project's Code of Conduct.
           required: true
         - label: I have removed any sensitive personally identifying information(PII) and secrets from in this issue report.
           required: true

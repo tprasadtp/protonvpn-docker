@@ -31,11 +31,21 @@ body:
       required: true
 
   - type: dropdown
+    id: adblock-whitelist
+    attributes:
+      label: Whitelisting API endpoints
+      options:
+        - label: I have whitelisted `protonwire-api.vercel.app` from my DNS ad-blocking DNS server or gateway (if applicable)
+          required: true
+        - label: I have whitelisted `icanhazip.com` from my DNS ad-blocking DNS server or gateway (if applicable)
+          required: true
+
+  - type: dropdown
     id: dns-protocol
     attributes:
       label: DNS Protocol
       options:
-        - Systemd's default DNS resolver
+        - Default DNS resolver
         - DNS over HTTPS (DoH)
         - DNS over TLS (DoT)
     validations:
@@ -66,7 +76,7 @@ body:
         Please also ensure that you remove or redact any sensitive personally identifying information
         like IP addresses and secrets like your API keys from logs and report included here.
       options:
-        - label: I agree to follow this project's Code of Conduct
+        - label: I agree to follow this project's Code of Conduct.
           required: true
         - label: I have removed any sensitive personally identifying information(PII) and secrets from in this issue report.
           required: true

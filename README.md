@@ -27,7 +27,6 @@
 </p>
 
 
-
 <p align="center">
   <a href="https://github.com/tprasadtp/protonvpn-docker/actions/workflows/metadata.yml" target="_blank" rel="noreferrer">
     <img src="https://github.com/tprasadtp/protonvpn-docker/actions/workflows/metadata.yml/badge.svg" height="24" alt="metadata-build">
@@ -66,14 +65,14 @@ Images are published at [ghcr.io/tprasadtp/protonwire][ghcr].
 
 ## Linux Kernel Requirements
 
-- If using Debian 11 (Buster) or later, Raspberry Pi OS (Buster) or later, Fedora, ArchLinux, Linux Mint 20.x or later, RHEL 9 or later, Alma Linux 9 or later, CentOS 9 Stream, Ubuntu 20.04 or later you have the required kernel module built-in.
-- If you have kernel versions 5.6 or later you should also be good to go.
+- If using Debian 11 (Buster) or later, Raspberry Pi OS (Buster) or later, Fedora, ArchLinux, Linux Mint 20.x or later, RHEL 9 or later, Alma Linux 9 or later, CentOS 9 Stream, Ubuntu 20.04 or later have the required kernel module built-in.
+- Kernel versions 5.6 or later.
 - If **NONE** of the above conditions can be satisfied, You have to install WireGuard. Your distribution might already package DKMS module or provide signed kernels with WireGuard built-in. Visit https://www.wireguard.com/install/ for more info.
     > **Note**
     >
     > If running as a container, Wireguard **MUST** be installed on the host, not the container.
 
-- To check your current kernel version run,
+- To check current kernel version run,
     ```bash
     uname -r
     ```
@@ -97,7 +96,7 @@ Images are published at [ghcr.io/tprasadtp/protonwire][ghcr].
     AllowedIPs = 0.0.0.0/0
     Endpoint = 91.229.23.180:51820
     ```
-- Only thing you need from the above config is `PrivateKey`.
+- Only thing needed from the above config is `PrivateKey`.
 - See https://protonvpn.com/support/wireguard-configurations/ for more info.
 
 ## Environment Variables & Config
@@ -148,7 +147,7 @@ See [this](https://github.com/tprasadtp/protonvpn-docker/blob/master/docs/faq.md
 > This Feature is experimental.
 
 Kill-Switch is not a hard kill-switch but more of an "internet" kill-switch.
-Your LAN addresses, Link-Local addresses and CGNAT(also Tailscale) addresses
+LAN addresses, Link-Local addresses and CGNAT(also Tailscale) addresses
 remain reachable. Unlike most VPN containers, kill-switch is implemented via
 routing policies, rather than firewall rules.
 
@@ -219,9 +218,9 @@ Environment:
 
 ## Health-checks
 
-- Script supports `healthcheck` command. By default, when running as a service script will keep checking every `IPCHECK_INTERVAL` _(default=60)_ seconds using the same api endpoint. If you wish to disable healthchecks entirely set `IPCHECK_INTERVAL` to `0`
+- Script supports `healthcheck` command. By default, when running as a service script will keep checking every `IPCHECK_INTERVAL` _(default=60)_ seconds using the same api endpoint. To disable healthchecks entirely set `IPCHECK_INTERVAL` to `0`
 - Containers images do not have healthchecks by default. This is because OCI specs do not include healthcheck. `HEALTHCHECK` directive on Dockerfile is specific to docker.
-- You can use `protonwire healthcheck --silent --container` as your healthcheck command.
+- Use `protonwire healthcheck --silent --container` as the healthcheck command.
 Same can be used as liveness probe and readiness probe for Kubernetes.
 
 ## Docker
@@ -236,7 +235,7 @@ Same can be used as liveness probe and readiness probe for Kubernetes.
     ```bash
     docker pull ghcr.io/tprasadtp/protonwire:latest
     ```
-- Run VPN Container. Assuming that you have have a container which needs to be routed via VPN, listening on container port `80` and you wish to map it to host port `8000`,
+- Run VPN Container. Assuming that a container which needs to be routed via VPN, listening on container port `80` and it listens on port 80 and you wish to map it to host port `8000`,
     ```console
     docker run \
         -it \
@@ -253,18 +252,20 @@ Same can be used as liveness probe and readiness probe for Kubernetes.
     ```
     > **Warning**
     >
-    > - If you wish to publish additional ports from other containers using this VPN, you **MUST** do it
-    >   here on the `protonwire` container!
+    > - Ro publish additional ports from other containers using this VPN, it **MUST** be done
+    >   on the `protonwire` container!
     > - `--sysctl` and `--cap-add` flags are important! without these, container cannot create or manage
     >   WireGuard interfaces or routing.
 
 - To use VPN in other container(s), use `--net=container:protonwire` flag.
-For example, we can run caddy to proxy `https://api.ipify.org/` via VPN. Visiting http://localhost:8000, or `curl http://localhost:8000` should show your VPN's country and IP address.
+For example, we can run caddy to proxy `https://api.ipify.org/` via VPN. Visiting http://localhost:8000, or `curl http://localhost:8000` should show VPN's country and IP address.
 
     ```console
     docker run \
         -it \
+        --rm \
         --net=container:protonwire \
+        --name=protonwire-demo \
         caddy:latest \
         caddy reverse-proxy \
             --change-host-header \
@@ -278,10 +279,9 @@ For example, we can run caddy to proxy `https://api.ipify.org/` via VPN. Visitin
 
 ## Docker Compose
 
-If you have your entire stack in a single compose file, then `network_mode: service:protonwire` on the services which should be routed via VPN. If your VPN stack is **NOT** in same compose file use `network_mode: container:<protonwire-container-name>`.
+If entire stack in a single compose file, then `network_mode: service:protonwire` on the services which should be routed via VPN. If the VPN stack is **NOT** in same compose file use `network_mode: container:<protonwire-container-name>`.
 
-As an example, run caddy web-server, proxying `api.ipify.org` via VPN is shown below. Visiting http://localhost:8000, or `curl -s http://localhost:8000` should show your VPN's country and IP address.
-
+As an example, run caddy web-server, proxying https://ip.me, via VPN using the compose config given below. Once the stack is up, visiting the http://localhost:8000, or `curl -s http://localhost:8000` should show VPN's country and IP address.
 
 <!--diana::dynamic:protonwire-sample-compose-file:begin-->
 ```yaml
@@ -324,8 +324,8 @@ services:
 
 
 > **Note**
-> - It is **essential** to expose/publish port(s) _on protonwire container_, instead of your application.
-> - You **SHOULD NOT** run the container as privileged. Adding capability `CAP_NET_ADMIN` **AND** defined `sysctls` should be sufficient.
+> - It is **essential** to expose/publish port(s) _on protonwire container_, instead of application container.
+> - **SHOULD NOT** run the container as privileged. Adding capability `CAP_NET_ADMIN` **AND** defined `sysctls` should be sufficient.
 
 ## Podman
 
@@ -335,45 +335,65 @@ services:
   </a>
 </p>
 
+> **Warning**
+>
+> - podman versions older than v4 (one included in Debian 11/Ubuntu 22.04)
+> are not supported. You might be able to use podman v3 to run the container,
+> but some basic flags and commands are missing(`--sysctl` on pod create,
+> `podman secret` commands etc.) and thus cannot be supported.
+
+
 - Create a podman secret for private key
     ```bash
-    sudo podman create secret protonwire-private-key <PRIVATE_KEY>
+    sudo podman secret create protonwire-private-key <PRIVATE_KEY>
     ```
-    > **Warning**
-    >
-    > podman secrets are **NOT** encrypted at rest!
 
 - Run protonwire container
     ```bash
-    sudo podman run \
-    --name protonwire \
-    -it \
-    --init \
-    --replace \
-    --tz local \
-    --tmpfs /tmp \
-    --port 8000:80 \
-    --cap-add NET_ADMIN \
-    --env PROTONVPN_SERVER=<SERVER-NAME> \
-    --secret protonwire-private-key \
-    --sysctl net.ipv4.conf.all.rp_filter=2 \
-    ghcr.io/tprasadtp/protonwire:latest
-    ```
-
-    * If you wish to publish additional ports from other containers using this VPN (usually done via argument `-p host_port:container_port`), you will need to do it here on the `protonwire` container!
-    * `--sysctl` and `--cap-add` flags are important! without these, container cannot create/manage WireGuard interface.
-
-## Run container as systemd unit
-
-- Use `podman` instead of docker as it has better support for systemd.
-- You can run `protonwire` container as usual and the generate systemd unit for it via,
-    ```bash
-    podman generate systemd \
-        --new \
+    podman run \
+        -it \
+        --rm \
         --name protonwire \
-        --after network-online.target
+        --init \
+        --tz local \
+        --tmpfs /tmp \
+        --cap-add=NET_ADMIN \
+        --sysctl=net.ipv4.conf.all.rp_filter=2 \
+        --secret private-key,mode=600  \
+        --env PROTONVPN_SERVER=<SERVER-NAME> \
+        --publish 8000:80 \
+        ghcr.io/tprasadtp/protonwire:latest
     ```
-- See [podman-generate-systemd](https://docs.podman.io/en/latest/markdown/podman-generate-systemd.1.html) for more info.
+
+    > **Warning**
+    >
+    > * To publish additional ports from other containers using this VPN (usually done via argument
+    > `-p host_port:container_port`), it **MUST** be done on the `protonwire` container!
+    > * `--sysctl` and `--cap-add` flags are important! without these, container cannot create/manage
+    > WireGuard interface.
+    > * `mode=600` in secret mounting is important as script refuses to use private key with insecure
+    > permissions.
+
+- To use VPN in other container(s), use `--net=container:protonwire` flag.
+For example, we can run caddy to proxy `https://api.ipify.org/` via VPN. Visiting http://localhost:8000, or `curl http://localhost:8000` should show VPN's country and IP address.
+
+    ```console
+    podman run \
+        -it  \
+        --rm \
+        --name=protonwire-demo \
+        --net=container:protonwire \
+        caddy:latest \
+        caddy reverse-proxy \
+        --change-host-header \
+        --from :80 \
+        --to https://ip.me:443
+    ```
+
+## Run podman container as systemd unit
+
+[podman-generate-systemd](https://docs.podman.io/en/latest/markdown/podman-generate-systemd.1.html)
+can be used to generate systemd unit files for the entire pod.
 
 ## Dependencies
 
@@ -436,8 +456,8 @@ if running as systemd unit outside of containers.
 
 ## Installation
 
-- You can install DEB or RPM packages from releases.
-- Alternatively, you can clone this repository and run `sudo make install`
+- Install DEB or RPM packages from releases.
+- Alternatively, clone this repository and run `sudo make install`
 
 ## Usage
 
@@ -489,15 +509,15 @@ Provides rich systemd integration. Connected server kill-switch state is display
 
 - By default unit will load environment variables from files ending with `.env` extension from `/etc/protonwire/`. This is done by systemd not the unit executable/user. See `EnvironmentFile` in [systemd.exec(5)][] for more info.
 
-- If [`systemd-creds`][systemd-creds] is available (requires systemd version 250 or above), you can use [drop-in][] units to supply credentials. see [this](https://systemd.io/CREDENTIALS/) for more info.
+- If [`systemd-creds`][systemd-creds] is available (requires systemd version 250 or above),  use [drop-in][] units to supply credentials. see [this](https://systemd.io/CREDENTIALS/) for more info.
 
-- If `systemd-creds` is not available, you can save key to in `/etc/protonwire/wireguard-private-key` or one of the search paths.
+- If `systemd-creds` is not available, save key to in `/etc/protonwire/wireguard-private-key` or one of the search paths.
 
     - Create `/etc/protonwire` if it does not exist
         ```bash
         sudo mkdir -p /etc/protonwire
         ```
-    - Create private key file, alternatively you can copy existing key file to this location.
+    - Create private key file, alternatively copy existing key file to this location.
         ```bash
         systemd-ask-password | sudo tee -a /etc/protonwire/private-key
         ```
@@ -513,25 +533,25 @@ Provides rich systemd integration. Connected server kill-switch state is display
 
     > If running as non-root user(default), ensure unit's user has access to the key file. Using `SupplementaryGroup=systemd-network` and giving `systemd-network` group read access to key file.
 
-- For non sensitive settings, you can use environment files(`.env`) in `/etc/protonwire/` They are loaded automatically be the default unit.
+- For non sensitive settings, use environment files(`.env`) in `/etc/protonwire/` They are loaded automatically be the default unit.
     ```bash
     # /etc/protonwire/settings.env
     PROTONVPN_SERVER="nl-free-127.protonvpn.net"
     ```
 
-- If you installed or modified unit files, You must reload systemd via
+- Reload systemd
     ```bash
     sudo systemctl daemon-reload
     ```
-- You can enable VPN service via
+- Enable protonwire service via
     ```bash
     sudo systemctl enable protonwire
     ```
-- You can start VPN service via
+- Start protonwire service via
     ```bash
     sudo systemctl start protonwire
     ```
-- You can stop VPN service via
+-  Stop VPN service via
     > **Warning**
     >
     > Units bound to protonwire unit will also be stopped.
@@ -540,16 +560,16 @@ Provides rich systemd integration. Connected server kill-switch state is display
     sudo systemctl stop protonwire
     ```
 
-- You can check status of VPN service via
+- Check status of VPN service via
     ```bash
     systemctl status protonwire
     ```
 
-- To check logs, you can use `journalctl -u protonwire`. You might have to prefix command with `sudo ` if you are not a member of `adm` group or `systemd-journal` group to see the logs.
-
-- You can disable VPN service via
+- To check logs, use `journalctl -u protonwire`.
+- Disable VPN service via
     ```bash
     sudo systemctl disable --now protonwire
+    sudo protonwire disable-ks
     ```
 
 ### Watchdog
@@ -557,7 +577,7 @@ Provides rich systemd integration. Connected server kill-switch state is display
 - Systemd watchdog feature is supported and enabled if `NOTIFY_SOCKET` and `WATCHDOG_USEC` are set.
 - `IPCHECK_INTERVAL` or `--check-interval`, with non zero value cannot be used with watchdog as it creates conflicts.
 - `WatchdogSec` cannot be less than 20 seconds.
-- Default watchdog signal(`SIGABRT`) cannot be used with containers if you are using `--init` flag. You **MUST** set `WatchdogSignal=SIGTERM`. This is because both `tini` (docker) and `catatonit`(podman) do not forward this signal to their children.
+- Default watchdog signal(`SIGABRT`) cannot be used with containers if with `--init` flag. You **MUST** set `WatchdogSignal=SIGTERM`. This is because both `tini` (docker) and `catatonit`(podman) do not forward this signal to their children.
 
 ## systemd-resolved Split Horizon DNS
 

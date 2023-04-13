@@ -1,0 +1,59 @@
+[Unit]
+Description=ProtonWire Container
+Documentation=https://github.com/tprasadtp/protonvpn-docker
+Wants=network-online.target
+After=network-online.target
+RequiresMountsFor=%t/containers
+
+[Service]
+# Service Type
+# ----------------------------------------
+Type=notify
+NotifyAccess=all
+
+# Service Settings and Environment
+# ----------------------------------------
+Environment=PODMAN_SYSTEMD_UNIT=%n
+
+# Service lifecycle
+# ----------------------------------------
+Restart=on-failure
+
+# Service commands
+# ----------------------------------------
+ExecStart=/usr/bin/podman run \
+	--cidfile=%t/%n.ctr-id \
+	--cgroups=no-conmon \
+	--rm \
+	--sdnotify=conmon \
+	--detach \
+	--replace \
+	--name protonwire \
+	--cap-add=NET_ADMIN \
+	--sysctl=net.ipv4.conf.all.rp_filter=2 \
+	--secret private-key,mode=600 \
+	--publish 8000:80 \
+	--env PROTONVPN_SERVER=nl-free-127.protonvpn.net \
+	--env DEBUG=1 \
+    ghcr.io/tprasadtp/protonwire:latest
+
+ExecStop=/usr/bin/podman stop --ignore --time 10 --cidfile=%t/%n.ctr-id
+ExecStopPost=/usr/bin/podman rm --force --ignore --time 10 --cidfile=%t/%n.ctr-id
+
+# Other Settings
+# ----------------------------------------
+IPAccounting=true
+CPUAccounting=true
+BlockIOAccounting=true
+MemoryAccounting=true
+TasksAccounting=true
+
+# Service timeouts & Watchdog
+# ----------------------------------------
+WatchdogSec=120
+TimeoutAbortSec=30
+TimeoutStopSec=70
+TimeoutStartSec=180
+
+[Install]
+WantedBy=default.target

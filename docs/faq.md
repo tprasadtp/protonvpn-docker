@@ -3,11 +3,10 @@
 ## Why automatic server selection is not supported
 
 - This is caused by changes to ProtonVPN API, which now requires authentication.
-- Upstream API uses geo-location/latency to select "best" server with least amount of load. This information is returned via API (via field `.Score` and `.Load` on every `LogicalNode`) to the caller. Because v7 and later do not make API requests to ProtonVPN directly and use a global cache, This geo-location/latency based automatic server selection is not supported.
+- Upstream API uses geo-location/latency to select "best" server with least amount of load. This information is returned via API (via field `.Score` and `.Load` on every `LogicalNode`) to the caller. Because 7.0.0 and later do not make API requests to ProtonVPN directly, but to a global cache, This geo-location/latency based automatic server selection is not supported.
 - It might be possible to cache server load, but if the cache becomes stale fails to update,
 it might result in a single VPN server to be selected as "best" and might cause issues upstream.
-- You can however validate that a server supports features like P2P, steaming etc by using
-`--p2p`, `--streaming`, `--secure-core` flags during connect/healthcheck command.
+- It is possible to do some client side validations that a server supports features like P2P, steaming etc by using `--p2p`, `--streaming`, `--secure-core` flags during connect/healthcheck command.
 
 ## How to check if an address is being routed via VPN via CLI
 
@@ -17,13 +16,13 @@ then the IP address will be routed via VPN.
 
 ## How to check if systemd-resolved is in use
 
-- If you are using Ubuntu/Fedora with defaults you are most likely using systemd-resolved for local DNS.
-- Run `resolvectl status --no-pager`. If it has `resolv.conf mode: stub`.  you are using `systemd-resolved`.
+- If using Ubuntu/Fedora with defaults most likely using systemd-resolved is in use for local DNS.
+- Run `resolvectl status --no-pager`. If it has `resolv.conf mode: stub`.  `systemd-resolved` is in use.
 
-## What with route table 51821 and 51822
+## What with route tables 51821 and 51822
 
-- We keep route table separate (`51821` for wireguard routing and `51822` for killswitch).
-- By default we _include_ following subnets in the route table.
+- Route tables are kept separate (`51821` for wireguard routing and `51822` for killswitch).
+- By default following subnets are _included_ in the route table.
     - `10.2.0.1/32` (_DNS server_)
     - `0.0.0.0/5`
     - `8.0.0.0/7`
@@ -95,7 +94,7 @@ then the IP address will be routed via VPN.
     - `228.0.0.0/6`
     - `232.0.0.0/5`
     - `240.0.0.0/4`
-- For IPV6 we _include_ `2000::/3` as it excludes almost all _reserved_ addresses.
+    - `2000::/3` (Only if IPv6 is enabled)
 
 ## NAT and KeepAlive packets
 
@@ -103,9 +102,8 @@ WireGuard is not a chatty protocol. However for _most_ if not all use cases, end
 
 ## Split horizon DNS
 
-- This is only possible with `systemd-resolved`. After connecting to VPN (`protonwire connect`) You can verify split dns configuration via `resolvectl query <domain>` and check the interface being used to resolve it.
-Please ensure to use stub resolver mode as many statically built programs (Especially go/rust programs) do not use `nss-resolve` and directly read `/etc/resolv.conf`.
-- Please ensure that your DHCP server/router or VPN gateway advertises search domains. They will be automatically picked up if using NetworkManager(most desktops) or `systemd-networkd` (most servers) or `ifupdown`.
+- This is only possible with `systemd-resolved`. After connecting to VPN (via `protonwire connect <SERVER>`). Verify split dns configuration using `resolvectl query <domain>` and check the interface being used to resolve it.
+- Ensure that DHCP server/router or VPN gateway advertises search domains. They will be automatically picked up if using NetworkManager(most desktops) or `systemd-networkd` (most servers) or `ifupdown` hooks.
 
 ## Running systemd unit as non-root user
 
@@ -129,9 +127,10 @@ Please ensure to use stub resolver mode as many statically built programs (Espec
 
 Tailscale uses its own fwmark, routing table and routing rules.
 Because Tailscale addresses are CGNAT addresses and have fwmark on the packets
-passing via tailscale interface, it just works. Zero configuration changes required!
+passing via tailscale interface, it just works.
+Zero configuration changes required!
 
-## How can I see WireGuard settings
+## How to see WireGuard settings
 
 ```bash
 wg show
@@ -181,7 +180,8 @@ Bulk of the work is done via `scripts/generate-server-metadata`
 
 ## Known Bugs in Upstream API/libraries
 
-> Proton API and libraries are in constant state of ~~chaos~~ ~~development~~ ~~buggy~~ ~~flux~~ ~~inconsistency~~ instability and documentation is ~~virtually~~ actually non-existent.
+> Proton API and libraries are in constant state of ~~chaos~~ ~~flux~~
+~~inconsistency~~ instability and documentation is ~~virtually~~ actually non-existent.
 
 - Some servers appear to flip flop between ONLINE and OFFLINE state in loop (like every hour), appear and disappear randomly (sometimes just two servers weirdly appearing and disappearing every hour or so).
 - Server's Entry IP sometimes appears to be its ExitIP and sometimes Exit IP of some other
