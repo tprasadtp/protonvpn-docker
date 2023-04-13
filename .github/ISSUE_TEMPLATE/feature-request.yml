@@ -28,6 +28,8 @@ body:
       description: |
         Details of feature request and enhancement.
         Please be specific. Include details with relevant links/data.
+    validations:
+      required: true
 
   - type: checkboxes
     id: code-of-conduct
@@ -39,6 +41,8 @@ body:
         Please also ensure that you remove or redact any sensitive personally identifying information
         like IP addresses and secrets like your API keys from logs and report included here.
       options:
+        - label: I have verified that this feature request is not a duplicate and is not not addressed by the [FAQ](https://github.com/tprasadtp/protonvpn-docker/blob/master/docs/faq.md) and [Troubleshooting](https://github.com/tprasadtp/protonvpn-docker/blob/master/docs/help.md).
+          required: true
         - label: I agree to follow this project's Code of Conduct
           required: true
         - label: I have removed any sensitive personally identifying information(PII) and secrets from in this issue report.

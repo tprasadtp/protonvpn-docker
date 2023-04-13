@@ -94,7 +94,6 @@ Restart=on-failure
 # ----------------------------------------
 WatchdogSec=120
 TimeoutAbortSec=30
-
 TimeoutStopSec=30
 TimeoutStartSec=180
 
