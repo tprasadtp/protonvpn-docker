@@ -708,7 +708,7 @@ def write_metadata(
             if feature_bits[4] == "1":
                 features.append("IPV6")
 
-            logging.info(
+            logging.debug(
                 "%-15s Status=%s Features=%s",
                 logical_server_name,
                 logical_server_status,
@@ -936,6 +936,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "-v",
         "--verbose",
+        "--debug",
         required=False,
         dest="verbose",
         action="store_true",
@@ -948,6 +949,10 @@ if __name__ == "__main__":
 
     if args.verbose:
         log_lvl = logging.DEBUG
+    else:
+        debug = os.getenv("DEBUG", "false")
+        if debug.lower() == "true" or debug.lower() == "1" or debug.lower() == "yes":
+            log_lvl = logging.DEBUG
 
     try:
         import coloredlogs
