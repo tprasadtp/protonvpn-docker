@@ -52,14 +52,14 @@ No special configuration required!
 
 > **Note**
 >
-> If you are looking for OpenVPN based container,
+> For old OpenVPN based container's documentation,
 > See [here](https://github.com/tprasadtp/protonvpn-docker/tree/release/v5).
 
 ## Container Images
 
 > **Warning**
 >
-> [Docker Rootless](https://docs.docker.com/engine/security/rootless/), [gVisor](https://gvisor.dev), [Podman Rootless](https://github.com/containers/podman/blob/main/rootless.md) or any other container runtime using **user mode networking** are **NOT** supported!
+> [gVisor](https://gvisor.dev) runtime is **NOT** supported!
 
 Images are published at [ghcr.io/tprasadtp/protonwire][ghcr].
 
@@ -67,7 +67,7 @@ Images are published at [ghcr.io/tprasadtp/protonwire][ghcr].
 
 - If using Debian 11 (Buster) or later, Raspberry Pi OS (Buster) or later, Fedora, ArchLinux, Linux Mint 20.x or later, RHEL 9 or later, Alma Linux 9 or later, CentOS 9 Stream, Ubuntu 20.04 or later have the required kernel module built-in.
 - Kernel versions 5.6 or later.
-- If **NONE** of the above conditions can be satisfied, You have to install WireGuard. Your distribution might already package DKMS module or provide signed kernels with WireGuard built-in. Visit https://www.wireguard.com/install/ for more info.
+- If **NONE** of the above conditions can be satisfied, install WireGuard. Your distribution might already package DKMS module or provide signed kernels with WireGuard built-in. Visit https://www.wireguard.com/install/ for more info.
     > **Note**
     >
     > If running as a container, Wireguard **MUST** be installed on the host, not the container.
@@ -254,8 +254,10 @@ Same can be used as liveness probe and readiness probe for Kubernetes.
     >
     > - Ro publish additional ports from other containers using this VPN, it **MUST** be done
     >   on the `protonwire` container!
-    > - `--sysctl` and `--cap-add` flags are important! without these, container cannot create or manage
-    >   WireGuard interfaces or routing.
+    > - `--sysctl` and `--cap-add` flags are important! without these, container cannot create
+    > or manage WireGuard interfaces or routing.
+    > - docker rootless should also work just fine for most users, but is considered experimental.
+
 
 - To use VPN in other container(s), use `--net=container:protonwire` flag.
 For example, we can run caddy to proxy `https://api.ipify.org/` via VPN. Visiting http://localhost:8000, or `curl http://localhost:8000` should show VPN's country and IP address.
@@ -337,11 +339,11 @@ services:
 
 > **Warning**
 >
-> - podman versions older than v4 (one included in Debian 11/Ubuntu 22.04)
-> are not supported. You might be able to use podman v3 to run the container,
-> but some basic flags and commands are missing(`--sysctl` on pod create,
-> `podman secret` commands etc.) and thus cannot be supported.
-
+> - podman versions older than v4 (one included in Debian 11/Ubuntu 22.04 repos)
+> are **NOT** supported. It might be possible to use it to run the container,
+> but some flags and commands are missing(`--sysctl` flag on pod create,
+> `podman secret` commands etc.) and thus cannot be __supported__,
+> but may be used without those features.
 
 - Create a podman secret for private key
     ```bash
@@ -350,7 +352,7 @@ services:
 
 - Run protonwire container
     ```bash
-    podman run \
+    sudo podman run \
         -it \
         --rm \
         --name protonwire \
@@ -373,12 +375,13 @@ services:
     > WireGuard interface.
     > * `mode=600` in secret mounting is important as script refuses to use private key with insecure
     > permissions.
+    > * podman rootless should also work just fine for most users, but is considered experimental.
 
 - To use VPN in other container(s), use `--net=container:protonwire` flag.
 For example, we can run caddy to proxy `https://api.ipify.org/` via VPN. Visiting http://localhost:8000, or `curl http://localhost:8000` should show VPN's country and IP address.
 
     ```console
-    podman run \
+    sudo podman run \
         -it  \
         --rm \
         --name=protonwire-demo \
@@ -469,7 +472,7 @@ if running as systemd unit outside of containers.
     ```bash
     sudo protonwire disconnect
     ```
-- To check/verify your connection
+- To check/verify connection
     ```bash
     sudo protonwire check
     ```
@@ -577,32 +580,35 @@ Provides rich systemd integration. Connected server kill-switch state is display
 - Systemd watchdog feature is supported and enabled if `NOTIFY_SOCKET` and `WATCHDOG_USEC` are set.
 - `IPCHECK_INTERVAL` or `--check-interval`, with non zero value cannot be used with watchdog as it creates conflicts.
 - `WatchdogSec` cannot be less than 20 seconds.
-- Default watchdog signal(`SIGABRT`) cannot be used with containers if with `--init` flag. You **MUST** set `WatchdogSignal=SIGTERM`. This is because both `tini` (docker) and `catatonit`(podman) do not forward this signal to their children.
+- Default watchdog signal(`SIGABRT`) cannot be used with containers if with `--init` flag.
+**MUST** set `WatchdogSignal=SIGTERM` as both `tini` (docker) and `catatonit`(podman) do not forward this signal to their children.
 
 ## systemd-resolved Split Horizon DNS
 
 - Split horizon DNS is only supported with `systemd-resolved` **AND** when **NOT** running in a container.
 - It depends on `systemd-resolved` to be up and running and `/etc/resolv.conf` to be in stub resolver mode. `nss-resolve` is buggy as most statically compiled programs (especially Go) may break DNS resolution for
 link specific domains.
-- It also requires you to specify routing domains and/or search domains for your **local/non-vpn** networks, via DHCP options or via `resolvectl`
+- It also requires specifying routing domains and/or search domains for **local/other-vpn** networks, via DHCP options or via `resolvectl`
 - By default script will set default routing domain on VPN interface.
 - Run the command below for status of routing domains.
     ```bash
     resolvectl status --no-pager
     ```
-- You can disable this integration by setting environment variable `SKIP_DNS_CONFIG` to `1` or via `--skip-dns-config` CLI flag.
+- Disable `systemd-resolved` integration by setting environment variable `SKIP_DNS_CONFIG` to `1`
+or via `--skip-dns-config` CLI flag.
 
 ### Dependent units
 
-You can depend on this unit by adding **ALL** the properties below to `[Unit]` section in your dependent units. See [systemd.unit(5)][] for more info.
+Depend on `protonwire` unit by adding **ALL** the properties below to `[Unit]` section in
+dependent units. See [systemd.unit(5)][] for more info.
 
 - [`BindsTo=protonwire.service`][BindsTo]
 - [`Requisite=protonwire.service`][Requisite]
 - [`After=protonwire.service`][After]
 
-This setup ensures that service depending on VPN will be **ONLY** started when `protonwire` is activated. (You still have to `enable` dependent units) If for some reason protonwire service becomes un-healthy and exits, `BindsTo` ensures that dependent unit will be stopped.
+This setup ensures that service depending on VPN will be **ONLY** started when `protonwire` is activated. (Dependent units still have to be enabled) If for some reason protonwire service becomes un-healthy and exits, `BindsTo` ensures that dependent unit will be stopped.
 
-If your system package already provides a systemd unit file, you can use [drop-in][] units to configure dependencies.
+If system package already provides a systemd unit file for the service, use [drop-in][] units to configure dependencies.
 
 > Don't forget to run `sudo systemctl daemon-reload` upon updating/installing unit files.
 

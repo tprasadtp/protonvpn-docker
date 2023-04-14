@@ -2255,14 +2255,14 @@ function __protonvpn_connect() {
     else
         if [[ -n $WIREGUARD_PRIVATE_KEY ]]; then
             if printf "%s" "${WIREGUARD_PRIVATE_KEY}" | wg set protonwire0 private-key /dev/stdin 2>&1 | log_tail "wg-set-key"; then
-                log_success "Setting WireGuard private key"
+                log_success "Configured WireGuard private key"
             else
                 log_error "Setting WireGuard private key failed!"
                 return 1
             fi
         elif [[ -n $WIREGUARD_PRIVATE_KEY_FILE ]]; then
             if wg set protonwire0 private-key "${WIREGUARD_PRIVATE_KEY_FILE}" 2>&1 | log_tail "wg-set-key"; then
-                log_success "Setting WireGuard private key from $WIREGUARD_PRIVATE_KEY_FILE"
+                log_success "Configured WireGuard private key from $WIREGUARD_PRIVATE_KEY_FILE"
             else
                 log_error "Setting WireGuard private key from $WIREGUARD_PRIVATE_KEY_FILE failed!"
                 return 1
@@ -2364,7 +2364,7 @@ function __protonvpn_connect() {
         log_success "WireGuard interface fwmark is already set to - 0xca6d"
     else
         if wg set protonwire0 fwmark 0xca6d 2>&1 | log_tail "wg-set-fwmark"; then
-            log_success "Setting fwmark on WireGuard interface to - 0xca6d"
+            log_success "Configured fwmark on WireGuard interface to - 0xca6d"
         else
             log_error "Setting fwmark on WireGuard interface to - 0xca6d failed!"
             return 1

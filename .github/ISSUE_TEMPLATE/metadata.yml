@@ -35,9 +35,9 @@ body:
     attributes:
       label: Whitelisting API endpoints
       options:
-        - label: I have whitelisted `protonwire-api.vercel.app` from my DNS ad-blocking DNS server or gateway (if applicable)
+        - label: I have whitelisted `protonwire-api.vercel.app` from my ad-blocking DNS server or gateway (if applicable)
           required: true
-        - label: I have whitelisted `icanhazip.com` from my DNS ad-blocking DNS server or gateway (if applicable)
+        - label: I have whitelisted `icanhazip.com` from my ad-blocking DNS server or gateway (if applicable)
           required: true
 
   - type: dropdown
