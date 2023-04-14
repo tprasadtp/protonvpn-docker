@@ -15,8 +15,6 @@ body:
       label: Version
       description: |
         - Version of the software you are running
-        - If unable to detect or not applicable, leave the field as is.
-      value: NA
     validations:
       required: true
 
@@ -68,11 +66,14 @@ body:
       options:
         - Manually via CLI
         - Systemd Unit
-        - Systemd Unit as podman container
+        - Systemd Unit as podman container/pod
         - docker
-        - Kubernetes/k3s with containerd
-        - Kubernetes/k3s with cri-o
-        - I don't know!
+        - docker-rootless
+        - podman
+        - podman-rootless
+        - Kubernetes with containerd
+        - Kubernetes with cri-o
+        - containerd with `nerdctl`
         - None of the above, I have mentioned the details in additional info section.
     validations:
       required: true
@@ -94,7 +95,7 @@ body:
   - type: textarea
     id: config
     attributes:
-      label: Your configuration
+      label: My configuration
       description: |
           - For docker-compose, include your docker-compose file.
           - For kubernetes, include your Pod/Deployment, Service and Network configurations.
@@ -102,6 +103,26 @@ body:
       render: markdown
     validations:
       required: true
+
+  - type: dropdown
+    id: adblock-dns
+    attributes:
+      label: Running via PiHole/Pfblocker or other ad-blocking DNS server?
+      options:
+        - "Yes"
+        - "No"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: adblock-whitelist
+    attributes:
+      label: Whitelisting API endpoints
+      options:
+        - label: I have whitelisted `protonwire-api.vercel.app` from my ad-blocking DNS server or gateway (if applicable)
+          required: true
+        - label: I have whitelisted `icanhazip.com` from my ad-blocking DNS server or gateway (if applicable)
+          required: true
 
   - type: checkboxes
     id: troubleshooting
@@ -112,19 +133,17 @@ body:
       options:
         - label: I have read [FAQ](https://github.com/tprasadtp/protonvpn-docker/blob/master/docs/faq.md) and [Troubleshooting](https://github.com/tprasadtp/protonvpn-docker/blob/master/docs/help.md).
           required: true
-        - label: I am **NOT** using container runtime which use user-mode networking, [Docker Rootless](https://docs.docker.com/engine/security/rootless/), [gVisor](https://gvisor.dev), [Podman Rootless](https://github.com/containers/podman/blob/main/rootless.md) etc.
-          required: true
         - label: I am using latest stable version
           required: true
 
   - type: textarea
     id: logs
     attributes:
-      label: Container/Pod/systemd log output
+      label: Container/Pod/systemd log output with DEBUG=1 or `--debug`
       description: |
-        - What do you see when you run the script with debug logs enabled
+        - What do you see when you run the script with debug logs enabled?
           - Set env variable `DEBUG` to 1
-          - Use `--debug` cli flag
+          - Use `--debug` flag
           - Add drop-in unit to enable DEBUG or run with `systemd-run --env DEBUG=1`
       render: log
     validations:
