@@ -252,7 +252,7 @@ Same can be used as liveness probe and readiness probe for Kubernetes.
     ```
     > **Warning**
     >
-    > - Ro publish additional ports from other containers using this VPN, it **MUST** be done
+    > - To publish additional ports from other containers using this VPN, it **MUST** be done
     >   on the `protonwire` container!
     > - `--sysctl` and `--cap-add` flags are important! without these, container cannot create
     > or manage WireGuard interfaces or routing.
@@ -260,7 +260,7 @@ Same can be used as liveness probe and readiness probe for Kubernetes.
 
 
 - To use VPN in other container(s), use `--net=container:protonwire` flag.
-For example, we can run caddy to proxy `https://api.ipify.org/` via VPN. Visiting http://localhost:8000, or `curl http://localhost:8000` should show VPN's country and IP address.
+For example, we can run caddy to proxy `https://ip.me/` via VPN. Visiting http://localhost:8000, or `curl http://localhost:8000` should show VPN's country and IP address.
 
     ```console
     docker run \
@@ -378,7 +378,7 @@ services:
     > * podman rootless should also work just fine for most users, but is considered experimental.
 
 - To use VPN in other container(s), use `--net=container:protonwire` flag.
-For example, we can run caddy to proxy `https://api.ipify.org/` via VPN. Visiting http://localhost:8000, or `curl http://localhost:8000` should show VPN's country and IP address.
+For example, we can run caddy to proxy `https://ip.me` via VPN. Visiting http://localhost:8000, or `curl http://localhost:8000` should show VPN's country and IP address.
 
     ```console
     sudo podman run \
