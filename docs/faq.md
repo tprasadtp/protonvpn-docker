@@ -6,7 +6,7 @@
 - Upstream API uses geo-location/latency to select "best" server with least amount of load. This information is returned via API (via field `.Score` and `.Load` on every `LogicalNode`) to the caller. Because 7.0.0 and later do not make API requests to ProtonVPN directly, but to a global cache, This geo-location/latency based automatic server selection is not supported.
 - It might be possible to cache server load, but if the cache becomes stale fails to update,
 it might result in a single VPN server to be selected as "best" and might cause issues upstream.
-- It is possible to do some client side validations that a server supports features like P2P, steaming etc by using `--p2p`, `--streaming`, `--secure-core` flags during connect/healthcheck command.
+- It is possible to do some client side validations that a server supports features like P2P, steaming etc. by using `--p2p`, `--streaming`, `--secure-core` flags with connect/healthcheck command.
 
 ## How to check if an address is being routed via VPN via CLI
 

@@ -106,6 +106,7 @@ Images are published at [ghcr.io/tprasadtp/protonwire][ghcr].
 - If private key is not specified via CLI or environment variable, it is searched
 in following locations.
   - `/etc/protonwire/private-key`
+  - `/run/secrets/protonwire-private-key`
   - `/run/secrets/protonwire/private-key`
   - `${CREDENTIALS_DIRECTORY}/private-key` (Only if `$CREDENTIALS_DIRECTORY` is set)
 
@@ -126,9 +127,7 @@ in following locations.
 
 This should be server name like `NL#1`(or `NL-1`) or domain name like,
 `node-nl-01.protonvpn.net` (recommended). Automatic server selection
-by setting `PROTONVPN_SERVER` to `P2P`, `RANDOM` and other methods are
-**NOT SUPPORTED**. Use a fully qualified DNS name (as shown in ProtonVPN website)
-or a server name like `NL-#1`.
+by setting `PROTONVPN_SERVER` to `P2P`, `RANDOM` etc are **NOT SUPPORTED**.
 
 See [this](https://github.com/tprasadtp/protonvpn-docker/blob/master/docs/faq.md#why-automatic-server-selection-is-not-supported) for more info.
 
