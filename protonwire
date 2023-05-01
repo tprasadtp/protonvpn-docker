@@ -406,7 +406,9 @@ function __is_valid_ipcheck_url() {
 }
 
 function __is_ipv6_disabled() {
-    if [[ $(sysctl -n net.ipv6.conf.all.disable_ipv6) == "1" ]]; then
+    if [[ $(cat /sys/module/ipv6/parameters/disable) == "1" ]]; then
+        return 0
+    elif [[ $(sysctl -n net.ipv6.conf.all.disable_ipv6) == "1" ]]; then
         return 0
     elif [[ $(sysctl -n net.ipv6.conf.default.disable_ipv6) == "1" ]]; then
         return 0
