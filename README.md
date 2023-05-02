@@ -45,7 +45,7 @@
 ## Features
 
 - LAN, private and Tailscale networks remain accessible and are not routed over VPN.
-No special configuration required!
+**No special configuration required**.
 - Supports split horizon DNS **automatically**, if `systemd-resolved` is in use.
 - Supports running as systemd unit (natively and as podman container)
 - Supports roaming clients
@@ -70,7 +70,7 @@ Images are published at [ghcr.io/tprasadtp/protonwire][ghcr].
 - If **NONE** of the above conditions can be satisfied, install WireGuard. Your distribution might already package DKMS module or provide signed kernels with WireGuard built-in. Visit https://www.wireguard.com/install/ for more info.
     > **Note**
     >
-    > If running as a container, Wireguard **MUST** be installed on the host, not the container.
+    > If running as a container, Wireguard **MUST** be installed on the host, **not** the container.
 
 - To check current kernel version run,
     ```bash
@@ -134,16 +134,15 @@ See [this](https://github.com/tprasadtp/protonvpn-docker/blob/master/docs/faq.md
 > **Warning**
 >
 > - Script cannot validate if specified server is available under your plan.
-> Its user's responsibility to ensure that server specified is available
+> It is user's responsibility to ensure that server specified is available
 > under your subscription and supports required features, like P2P, Streaming etc.
 > Use `--p2p`, `--streaming`, `--secure-core` flags to enable client side validations.
-
 
 ## KillSwitch
 
 > **Warning**
 >
-> This Feature is experimental.
+> This Feature is experimental and is not covered by semver compatibility guarantees.
 
 Kill-Switch is not a hard kill-switch but more of an "internet" kill-switch.
 LAN addresses, Link-Local addresses and CGNAT(also Tailscale) addresses
@@ -217,9 +216,8 @@ Environment:
 
 ## Health-checks
 
-- Script supports `healthcheck` command. By default, when running as a service script will keep checking every `IPCHECK_INTERVAL` _(default=60)_ seconds using the same api endpoint. To disable healthchecks entirely set `IPCHECK_INTERVAL` to `0`
-- Containers images do not have healthchecks by default. This is because OCI specs do not include healthcheck. `HEALTHCHECK` directive on Dockerfile is specific to docker.
-- Use `protonwire healthcheck --silent --container` as the healthcheck command.
+- Script supports `healthcheck` command. By default, when running as a service script will keep checking every `IPCHECK_INTERVAL` _(default=60)_ seconds using the `IPCHECK_URL` api endpoint. To disable healthchecks entirely set `IPCHECK_INTERVAL` to `0`
+- Use `protonwire healthcheck --silent --container` as the `HEALTHCHECK` command.
 Same can be used as liveness probe and readiness probe for Kubernetes.
 
 ## Docker
@@ -234,7 +232,7 @@ Same can be used as liveness probe and readiness probe for Kubernetes.
     ```bash
     docker pull ghcr.io/tprasadtp/protonwire:latest
     ```
-- Run VPN Container. Assuming that a container which needs to be routed via VPN, listening on container port `80` and it listens on port 80 and you wish to map it to host port `8000`,
+- Run the VPN container. Assuming that a container which needs to be routed via VPN, listening on container port `80` and you wish to map it to host port `8000`,
     ```console
     docker run \
         -it \
@@ -280,7 +278,7 @@ For example, we can run caddy to proxy `https://ip.me/` via VPN. Visiting http:/
 
 ## Docker Compose
 
-If entire stack in a single compose file, then `network_mode: service:protonwire` on the services which should be routed via VPN. If the VPN stack is **NOT** in same compose file use `network_mode: container:<protonwire-container-name>`.
+If entire stack is in a single compose file, then `network_mode: service:protonwire` on the services which should be routed via VPN. If the VPN stack is **NOT** in same compose file use `network_mode: container:<protonwire-container-name>`.
 
 As an example, run caddy web-server, proxying https://ip.me, via VPN using the compose config given below. Once the stack is up, visiting the http://localhost:8000, or `curl -s http://localhost:8000` should show VPN's country and IP address.
 
@@ -325,6 +323,7 @@ services:
 
 
 > **Note**
+>
 > - It is **essential** to expose/publish port(s) _on protonwire container_, instead of application container.
 > - **SHOULD NOT** run the container as privileged. Adding capability `CAP_NET_ADMIN` **AND** defined `sysctls` should be sufficient.
 
@@ -476,6 +475,8 @@ if running as systemd unit outside of containers.
     sudo protonwire check
     ```
 
+> **Note**
+>
 > Add `--debug` flag to see debug logs.
 
 ## Systemd Integrations
@@ -609,6 +610,8 @@ This setup ensures that service depending on VPN will be **ONLY** started when `
 
 If system package already provides a systemd unit file for the service, use [drop-in][] units to configure dependencies.
 
+> **Note**
+>
 > Don't forget to run `sudo systemctl daemon-reload` upon updating/installing unit files.
 
 ## Troubleshooting & FAQ

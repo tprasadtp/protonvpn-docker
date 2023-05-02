@@ -51,7 +51,10 @@ body:
   - type: dropdown
     id: nas
     attributes:
-      label: Running on a NAS?
+      label: |
+        Running on a NAS?
+        - Please ensure that your kernel includes Wireguard support
+        - If wireguard is not present install wireguard on your host.
       options:
         - "Yes"
         - "No"
@@ -131,6 +134,8 @@ body:
       description: |
         - Check common troubleshooting steps.
       options:
+        - label: Wireguard is supported by my kernel
+          required: true
         - label: I have read [FAQ](https://github.com/tprasadtp/protonvpn-docker/blob/master/docs/faq.md) and [Troubleshooting](https://github.com/tprasadtp/protonvpn-docker/blob/master/docs/help.md).
           required: true
         - label: I am using latest stable version
