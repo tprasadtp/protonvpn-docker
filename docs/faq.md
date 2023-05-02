@@ -8,6 +8,18 @@
 it might result in a single VPN server to be selected as "best" and might cause issues upstream.
 - It is possible to do some client side validations that a server supports features like P2P, steaming etc. by using `--p2p`, `--streaming`, `--secure-core` flags with connect/healthcheck command.
 
+## WireGuard interface creation fails
+
+```log
+[TRACE   ] (ip-link) RTNETLINK answers: Not supported
+[ERROR   ] WireGuard interface creation failed!
+```
+
+This typically happens on a older machine or NAS/embedded devices
+as Wireguard support might not be present in the kernel.
+Please visit https://www.wireguard.com/install/ or contact device manufacturer.
+
+
 ## How to check if an address is being routed via VPN via CLI
 
 - Run `ip route get <ip-address>`
