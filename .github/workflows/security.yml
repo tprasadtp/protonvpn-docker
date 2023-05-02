@@ -16,7 +16,7 @@ jobs:
           latest_release_tag="$(gh api repos/${GH_REPO}/releases/latest --jq '.tag_name')"
           if [[ -n $latest_release_tag ]]; then
               echo "::debug::Tag for latest release is - $latest_release_tag"
-              echo "::set-output name=TAG_NAME::$latest_release_tag"
+              echo "TAG_NAME=$latest_release_tag" >> "$GITHUB_OUTPUT"
           else
               echo "::error::Failed to get tag for latest release($latest_release_tag)"
               exit 1
@@ -45,9 +45,6 @@ jobs:
           image-ref: 'ghcr.io/tprasadtp/protonwire:latest'
           format: 'sarif'
           output: 'trivy-results.sarif'
-      - name: Correct Trivy cache permissions
-        run: sudo chown -R $USER:$GROUP .trivy
-        if: always()
       - name: Upload Trivy scan results to GitHub Security tab
         if: github.ref == 'refs/heads/master' && always()
         uses: github/codeql-action/upload-sarif@v2
