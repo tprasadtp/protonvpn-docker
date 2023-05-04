@@ -19,7 +19,6 @@ This typically happens on a older machine or NAS/embedded devices
 as Wireguard support might not be present in the kernel.
 Please visit https://www.wireguard.com/install/ or contact device manufacturer.
 
-
 ## How to check if an address is being routed via VPN via CLI
 
 - Run `ip route get <ip-address>`
@@ -31,9 +30,9 @@ then the IP address will be routed via VPN.
 - If using Ubuntu/Fedora with defaults most likely using systemd-resolved is in use for local DNS.
 - Run `resolvectl status --no-pager`. If it has `resolv.conf mode: stub`.  `systemd-resolved` is in use.
 
-## What with route tables 51821 and 51822
+## Whats with route table 51821
 
-- Route tables are kept separate (`51821` for wireguard routing and `51822` for killswitch).
+- This route table is kept separate to avoid cluttering main route table and avoid conflicts.
 - By default following subnets are _included_ in the route table.
     - `10.2.0.1/32` (_DNS server_)
     - `0.0.0.0/5`
@@ -108,6 +107,20 @@ then the IP address will be routed via VPN.
     - `240.0.0.0/4`
     - `2000::/3` (Only if IPv6 is enabled)
 
+> **Warning**
+>
+> - You should let protonwire manage this table.
+> - Any modification to this table outside of protonwire CLI
+> can lead to network connectivity issues. Though a reboot/restart
+> should revert the state of route tables.
+> - Any modifications made to this table might be lost.
+
+## Whats with route table 51822
+
+Route table 51822 is used for kill-switch in 7.0.3 and lower versions. Versions 7.1.0 and later
+use single route table(51821) with route metrics for kill-switch implementation.
+Script **WILL** flush this routing table automatically if found to be non empty.
+
 ## NAT and KeepAlive packets
 
 WireGuard is not a chatty protocol. However for _most_ if not all use cases, end user devices are using some form of NAT via docker, Kubernetes, home router or some other means. So _Keep alive_ is enabled and set to 20 seconds which should be enough for almost all NAT firewalls.
@@ -139,8 +152,7 @@ WireGuard is not a chatty protocol. However for _most_ if not all use cases, end
 
 Tailscale uses its own fwmark, routing table and routing rules.
 Because Tailscale addresses are CGNAT addresses and have fwmark on the packets
-passing via tailscale interface, it just works.
-Zero configuration changes required!
+passing via tailscale interface, it _just works_. Zero configuration changes required!
 
 ## How to see WireGuard settings
 
@@ -155,9 +167,10 @@ Also these addresses cannot belong to any __other__ interfaces on the machine/co
 - 10.2.0.1 (used by server and as DNS server)
 - 10.2.0.2 (used by client)
 
-## IP check endpoints
+## IP check endpoint URLs
 
-You can use any of the following services for verification as they return your _public_ IP address.
+You can use any of the following services for verification. They **MUST RETURN ONLY your public IP address**.
+  * https://protonwire-api.vercel.app/v1/client/ip (default)
   * https://icanhazip.com/
   * https://checkip.amazonaws.com/
 
@@ -165,7 +178,7 @@ You can use any of the following services for verification as they return your _
 >
 > Do not use ip.me as health-check endpoint, as they seem to do
 > user agent whitelisting and return html page, when user agent
-> does not contain `curl` or `wget` or `requests`.
+> does not contain string `curl` or `wget` or `requests`.
 >
 > ```console
 > curl -si -H "User-Agent: Go-http-client/1.1" https://ip.me/ -o /dev/null -D -
@@ -176,7 +189,6 @@ You can use any of the following services for verification as they return your _
 > Content-Length: 14626
 > Connection: keep-alive
 > ```
->
 
 ## Metadata updates
 
@@ -192,8 +204,7 @@ Bulk of the work is done via `scripts/generate-server-metadata`
 
 ## Known Bugs in Upstream API/libraries
 
-> Proton API and libraries are in constant state of ~~chaos~~ ~~flux~~
-~~inconsistency~~ instability and documentation is ~~virtually~~ actually non-existent.
+> Proton API and libraries are in constant state of ~~chaos~~ development and documentation is ~~virtually~~ actually non-existent.
 
 - Some servers appear to flip flop between ONLINE and OFFLINE state in loop (like every hour), appear and disappear randomly (sometimes just two servers weirdly appearing and disappearing every hour or so).
 - Server's Entry IP sometimes appears to be its ExitIP and sometimes Exit IP of some other

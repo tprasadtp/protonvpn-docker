@@ -5,7 +5,6 @@
 
 set -o pipefail
 
-# Minimum bash version checks
 if [[ ${BASH_VERSINFO[0]} -lt 4 ]]; then
     printf "protonwire requires Bash version >= 4.2" 1>&2
     exit 1
@@ -51,7 +50,6 @@ function __print_version() {
     #diana::dynamic:version:end#
     printf "protonwire version %s(%s)\n" "$PROTONWIRE_VERSION" "$PROTONWIRE_COMMIT"
 }
-
 
 function __is_stderr_colorable() {
     # CLICOLOR_FORCE is set and CLICOLOR_FORCE != 0, force colors
@@ -118,8 +116,7 @@ function __logger_core_event_handler() {
         ;;
     esac
 
-    # Immediately return if log level is not enabled
-    # If LOG_LVL is not set, defaults to 20 - info level
+    # Immediately return if log level is not enabled, If LOG_LVL is not set, defaults to 20 - info level
     if [[ ${LOG_LVL:-20} -gt "${level}" ]]; then
         return
     fi
@@ -376,7 +373,6 @@ function __is_valid_ipcheck_url() {
         if [[ $curl_rc == "0" ]]; then
             declare -a ip_check_response
             readarray -t ip_check_response <"${__PROTONWIRE_HCR}"
-
             if __is_valid_ipv4 "${ip_check_response[0]}"; then
                 log_debug "IP Check endpoint returned ${ip_check_response[0]}(IPv4)"
                 return 0
@@ -527,50 +523,9 @@ function __systemd_notify() {
     return 1
 }
 
-# systemd-resolved supports default routes in >= 241
-function __check_systemd_version() {
-    local systemd_version="0"
-    if has_command systemctl; then
-        declare -a systemctl_version_output
-        # systemtl --version usually gives, something like:
-        # systemd 248 (248.3-1ubuntu8.2)
-        # +PAM +AUDIT +SELINUX ..... <snip>
-        # So we need to extract the version number in first line
-        readarray -t systemctl_version_output < <(systemctl --version 2>/dev/null)
-        if [[ ${#systemctl_version_output[@]} -gt 0 ]]; then
-            if [[ ${systemctl_version_output[0]} =~ ^systemd[[:space:]]+([0-9]+)[[:space:]]+\(.*\)$ ]]; then
-                systemd_version="${BASH_REMATCH[1]}"
-            else
-                log_error "systemctl --version did not match expected format"
-                return 1
-            fi
-        else
-            log_warning "systemctl --version did not return any output!"
-            return 1
-        fi
-    else
-        log_error "systemd is not available"
-        return 1
-    fi
-
-    if [[ $systemd_version =~ ^[0-9]+$ ]]; then
-        log_debug "systemd version - $systemd_version"
-        if [[ $systemd_version -ge 242 ]]; then
-            return 0
-        else
-            log_error "systemd version is too old ($systemd_version), please upgrade to systemd 241 or later"
-        fi
-    else
-        log_error "systemd version is invalid ($systemd_version)"
-    fi
-    return 1
-}
-
 # sd-notify and watchdog checks
 function __sd_notify_checks() {
     local errs=0
-
-    # sd-watchdog checks
     if [[ ${WATCHDOG_USEC} =~ ^[1-9][0-9]+$ ]]; then
         local ping_interval
         ping_interval="$((WATCHDOG_USEC / 2000000))"
@@ -602,7 +557,6 @@ function __sd_notify_checks() {
     return 1
 }
 
-# detect dns update handler
 function __detect_dns_updater() {
     if [[ -n $__PROTONWIRE_DNS_UPDATER ]]; then
         return 0
@@ -650,15 +604,6 @@ function __check_caps() {
 function __check_systemd() {
     local errs=0
 
-    # check systemd requirements
-    # Triggered by using systemd-resolved or running as a systemd unit
-    if [[ $__PROTONWIRE_LOOPER == "systemd" ]] ||
-        [[ $__PROTONWIRE_DNS_UPDATER == "systemd-resolved" ]]; then
-        if ! __check_systemd_version; then
-            return 1
-        fi
-    fi
-
     # If running as loop via --systemd or --container then check if NOTIFY_SOCKET is set
     if [[ $__PROTONWIRE_LOOPER == "systemd" ]]; then
         if ! __sd_notify_checks; then
@@ -666,9 +611,7 @@ function __check_systemd() {
         fi
         declare -ar systemd_populated_vars=(
             "RUNTIME_DIRECTORY"
-            "STATE_DIRECTORY"
             "CACHE_DIRECTORY"
-            "LOGS_DIRECTORY"
         )
 
         for var in "${systemd_populated_vars[@]}"; do
@@ -942,7 +885,7 @@ function __detect_paths() {
     log_variable "__PROTONWIRE_HCR"
 }
 
-# connect command
+# looper command
 function protonvpn_looper_cmd() {
     case "$__PROTONWIRE_LOOPER" in
     systemd)
@@ -962,18 +905,14 @@ function protonvpn_looper_cmd() {
         return 1
     fi
 
-    log_variable "PROTONVPN_CHECK_THRESHOLD"
+    log_variable "IPCHECK_THRESHOLD"
     log_variable "IPCHECK_INTERVAL"
 
     if __protonvpn_connect; then
         if [[ $IPCHECK_INTERVAL != "0" ]]; then
             log_info "Verifying connection"
-            # This can be a bit race-y. A short sleep interval fixes things
-            sleep 2 &
-            wait $!
-
             local verify_attemps=0
-            local max_verify_attemps="${PROTONVPN_CHECK_THRESHOLD:-3}"
+            local max_verify_attemps="${IPCHECK_THRESHOLD:-5}"
             while [[ $verify_attemps -lt $max_verify_attemps ]]; do
                 ((++verify_attemps))
                 if __protonvpn_verify_connection; then
@@ -1086,7 +1025,7 @@ function protonvpn_looper_cmd() {
             fi
 
             if [[ $__PROTONWIRE_HC_ERRORS -ge ${max_verify_attemps} ]]; then
-                log_error "Connection verification ($((__PROTONWIRE_HC_ERRORS))/${PROTONVPN_CHECK_THRESHOLD:-3}) failed"
+                log_error "Connection verification ($((__PROTONWIRE_HC_ERRORS))/${IPCHECK_THRESHOLD:-5}) failed"
                 break
             fi
 
@@ -1094,7 +1033,7 @@ function protonvpn_looper_cmd() {
             wait $!
 
             if ! __protonvpn_verify_connection; then
-                log_error "Failed to verify connection ($((__PROTONWIRE_HC_ERRORS + 1))/${PROTONVPN_CHECK_THRESHOLD:-3})"
+                log_error "Failed to verify connection ($((__PROTONWIRE_HC_ERRORS + 1))/${IPCHECK_THRESHOLD:-5})"
                 ((++__PROTONWIRE_HC_ERRORS))
                 log_warning "Attempting to re-connect to ${PROTONVPN_SERVER}"
                 if __protonvpn_connect; then
@@ -1245,9 +1184,6 @@ function protonvpn_fetch_metadata() {
         elif [[ $curl_rc -eq 28 ]]; then
             log_error "Failed to refresh ProtonVPN server metadata (timeout)"
             return 1
-        elif [[ $curl_rc -eq 32 ]]; then
-            log_error "Failed to refresh ProtonVPN server metadata (flock timeout/conflict)"
-            return 1
         elif [[ $curl_rc -eq 22 ]]; then
             log_error "Failed to refresh ProtonVPN server metadata (server name is invalid or not found)"
             return 1
@@ -1303,7 +1239,6 @@ function protonvpn_healthcheck_status_file() {
 
         local hc_diff="-1"
         hc_diff=$((current_ts - hc_time))
-        # +10 is because of subtle race conditions (use flock?)
         if [[ $hc_diff -lt $((check_interval + 10)) ]]; then
             log_success "Healthcheck is up (via status file), last checked ${hc_diff}s ago"
             return 0
@@ -1409,7 +1344,6 @@ function __protonvpn_verify_connection() {
     elif [[ $hc_response_rc == 28 ]]; then
         log_error "curl failed to connect to $$IPCHECK_URL (timeout)"
         return 1
-
     elif [[ $hc_response_rc != 0 ]]; then
         log_error "curl command exited with $hc_response_rc"
         return 1
@@ -1488,7 +1422,7 @@ function protonvpn_verify_cmd() {
     return 1
 }
 
-# Verifies input is a file, readable, has correct permissions (660 or better) & a valid key
+# Verifies input is a file, readable, has correct permissions (660 or better) and a valid key
 function __is_usable_keyfile() {
     local file_path="$1"
 
@@ -1659,25 +1593,42 @@ function __build_subnets() {
     fi
 }
 
+function __flush_old_ks_table_and_rules() {
+    if __is_ipv6_disabled; then
+        declare -ar __rt_protos=("4")
+    else
+        declare -ar __rt_protos=("4" "6")
+    fi
+    local errs=0
+    for proto in "${__rt_protos[@]}"; do
+        local legacy_ks_table
+        legacy_ks_table="$(ip "-${proto}" route show table 51822 2>/dev/null)"
+        if [[ -n ${legacy_ks_table} ]]; then
+            log_warning "Flushing legacy killswitch route table 51822 (IPv$proto)"
+            if ! ip "-${proto}" route flush table 51822 2>&1 | log_tail "ip-route-flush-51822"; then
+                log_error "Failed to flush legacy kill-switch table 51822 (IPv$proto)"
+                return 1
+            fi
+        else
+            log_debug "Legacy killswitch route table 51822 not found or is empty"
+        fi
+        log_debug "Deleting legacy kill-switch routing rules"
+        while [[ $(ip "-${proto}" rule show 2>/dev/null) == *"lookup 51822"* ]]; do
+            log_notice "Removing legacy killswitch table rule (IPv$proto)"
+            if ! ip "-${proto}" rule del not fwmark 0xca6d table 51822 2>&1 | log_tail "ip-rule-ks"; then
+                log_error "Failed to remove killswitch IP rule (IPv$proto) "
+                ((++errs))
+            fi
+        done
+    done
+    if [[ $errs -eq 0 ]]; then
+        return 0
+    fi
+    return 1
+}
+
 function __build_route_table() {
-    local table_type="$1"
-    declare -a table_action
-
-    case "${table_type}" in
-    wireguard)
-        table_id="51821"
-        table_action=(dev protonwire0)
-        ;;
-    killswitch)
-        table_id="51822"
-        table_action=(prohibit)
-        ;;
-    *)
-        log_error "Unknown route table type: $table_type"
-        return 1
-        ;;
-    esac
-
+    local table_id="51821"
     if __is_ipv6_disabled; then
         declare -ar __rt_protos=("4")
     else
@@ -1692,63 +1643,137 @@ function __build_route_table() {
             declare -a desired_routes=("${__PROTONWIRE_SUBNET_6[@]}")
         fi
 
-        # These bools are false by default as it makes things easier when tracking individual routes.
-        local create_table="false"
-        local flush_table="false"
-        log_info "Configuring $table_type table $table_id (IPv$proto)"
-        if [[ -z $(ip "-${proto}" route show table "$table_id" 2>/dev/null) ]]; then
-            log_debug "Not found $table_type table $table_id (IPv$proto)"
-            create_table="true"
+        local create_wg_routes="true"
+        local create_ks_routes="true"
+
+        local routes_rt
+        log_debug "Collecting existing routes if any (IPv$proto)"
+        routes_rt="$(ip "-${proto}" --json route show table "${table_id}" 2>/dev/null)"
+
+        if [[ -z ${routes_rt} ]]; then
+            log_debug "Not found table $table_id (IPv$proto)"
         else
-            log_debug "Checking routes $table_type table $table_id (IPv$proto)"
-            local existing_routes
-
-            log_debug "Collecting routes from $table_type table $table_id (IPv$proto)"
-            existing_routes="$(ip "-${proto}" --json route show table "$table_id" | jq -r '.[].dst' 2>/dev/null)"
-
-            if [[ -z ${existing_routes} ]]; then
-                log_warning "No routes in $table_type table $table_id (IPv$proto)"
-                create_table="true"
+            # cleanup routes from 7.0.0-7.0.3 versions they do not have a metric associated with them.
+            declare -a routes_no_metric
+            readarray -t routes_no_metric < <(jq -r '.[] | select(has("metric") | not) | .dst' <<<"${routes_rt}" 2>/dev/null)
+            if [[ ${#routes_no_metric[@]} -gt 0 ]]; then
+                for item in "${routes_no_metric[@]}"; do
+                    log_debug "Deleting legacy route without metric - ${item} (IPv$proto)"
+                    if ! ip "-${proto}" route del table "$table_id" dev protonwire0 "$item" 2>&1 | log_tail "ip-route-del-legacy"; then
+                        log_error "Failed to delete route $item table $table_id (IPv$proto)"
+                        ((++errs))
+                    fi
+                done
+            else
+                log_debug "No legacy routes (from 7.0.0-7.0.3) found (IPv$proto)"
             fi
 
-            # we have a route table already, check if its configured correctly
-            log_info "Verifying $table_type table $table_id (IPv$proto)"
+            if [[ $errs -gt 0 ]]; then
+                return 1
+            fi
 
-            for route in "${desired_routes[@]}"; do
-                __route_regex="(${route}|${route///32/})" # special handling of /32 route
-                if [[ "$existing_routes" =~ ${__route_regex} ]]; then
-                    log_debug "Route - $route already present in $table_type table $table_id (IPv$proto)"
+            local routes_ks
+            routes_ks="$(jq -r '.[] | select((.metric==900) and (.type=="prohibit")) | .dst' <<<"${routes_rt}" 2>/dev/null)"
+            if [[ -n ${routes_ks} ]]; then
+                if ! __is_enable_killswitch; then
+                    log_warning "Existing killswitch routes found! but killswitch is not enabled! (IPv$proto)"
                 else
-                    log_warning "Route - $route is not present in $table_type table $table_id (IPv$proto)"
-                    create_table="true"
-                    flush_table="true"
+                    log_notice "Validating Killswitch routes (IPv$proto)"
                 fi
-            done
-        fi
 
-        if [[ $flush_table == "true" ]]; then
-            log_debug "Flush (IPv$proto)  table($table_id)"
-            if ! ip "-${proto}" route flush table "$table_id" 2>&1 | log_tail "ip route flush"; then
-                log_error "Failed to flush $table_type table $table_id (IPv$proto)"
-                ((++errs))
+                local ksr_mismatch=0
+                for route in "${desired_routes[@]}"; do
+                    __route_regex="(${route}|${route///32/})" # special handling of /32 route
+                    if [[ "$routes_ks" =~ ${__route_regex} ]]; then
+                        log_debug "Prohibit route - $route already present in table $table_id (IPv$proto)"
+                    else
+                        log_error "Prohibit route - $route is not present in table $table_id (IPv$proto)"
+                        ((++ksr_mismatch))
+                    fi
+                done
+
+                if [[ $ksr_mismatch -gt 0 ]]; then
+                    log_error "You SHOULD NOT manually change route table managed by protonwire (IPv$proto)"
+                    log_error "KillSwitch is in un-managable state (IPv$proto)"
+                    log_error "Run 'protonwire disable-ks' and try again (IPv$proto)"
+                    return 1
+                else
+                    create_ks_routes=false
+                fi
+            else
+                log_debug "No existing killswitch routes found"
             fi
-        else
-            log_debug "No need to flush $table_type table $table_id (IPv$proto)"
+
+            # wg routes
+            declare -a routes_wg
+            readarray -t routes_wg < <(jq -r '.[] | select((.metric==500) and (.dev=="protonwire0")) | .dst' <<<"${routes_rt}" 2>/dev/null)
+            if [[ ${#routes_wg[@]} -gt 0 ]]; then
+                local wgr_mismatch=0
+                for route in "${desired_routes[@]}"; do
+                    __route_regex="(${route}|${route///32/})" # special handling of /32 route
+                    if [[ "${routes_wg[*]}" =~ ${__route_regex} ]]; then
+                        log_debug "Route - $route already present in table $table_id (IPv$proto)"
+                    else
+                        log_error "Route - $route is not present in table $table_id (IPv$proto)"
+                        ((++wgr_mismatch))
+                    fi
+                done
+
+                if [[ $wgr_mismatch -gt 0 ]]; then
+                    log_error "You SHOULD NOT manually change route table $table_id managed by protonwire (IPv$proto)"
+                    for item in "${routes_wg[@]}"; do
+                        log_warning "Removing route - $item in table $table_id (IPv$proto)"
+                        if ! ip "-${proto}" route del table "$table_id" dev protonwire0 metric 500 2>&1 | log_tail "ip-route-del-wg"; then
+                            log_error "Failed to delete route $item with metric 500 in table $table_id (IPv$proto)"
+                            ((++errs))
+                        fi
+                    done
+                else
+                    create_wg_routes=false
+                fi
+
+                if [[ $errs -gt 0 ]]; then
+                    log_error "Route table $table_id is in unknown state! (IPv$proto)"
+                    return 1
+                fi
+            else
+                log_debug "No existing routes found (IPv$proto)"
+            fi
+
         fi
 
-        if [[ $create_table == "true" ]]; then
+        if [[ $create_wg_routes == "true" ]]; then
+            log_notice "Creating routes (IPv$proto)"
             for route in "${desired_routes[@]}"; do
-                # shellcheck disable=SC2068
-                if ! ip "-${proto}" route add table "$table_id" ${table_action[@]} "$route" 2>&1 | log_tail "ip route"; then
-                    log_error "Failed to add $table_type route(IPv$proto) - $route to table($table_id)"
+                if ip "-${proto}" route add table "$table_id" metric 500 dev protonwire0 "${route}" 2>&1 | log_tail "ip-route-add-ks"; then
+                    log_debug "Added route - ${route} to table $table_id (IPv$proto)"
+                else
+                    log_error "Failed to add route - ${route} to table $table_id (IPv$proto)"
                     ((++errs))
-                else
-                    log_debug "Added $table_type route(IPv$proto) - $route to table($table_id)"
                 fi
             done
+        else
+            log_success "Routes are algrady configured (IPv$proto)"
+        fi
+
+        if __is_enable_killswitch; then
+            if [[ $create_ks_routes == "true" ]]; then
+                log_notice "Creating Killswitch routes (IPv$proto)"
+                for route in "${desired_routes[@]}"; do
+                    if ip "-${proto}" route add table "$table_id" metric 900 prohibit "${route}" 2>&1 | log_tail "ip-route-add-ks"; then
+                        log_debug "Added prohibit route - ${route} to table $table_id (IPv$proto)"
+                    else
+                        log_error "Failed to add prohibit route - ${route} to table $table_id (IPv$proto)"
+                        ((++errs))
+                    fi
+                done
+            else
+                log_success "Killswitch is algrady configured (IPv$proto)"
+            fi
+        else
+            log_debug "KillSwitch is disabled (IPv$proto)"
         fi
     done
-
     if [[ $errs -eq 0 ]]; then
         return 0
     fi
@@ -1764,71 +1789,30 @@ function __build_route_rules() {
 
     local errs=0
     for proto in "${__rt_protos[@]}"; do
+        log_debug "Configuring IP rules (IPv$proto)"
         declare -a _routes_json
         declare -a wg_rule_p
-        declare -a ks_rule_p
-
-        readarray -t _routes_json < <(ip "-${proto}" --json rule)
-
         local config_rules="true"
-        log_info "Configuring IP rules (IPv$proto)"
-        readarray -t wg_rule_p < <(jq -r '.[] | select((.fwmark=="0xca6d") and (.table=="51821") and (.src=="all")) | .priority' <<<"${_routes_json[@]}" 2>/dev/null)
-        readarray -t ks_rule_p < <(jq -r '.[] | select((.fwmark=="0xca6d") and (.table=="51822") and (.src=="all")) | .priority' <<<"${_routes_json[@]}" 2>/dev/null)
-
-        # If there are more than 1 routing rules return an error.
-        if [[ ${#wg_rule_p[@]} -gt 1 ]] || [[ ${#ks_rule_p[@]} -gt 1 ]]; then
-            log_error "More than one killswitch/wireguard route rule found!"
-            log_error "Cannot reliably connect to server without leaking connection!"
-            return 1
-        fi
-
-        # If both ks_rule_p and wg_rule_p bot have first element
-        if [[ -n ${ks_rule_p[0]} ]] && [[ -n ${wg_rule_p[0]} ]]; then
-            log_debug "ks_rule_p=${ks_rule_p[0]}, wg_rule_p${wg_rule_p[0]}"
-            # Validate ks rule has lower priority num than wg_rule_p rule
-            if [[ ${ks_rule_p[0]} -gt ${wg_rule_p[0]} ]]; then
-                log_success "Killswitch rule has lower priority(${ks_rule_p[0]}) than manual rule(${wg_rule_p[0]})"
-                config_rules="false"
-            else
-                log_error "Killswitch rule has priority (${ks_rule_p[0]}), but wireguard rule has (${wg_rule_p[0]})"
-                log_error "Cannot reliably connect to server without leaking connection!"
-                log_error "Run 'protonwire disconnect --kill-switch' and try again!"
+        readarray -t _routes_json < <(ip "-${proto}" --json rule)
+        if [[ ${#_routes_json[@]} -gt 0 ]]; then
+            readarray -t wg_rule_p < <(jq -r '.[] | select((.fwmark=="0xca6d") and (.table=="51821") and (.src=="all")) | .priority' <<<"${_routes_json[*]}" 2>/dev/null)
+            if [[ ${#wg_rule_p[@]} -gt 1 ]]; then
+                log_error "More than one routing rule found! (IPv$proto)"
+                log_error "Cannot reliably connect to server without leaking connection! (IPv$proto)"
                 return 1
+            elif [[ ${#wg_rule_p[@]} -eq 1 ]]; then
+                log_success "Routing policy rule is already configured (IPv$proto)"
+                config_rules="false"
             fi
+        else
+            log_debug "No routing rules present (IPv$proto)"
         fi
 
         if [[ $config_rules != "false" ]]; then
-            log_debug "Cleanup old rules if any (IPv$proto)"
-
-            while [[ $(ip "-${proto}" rule show 2>/dev/null) == *"lookup 51821"* ]]; do
-                log_warning "Removing WireGuard table rule (IPv$proto)"
-                if ! ip "-${proto}" rule del not fwmark 0xca6d table 51821 2>&1 | log_tail "ip-rule-wireguard"; then
-                    log_error "Failed to remove rule(IPv$proto) to route traffic via WireGuard"
-                    ((++errs))
-                fi
-            done
-
-            # from all not fwmark 0xca6d lookup 51822
-            if __is_enable_killswitch; then
-                log_debug "Adding IP rule for Killswitch Table (51822)"
-                if ! ip "-${proto}" rule add not fwmark 0xca6d table 51822 2>&1 | log_tail "ip-rule-wireguard"; then
-                    log_error "Failed to add rule to Killswitch table 51822 (IPv$proto)"
-                    ((++errs))
-                fi
-            else
-                if [[ -n ${ks_rule_p[0]} ]]; then
-                    if ! __is_enable_killswitch; then
-                        log_warning "Killswitch is active, but flag --killswitch is not specified!"
-                    fi
-                else
-                    log_debug "No killswitch rules present"
-                fi
-            fi
-
             # from all not fwmark 0xca6d lookup 51821
-            log_debug "Adding IP rule for Wireguard Table (51821)"
-            if ! ip "-${proto}" rule add not fwmark 0xca6d table 51821 2>&1 | log_tail "ip-rule-ks"; then
-                log_error "Failed to add rule to route traffic via WireGuard table 51821 (IPv$proto)"
+            log_debug "Adding IP rule for Table 51821 (IPv$proto)"
+            if ! ip "-${proto}" rule add not fwmark 0xca6d table 51821 2>&1 | log_tail "ip-rule"; then
+                log_error "Failed to add rule to route traffic via table 51821 (IPv$proto)"
                 ((++errs))
             fi
         fi
@@ -2343,7 +2327,7 @@ function __protonvpn_connect() {
             endpoint "${selected_endpoint}:51820" \
             persistent-keepalive 25 \
             2>&1 | log_tail "wg-set-peer"; then
-            log_debug "WireGuard interface is configured with peer - $peer_pub_key(${selected_endpoint})"
+            log_info "WireGuard interface is configured with peer - $peer_pub_key(${selected_endpoint})"
         else
             log_error "Setting WireGuard peer $peer_pub_key(${selected_endpoint}) on interface failed!"
             return 1
@@ -2380,34 +2364,13 @@ function __protonvpn_connect() {
         return 1
     fi
 
-    if ! __build_route_table "wireguard"; then
-        log_error "Failed to build WireGuard table!"
+    if ! __flush_old_ks_table_and_rules; then
         return 1
     fi
 
-    if __is_enable_killswitch; then
-        if ! __build_route_table "killswitch"; then
-            log_error "Failed to build killswitch table!"
-            return 1
-        fi
-    else
-        log_debug "Killswitch is disabled, delete killswitch table 51822 if present"
-        if __is_ipv6_disabled; then
-            declare -ar __rt_protos=("4")
-        else
-            declare -ar __rt_protos=("4" "6")
-        fi
-
-        for proto in "${__rt_protos[@]}"; do
-            if [[ -n $(ip "-${proto}" route show table 51822 2>/dev/null) ]]; then
-                log_warning "Flush killswitch table (51822) (IPv$proto)"
-                if ! ip "-${proto}" route flush table 51822 2>&1 | log_tail "ip route flush"; then
-                    log_warning "Failed to flush killswitch table 51822 (IPv$proto)"
-                fi
-            else
-                log_debug "Killswitch table 51822 is not present or empty (IPv$proto)"
-            fi
-        done
+    if ! __build_route_table; then
+        log_error "Failed to build route table!"
+        return 1
     fi
 
     if ! __build_route_rules; then
@@ -2473,37 +2436,109 @@ function protonvpn_connect_cmd() {
 }
 
 function __protonvpn_disable_ks() {
+    local table_id="51821"
     log_notice "Disabling killswitch (if any)"
+    __flush_old_ks_table_and_rules # ignore errors
+
     if __is_ipv6_disabled; then
         declare -ar __rt_protos=("4")
     else
         declare -ar __rt_protos=("4" "6")
     fi
+    local errs=0
     for proto in "${__rt_protos[@]}"; do
-        while [[ $(ip "-${proto}" rule show 2>/dev/null) == *"lookup 51822"* ]]; do
-            log_notice "Removing Killswitch table rule (IPv$proto)"
-            if ! ip "-${proto}" rule del not fwmark 0xca6d table 51822 2>&1 | log_tail "ip-rule-ks"; then
-                log_error "Failed to remove killswitch IP rule (IPv$proto) "
-                ((++errs))
-            fi
-        done
-
-        if ip "-${proto}" route list table 51822 >/dev/null 2>&1; then
-            log_notice "Flushing routing table 51822 (IPv4)"
-            if ! ip "-${proto}" route flush table 51822 2>&1 | log_tail "ip-route-flush"; then
-                log_error "Failed to flush table 51822 (IPv4)"
-                ((++errs))
-            fi
+        if [[ $proto == "4" ]]; then
+            declare -a desired_routes=("${__PROTONWIRE_SUBNET_4[@]}")
+        elif [[ $proto == "6" ]]; then
+            declare -a desired_routes=("${__PROTONWIRE_SUBNET_6[@]}")
+        fi
+        local routes_ks
+        local routes_json
+        routes_json="$(ip "-${proto}" --json route show table "${table_id}" 2>/dev/null)"
+        routes_ks="$(jq -r '.[] | select((.metric==900) and (.type=="prohibit")) | .dst' <<<"${routes_json}" 2>/dev/null)"
+        if [[ -n ${routes_ks} ]]; then
+            log_debug "Existing killswitch routes found (IPv$proto)"
+            for route in "${desired_routes[@]}"; do
+                __route_regex="(${route}|${route///32/})" # special handling of /32 route
+                if [[ "$routes_ks" =~ ${__route_regex} ]]; then
+                    log_debug "Deleting prohibit route - $route in table $table_id (IPv$proto)"
+                    if ! ip "-${proto}" route del table "$table_id" metric 900 prohibit "${route}" 2>&1 | log_tail "ip-route-del-ks"; then
+                        log_error "Failed to delete prohibit route - ${route} to table $table_id (IPv$proto)"
+                        ((++errs))
+                    fi
+                else
+                    log_debug "Prohibit route - $route is not present in table $table_id (IPv$proto)"
+                fi
+            done
         else
-            log_success "Table 51822 does not exist (IPv4)"
+            log_info "No existing killswitch routes found in table $table_id (IPv$proto)"
+        fi
+        # if wg routes are present, leave the ip rule as is otherwise delete the ip rule.
+        local wg_rt
+        wg_rt="$(ip "-${proto}" --json route show table "${table_id}" 2>/dev/null | jq -r '.[] | select((.metric==500) and (.dev=="protonwire0")) | .dst' 2>/dev/null)"
+        if [[ -z ${wg_rt} ]]; then
+            while [[ $(ip "-${proto}" rule show 2>/dev/null) == *"lookup 51821"* ]]; do
+                log_notice "Removing IP rule (IPv$proto)"
+                if ! ip "-${proto}" rule del not fwmark 0xca6d table 51821 2>&1 | log_tail "ip-rule"; then
+                    log_error "Failed to remove IP rule (IPv$proto) "
+                    ((++errs))
+                fi
+            done
+        else
+            log_notice "Not deleting IP routng rule as wg routes are is active"
         fi
     done
+    if [[ $errs -eq 0 ]]; then
+        return 0
+    fi
+    return 1
+}
+
+function __protonvpn_delete_wg_routes() {
+    local table_id="51821"
+    if __is_ipv6_disabled; then
+        declare -ar __rt_protos=("4")
+    else
+        declare -ar __rt_protos=("4" "6")
+    fi
+    local errs=0
+    for proto in "${__rt_protos[@]}"; do
+        if [[ $proto == "4" ]]; then
+            declare -a desired_routes=("${__PROTONWIRE_SUBNET_4[@]}")
+        elif [[ $proto == "6" ]]; then
+            declare -a desired_routes=("${__PROTONWIRE_SUBNET_6[@]}")
+        fi
+        local routes_json
+        local routes_wg
+        routes_json="$(ip "-${proto}" --json route show table "${table_id}" 2>/dev/null)"
+        routes_wg="$(jq -r '.[] | select((.metric==500) and (.dev=="protonwire0")) | .dst' <<<"${routes_json}" 2>/dev/null)"
+        if [[ -n ${routes_wg} ]]; then
+            log_debug "Existing wireguard routes found (IPv$proto)"
+            for route in "${desired_routes[@]}"; do
+                __route_regex="(${route}|${route///32/})" # special handling of /32 route
+                if [[ "$routes_wg" =~ ${__route_regex} ]]; then
+                    log_debug "Deleting route - $route in table $table_id (IPv$proto)"
+                    if ! ip "-${proto}" route del table "$table_id" metric 500 dev protonwire0 "${route}" 2>&1 | log_tail "ip-route-del-ks"; then
+                        log_error "Failed to delete route - ${route} to table $table_id (IPv$proto)"
+                        ((++errs))
+                    fi
+                else
+                    log_debug "Route - $route is not present in table $table_id (IPv$proto)"
+                fi
+            done
+        else
+            log_info "No existing routes found in table $table_id (IPv$proto)"
+        fi
+    done
+    if [[ $errs -eq 0 ]]; then
+        return 0
+    fi
+    return 1
 }
 
 function __protonvpn_disconnect() {
-    # Order in which we do ensures that we dont have broken dns during disconnect.
     __PROTONWIRE_DISCONNECTING="true"
-
+    local table_id="51821"
     local errs=0
 
     if __has_notify_socket; then
@@ -2512,7 +2547,8 @@ function __protonvpn_disconnect() {
     else
         log_debug "No systemd notify socket found, skiping stopping notification"
     fi
-
+    local errs=0
+    # Order in which DNS is reconfigured ensures that we dont have broken dns during disconnect.
     if [[ $__PROTONWIRE_DNS_UPDATER == "systemd-resolved" ]]; then
         if __resolvctl_down_hook; then
             log_success "Successfully restored DNS(systemd-resolved)"
@@ -2534,49 +2570,35 @@ function __protonvpn_disconnect() {
         ((++errs))
     fi
 
-    local skip_ipv6="false"
-    if __is_ipv6_disabled; then
-        log_info "IPv6 disabled, skipping IPv6 routes and rules"
-        skip_ipv6="true"
+    if ! __protonvpn_delete_wg_routes; then
+        ((++errs))
     fi
 
-    log_info "Removing IP routing rules"
-    while [[ $(ip -4 rule show 2>/dev/null) == *"lookup 51821"* ]]; do
-        if ! ip -4 rule del not fwmark 0xca6d table 51821 2>&1 | log_tail "ip rule"; then
-            log_error "Failed to remove rule(IPv4) to route traffic via WireGuard"
-            ((++errs))
+    # if kill-switch routes are present, leave the ip rule as is
+    # otherwise delete the ip rule.
+    if __is_ipv6_disabled; then
+        declare -ar __rt_protos=("4")
+    else
+        declare -ar __rt_protos=("4" "6")
+    fi
+    local errs=0
+    for proto in "${__rt_protos[@]}"; do
+        local ks_rt
+        local routes_json
+        routes_json="$(ip "-${proto}" --json route show table "${table_id}" 2>/dev/null)"
+        ks_rt="$(jq -r '.[] | select((.metric==900) and (.type=="prohibit")) | .dst' <<<"${routes_json}" 2>/dev/null)"
+        if [[ -z ${ks_rt} ]]; then
+            while [[ $(ip "-${proto}" rule show 2>/dev/null) == *"lookup 51821"* ]]; do
+                log_notice "Removing IP rule (IPv$proto)"
+                if ! ip "-${proto}" rule del not fwmark 0xca6d table 51821 2>&1 | log_tail "ip-rule"; then
+                    log_error "Failed to remove IP rule (IPv$proto) "
+                    ((++errs))
+                fi
+            done
+        else
+            log_notice "Not deleting IP routng rule as kill-switch is active"
         fi
     done
-
-    if [[ $skip_ipv6 != "true" ]]; then
-        while [[ $(ip -6 rule show 2>/dev/null) == *"lookup 51821"* ]]; do
-            if ! ip -6 rule del not fwmark 0xca6d table 51821 2>&1 | log_tail "ip rule"; then
-                log_error "Failed to remove rule(IPv4) to route traffic via WireGuard"
-                ((++errs))
-            fi
-        done
-    fi
-
-    # delete table
-    if ip -4 route list table 51821 >/dev/null 2>&1; then
-        log_debug "Flushing routing table 51821 (IPv4)"
-        if ! ip -4 route flush table 51821 2>&1 | log_tail "ip route"; then
-            log_error "Failed to flush table 51821 (IPv4)"
-            ((++errs))
-        fi
-    else
-        log_warning "Table 51821(IPv4) does not exist"
-    fi
-
-    if [[ $skip_ipv6 != "true" ]]; then
-        if ip -6 route list table 51821 >/dev/null 2>&1; then
-            log_debug "Flushing routing table 51821 (IPv6)"
-            if ! ip -6 route flush table 51821 2>&1 | log_tail "ip route"; then
-                log_error "Failed to flush table 51821 (IPv6)"
-                ((++errs))
-            fi
-        fi
-    fi
 
     if [[ -n $(ip link show protonwire0 type wireguard 2>/dev/null) ]]; then
         log_info "Removing WireGuard interface"
@@ -2605,6 +2627,10 @@ function protonvpn_disable_ks_cmd() {
         return 1
     fi
 
+    if ! __build_subnets; then
+        return 1
+    fi
+
     if __protonvpn_disable_ks; then
         return 0
     fi
@@ -2621,6 +2647,10 @@ function protonvpn_disconnect_cmd() {
 
     if ! __check_caps; then
         log_error "Run as root and/or add CAP_NET_ADMIN capability"
+        return 1
+    fi
+
+    if ! __build_subnets; then
         return 1
     fi
 
@@ -2678,16 +2708,16 @@ ${BOLD}${CYAN}Options:${NC}
                                 (Cannot be used with --systemd)
       --systemd                 Run as systemd service
                                 (Cannot be used with --container)
-      --metadata-endpoint URL   Server metadata endpoint URL
-      --check-interval INT      IP check interval in seconds
-      --check-endpoint URL      IP check endpoint URL
+      --metadata-url URL        Server metadata endpoint URL
+      --check-interval INT      IP check interval in seconds (default 60)
+      --check-url URL           IP check endpoint URL
       --skip-dns-config         Skip configuring DNS.
                                 (Useful for Kubernetes and Nomad)
       --kill-switch             Enable killswitch (Experimental)
-      --p2p                     Verify if server supports P2P
-      --streaming               Verify if server supports streaming
-      --tor                     Verify if server supports Tor
-      --secure-core             Verify if server supports secure core
+      --p2p                     Verify if specified server supports P2P
+      --streaming               Verify if specified server supports streaming
+      --tor                     Verify if specified server supports Tor
+      --secure-core             Verify if specified server supports secure core
   -q, --quiet                   Show only errors
   -v, --verbose                 Show debug logs
   -h, --help                    Display this help and exit
@@ -2704,7 +2734,8 @@ ${BOLD}${ORANGE}Files:${NC}
 ${BOLD}${MAGENTA}Environment:${NC}
   WIREGUARD_PRIVATE_KEY         WireGuard private key or file
   PROTONVPN_SERVER              ProtonVPN server name
-  IPCHECK_INTERVAL              Custom IP check interval in seconds
+  IPCHECK_INTERVAL              Custom IP check interval in seconds (default 60)
+  IPCHECK_URL                   IP check endpoint URL (must be secure)
   SKIP_DNS_CONFIG               Set to '1' to skip configuring DNS
   KILL_SWITCH                   Set to '1' to enable killswitch (Experimental)
   DEBUG                         Set to '1' to enable debug logs
@@ -2716,7 +2747,6 @@ function main() {
     declare -i log_lvl_q_lock=0
     declare -i cmd_lock=0
     declare -i looper_lock=0
-    declare -i ip_check_lock=0
 
     local color_mode="auto"
     local cmd_mode="HELP"
@@ -2755,7 +2785,6 @@ function main() {
             LOG_FMT="${1}"
             ;;
         --check-interval | --ipcheck-interval)
-            ((++ip_check_lock))
             shift
             IPCHECK_INTERVAL="${1}"
             ;;

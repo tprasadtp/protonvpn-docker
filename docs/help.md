@@ -112,7 +112,7 @@ User namespaces can cause file permission issues. If you have problem accessing 
         protonwire connect --debug <server-name>
     ```
 
-## Manually Disabling Kill-Switch
+## Manually Disabling Kill-Switch for version 7.0.3 and lower (route table 51822)
 
 ```bash
 ip -4 route flush table 51822
@@ -123,7 +123,8 @@ ip -6 rule | grep 51822 | cut -f 1 -d ':' | xargs ip rule del priority
 
 ## Manually Disconnecting from VPN
 
-Please use `protonwire disconnect` as it handles things properly. If not possible, try the following.
+Please use `protonwire disconnect` optionally with (`--kill-switch` flag) as it handles things properly.
+If not possible, try the following.
 
 ```bash
 resolvectl revert protonwire0   # only if using systemd-resolved

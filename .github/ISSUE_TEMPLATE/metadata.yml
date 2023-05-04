@@ -21,24 +21,14 @@ body:
       required: true
 
   - type: dropdown
-    id: adblock-dns
-    attributes:
-      label: Running via PiHole/Pfblocker or other ad-blocking DNS server?
-      options:
-        - "Yes"
-        - "No"
-    validations:
-      required: true
-
-  - type: dropdown
-    id: adblock-whitelist
+    id: adblock
     attributes:
       label: Whitelisting API endpoints
       options:
-        - label: I have whitelisted `protonwire-api.vercel.app` from my ad-blocking DNS server or gateway (if applicable)
-          required: true
-        - label: I have whitelisted `icanhazip.com` from my ad-blocking DNS server or gateway (if applicable)
-          required: true
+        - I am not using ad-blocking DNS server or gateway
+        - I have whitelisted `protonwire-api.vercel.app` and `icanhazip.com` from my DNS server or gateway (if applicable)
+    validations:
+      required: true
 
   - type: dropdown
     id: dns-protocol
