@@ -27,3 +27,6 @@ indent_size = 4
 
 [*.key]
 insert_final_newline = false
+
+[Vagrantfile]
+indent_size = 2

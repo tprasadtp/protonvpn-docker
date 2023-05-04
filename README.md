@@ -127,9 +127,8 @@ in following locations.
 
 This should be server name like `NL#1`(or `NL-1`) or domain name like,
 `node-nl-01.protonvpn.net` (recommended). Automatic server selection
-by setting `PROTONVPN_SERVER` to `P2P`, `RANDOM` etc are **NOT SUPPORTED**.
-
-See [this](https://github.com/tprasadtp/protonvpn-docker/blob/master/docs/faq.md#why-automatic-server-selection-is-not-supported) for more info.
+by setting `PROTONVPN_SERVER` to `P2P`, `RANDOM` and other methods are
+**NOT SUPPORTED**. See [this](https://github.com/tprasadtp/protonvpn-docker/blob/master/docs/faq.md#why-automatic-server-selection-is-not-supported) for more info.
 
 > **Warning**
 >
@@ -142,23 +141,20 @@ See [this](https://github.com/tprasadtp/protonvpn-docker/blob/master/docs/faq.md
 
 > **Warning**
 >
-> This Feature is experimental and is not covered by semver compatibility guarantees.
+> This feature is experimental and is **NOT** covered by semver compatibility guarantees.
 
 Kill-Switch is not a hard kill-switch but more of an "internet" kill-switch.
 LAN addresses, Link-Local addresses and CGNAT(also Tailscale) addresses
 remain reachable. Unlike most VPN containers, kill-switch is implemented via
-routing policies, rather than firewall rules.
+routing policies, routing priorities and custom route tables rather than firewall rules.
 
-- Kill-switch will not be disabled during reconnects or disconnect unless `--ks`
-flag is also specified.
-- Using kill-switch with systemd unit **AND** using `protonwire` CLI manually
-in some edge cases create duplicate kill-switch routing policies.
+- Kill-switch **WILL NOT** be disabled during reconnects.
+- Kill-switch **WILL NOT** be disabled when running `protonwire disconnect` unless `--kill-switch`
+flag is **ALSO** specified.
+- Kill-switch is **NOT** reliable when upgrading the protonwire package. This is because binary itself may change during upgrade and it might include breaking changes. This only applies to native packages
+as containers are immutable and re-created during upgrades.
 - Using kill-switch with systemd unit **AND** using `protonwire` to manually
 disable kill-switch will lead to kill-switch being re-created during service restarts.
-- Using kill-switch with systemd unit **AND** using `protonwire` to manually
-disable kill-switch can lead to unit-errors as conflicting route priorities
-can be created.
-
 
 ## Usage
 
@@ -181,16 +177,16 @@ Options:
                                 (Cannot be used with --systemd)
       --systemd                 Run as systemd service
                                 (Cannot be used with --container)
-      --metadata-endpoint URL   Server metadata endpoint URL
-      --check-interval INT      IP check interval in seconds
-      --check-endpoint URL      IP check endpoint URL
+      --metadata-url URL        Server metadata endpoint URL
+      --check-interval INT      IP check interval in seconds (default 60)
+      --check-url URL           IP check endpoint URL
       --skip-dns-config         Skip configuring DNS.
                                 (Useful for Kubernetes and Nomad)
       --kill-switch             Enable killswitch (Experimental)
-      --p2p                     Verify if server supports P2P
-      --streaming               Verify if server supports streaming
-      --tor                     Verify if server supports Tor
-      --secure-core             Verify if server supports secure core
+      --p2p                     Verify if specified server supports P2P
+      --streaming               Verify if specified server supports streaming
+      --tor                     Verify if specified server supports Tor
+      --secure-core             Verify if specified server supports secure core
   -q, --quiet                   Show only errors
   -v, --verbose                 Show debug logs
   -h, --help                    Display this help and exit
@@ -207,7 +203,8 @@ Files:
 Environment:
   WIREGUARD_PRIVATE_KEY         WireGuard private key or file
   PROTONVPN_SERVER              ProtonVPN server name
-  IPCHECK_INTERVAL              Custom IP check interval in seconds
+  IPCHECK_INTERVAL              Custom IP check interval in seconds (default 60)
+  IPCHECK_URL                   IP check endpoint URL (must be secure)
   SKIP_DNS_CONFIG               Set to '1' to skip configuring DNS
   KILL_SWITCH                   Set to '1' to enable killswitch (Experimental)
   DEBUG                         Set to '1' to enable debug logs
@@ -288,6 +285,9 @@ version: '2.3'
 services:
   protonwire:
     container_name: protonwire
+    # Use semver tags or sha256 hashes of manifests.
+    # using latest tag can lead to issues when used with
+    # automatic image updaters like watchtower.
     image: ghcr.io/tprasadtp/protonwire:latest
     init: true
     restart: unless-stopped
@@ -297,6 +297,7 @@ services:
     cap_add:
       - NET_ADMIN
     # sysctl net.ipv4.conf.all.rp_filter is mandatory!
+    # net.ipv6.conf.all.disable_ipv6 disables IPv6 as protonVPN does not support IPv6.
     sysctls:
       net.ipv4.conf.all.rp_filter: 2
       net.ipv6.conf.all.disable_ipv6: 1
@@ -309,7 +310,8 @@ services:
         read_only: true
     ports:
       - 8000:80
-
+  # This is sample application which will be routed over VPN
+  # Replace this with your preferred application(s).
   caddy_proxy:
     image: caddy:latest
     network_mode: service:protonwire
@@ -430,7 +432,6 @@ if running as systemd unit outside of containers.
         ```console
         sudo dnf install curl jq procps-ng libcap iproute polkit util-linux wireguard-tools
         ```
-
     - Otherwise,
         ```console
         sudo dnf install curl jq procps-ng libcap iproute polkit util-linux wireguard-tools openresolv
@@ -446,13 +447,6 @@ if running as systemd unit outside of containers.
     - Otherwise,
         ```console
         sudo dnf install curl jq procps-ng libcap iproute polkit util-linux wireguard-tools openresolv
-        ```
-
-- If running on ArchLinux, Manjaro and other ArchLinux based distribution,
-
-    - If using `systemd-resolved`,
-        ```console
-        sudo pacman -S curl jq procps-ng libcap iproute2 polkit util-linux wireguard-tools systemd-resolvconf
         ```
 
 ## Installation
@@ -584,6 +578,10 @@ Provides rich systemd integration. Connected server kill-switch state is display
 **MUST** set `WatchdogSignal=SIGTERM` as both `tini` (docker) and `catatonit`(podman) do not forward this signal to their children.
 
 ## systemd-resolved Split Horizon DNS
+
+> **Note**
+>
+> Requires systemd version 244 or later.
 
 - Split horizon DNS is only supported with `systemd-resolved` **AND** when **NOT** running in a container.
 - It depends on `systemd-resolved` to be up and running and `/etc/resolv.conf` to be in stub resolver mode. `nss-resolve` is buggy as most statically compiled programs (especially Go) may break DNS resolution for

@@ -12,6 +12,7 @@ RUN --mount=type=cache,sharing=private,target=/var/cache/apk \
         curl \
         iproute2-minimal \
         libcap \
+        flock \
         procps \
         netcat-openbsd \
         openresolv \
