@@ -36,7 +36,7 @@ function __sigint_handler() {
     exit 1
 }
 
-# SIGABRT is not supported on containers.
+# SIGABRT is not supported in containers.
 function __sigabrt_handler() {
     log_warning "Received SIGABRT, exiting..."
     __protonvpn_disconnect
@@ -84,7 +84,6 @@ function __is_stdout_colorable() {
 }
 
 # Logger core ::internal::
-# This function should NOT be called directly.
 function __logger_core_event_handler() {
     [[ $# -lt 2 ]] && return 1
 
@@ -156,8 +155,7 @@ function __logger_core_event_handler() {
 
     # Define level, color and timestamp
     # By default we do not show log level and timestamp.
-    # However, if LOG_FMT is set to "full" or "long",
-    # we will enable long format with timestamps
+    # However, if LOG_FMT is set to "full" or "long", we will enable long format with timestamps
     case "$lvl_caller" in
     trace)
         # if lvl_string is set earlier, that means LOG_FMT is default or pretty
@@ -205,7 +203,6 @@ function __logger_core_event_handler() {
     printf "${lvl_color}%s %s ${lvl_reset}\n" "${lvl_string}" "$lvl_msg" 1>&2
 }
 
-# Leveled Loggers
 function log_trace() {
     __logger_core_event_handler "trace" "$@"
 }
@@ -270,7 +267,6 @@ function __cleanup_bg_tasks() {
     fi
 }
 
-# Checks if command is available
 function has_command() {
     if command -v "$1" >/dev/null; then
         return 0
@@ -309,7 +305,6 @@ function __is_valid_ipv4() {
 }
 
 function __is_valid_ipv6() {
-    # Yup, its ugly.
     local IPV6_REGEX="(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:))"
     local IPV6_REGEX_SUBNET="([0-9]{1,2}|1[01][0-9]|12[0-8])"
 
@@ -433,7 +428,6 @@ function __is_skip_dns_config() {
         return 0
         ;;
     esac
-
     return 1
 }
 
@@ -1104,8 +1098,7 @@ function protonvpn_fetch_metadata() {
         shift
     done
 
-    # to avoid urlencoding as server names contain '#'
-    # replace it with - which is required by metadata API.
+    # to avoid urlencoding as server names contain '#' replace it with '-' as required by API.
     local api_server_name
     api_server_name="${PROTONVPN_SERVER//#/-}"
 
@@ -2672,6 +2665,12 @@ function protonvpn_disconnect_cmd() {
     return 1
 }
 
+function __automatic_server_selection_error_msg() {
+    log_error "Automatic server selection for (${PROTONVPN_SERVER}) is not supported due to upstream API changes."
+    log_error "Specify a valid server DNS name like node-nl-01.protonvpn.net or server name like NL-1."
+    log_error "Please see https://github.com/tprasadtp/protonvpn-docker/blob/master/docs/faq.md for more info."
+}
+
 function display_usage() {
     if __is_stdout_colorable; then
         local NC=$'\e[0m'
@@ -2747,11 +2746,9 @@ function main() {
     declare -i log_lvl_q_lock=0
     declare -i cmd_lock=0
     declare -i looper_lock=0
-
     local color_mode="auto"
     local cmd_mode="HELP"
 
-    # Toggle debug flag
     if __is_debug; then
         LOG_LVL="0"
     fi
@@ -2944,12 +2941,15 @@ function main() {
 
     case "${PROTONVPN_SERVER,,}" in
     free | *-free | pro | p2p | random | secure-core | secure_core | sc | tor | streaming)
-        log_error "Automatic server selection for (${PROTONVPN_SERVER}) is not supported due to upstream API changes."
-        log_error "Specify a valid server DNS name like node-nl-01.protonvpn.net or server name like NL#1."
-        log_error "Please see https://github.com/tprasadtp/protonvpn-docker/blob/master/docs/faq.md for more info."
+        __automatic_server_selection_error_msg
         ((++args_errors))
         ;;
     esac
+    if [[ ${PROTONVPN_SERVER,,} =~ ^[a-z]{2}$ ]]; then
+        __automatic_server_selection_error_msg
+        ((++args_errors))
+    fi
+
     if [[ $args_errors -gt 0 ]]; then
         log_error "See protonwire(1) or protonwire --help for more information."
         exit 1

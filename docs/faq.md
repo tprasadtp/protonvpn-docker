@@ -7,6 +7,7 @@
 - It might be possible to cache server load, but if the cache becomes stale fails to update,
 it might result in a single VPN server to be selected as "best" and might cause issues upstream.
 - It is possible to do some client side validations that a server supports features like P2P, steaming etc. by using `--p2p`, `--streaming`, `--secure-core` flags with connect/healthcheck command.
+- It is [unlikely that ProtonVPN will remove auth requirements](https://github.com/Rafficer/linux-cli-community/issues/21). (VPN server IP addresses and Public keys are meant to be __public__ anyways).
 
 ## WireGuard interface creation fails
 
