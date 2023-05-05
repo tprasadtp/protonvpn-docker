@@ -1,7 +1,7 @@
 name: Metadata API Issue
 description: Report a bug with metadata API
 title: "[Metadata API] -  "
-labels: ["metadata", "api/metadata"]
+labels: ["api/metadata"]
 body:
   - type: markdown
     attributes:
@@ -14,9 +14,8 @@ body:
     attributes:
       label: Metadata API Version
       description: |
-        - Metadata API published Version
-        - `curl -sL https://protonwire-api.vercel.app`
-      render: logs
+        - Either paste output of `curl -sL https://protonwire-api.vercel.app`
+        - Or simply visit https://protonwire-api.vercel.app and paste its contents.
     validations:
       required: true
 
@@ -26,7 +25,7 @@ body:
       label: Whitelisting API endpoints
       options:
         - I am not using ad-blocking DNS server or gateway
-        - I have whitelisted `protonwire-api.vercel.app` and `icanhazip.com` from my DNS server or gateway (if applicable)
+        - I have whitelisted `protonwire-api.vercel.app` and `icanhazip.com` from my DNS server or gateway
     validations:
       required: true
 
