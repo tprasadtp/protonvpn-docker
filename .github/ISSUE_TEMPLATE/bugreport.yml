@@ -21,7 +21,7 @@ body:
   - type: checkboxes
     id: credential-validation
     attributes:
-      label: Credential Validation
+      label: Credential and Server Validation
       options:
         - label: I have verified that the servers I am trying to connect to are available under my plan.
           required: true
@@ -51,10 +51,7 @@ body:
   - type: dropdown
     id: nas
     attributes:
-      label: |
-        Running on a NAS?
-        - Please ensure that your kernel includes Wireguard support
-        - If wireguard is not present install wireguard on your host.
+      label: Running on a NAS?
       options:
         - "Yes"
         - "No"
@@ -103,10 +100,8 @@ body:
           - For docker-compose, include your docker-compose file.
           - For kubernetes, include your Pod/Deployment, Service and Network configurations.
           - For systemd include your systemd unit files.
-      render: markdown
     validations:
       required: true
-
 
   - type: dropdown
     id: adblock
@@ -114,7 +109,7 @@ body:
       label: Whitelisting API endpoints
       options:
         - I am not using ad-blocking DNS server or gateway
-        - I have whitelisted `protonwire-api.vercel.app` and `icanhazip.com` from my DNS server or gateway (if applicable)
+        - I have whitelisted `protonwire-api.vercel.app` and `icanhazip.com` from my DNS server or gateway
     validations:
       required: true
 
@@ -135,7 +130,7 @@ body:
   - type: textarea
     id: logs
     attributes:
-      label: Container/Pod/systemd log output with DEBUG=1 or `--debug`
+      label: Container/Pod/systemd log output with DEBUG=1 or `--debug` flag
       description: |
         - What do you see when you run the script with debug logs enabled?
           - Set env variable `DEBUG` to 1

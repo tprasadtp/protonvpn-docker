@@ -17,7 +17,6 @@ body:
       description: |
         - Version of the package/container or commit hash
         - If unable to detect or not applicable, leave the field as is.
-      value: NA
     validations:
       required: true
 
