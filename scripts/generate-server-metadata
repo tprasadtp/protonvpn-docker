@@ -803,16 +803,37 @@ def write_metadata(
             server_status=logical_server_status,
         )
 
+        logical_node_lowercase_name = LogicalNode(
+            name=logical_server_name.lower(),
+            dns_name=logical_server_domain,
+            exit_country=logical_server["ExitCountry"],
+            tier=logical_server["Tier"],
+            p2p="P2P" in features,
+            streaming="STREAMING" in features,
+            secure_core="SECURE_CORE" in features,
+            tor="TOR" in features,
+            nodes=servers,
+            exit_ips=sorted(exit_ips),
+            server_status=logical_server_status,
+        )
+
         logical_node_list.append(logical_node)
 
         try:
             logging.debug("Writing(JSON) - %s", logical_node.Name)
-            logical_node_file = metadata_dir_json_v1_srv / Path(
-                logical_node.Name.replace("#", "-")
+            logical_node_file_upper = metadata_dir_json_v1_srv / Path(
+                logical_node.Name.replace("#", "-").upper()
             )
-            with open(logical_node_file, "w", encoding="utf-8") as f:
+            with open(logical_node_file_upper, "w", encoding="utf-8") as f:
                 f.writelines(
                     (json.dumps(obj=logical_node, indent=2, default=vars))
+                )
+            logical_node_file_lc = metadata_dir_json_v1_srv / Path(
+                logical_node_lowercase_name.Name.replace("#", "-")
+            )
+            with open(logical_node_file_lc, "w", encoding="utf-8") as f:
+                f.writelines(
+                    (json.dumps(obj=logical_node_lowercase_name, indent=2, default=vars))
                 )
         except Exception:
             logging.exception(

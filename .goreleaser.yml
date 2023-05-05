@@ -138,6 +138,9 @@ changelog:
     - title: "🤖 CI/CD & Automation"
       regexp: "^.*ci[(\\w)]*:+.*$"
       order: 3
+    - title: "🖥️ Metadata API"
+      regexp: "^.*metadata[(\\w)]*:+.*$"
+      order: 4
     - title: Others
       order: 999
 
