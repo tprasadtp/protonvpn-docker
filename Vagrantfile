@@ -10,8 +10,8 @@ SCRIPT
 
 Vagrant.require_version ">= 2.2.0"
 Vagrant.configure("2") do |config|
-  config.vm.box = "fedora/37-cloud-base"
-  config.vm.box_version = "37.20221105.0"
+  config.vm.box = "fedora/38-cloud-base"
+  config.vm.box_version = "38.20230413.1"
   config.vm.define VM_NAME
   config.vm.hostname = VM_NAME
   config.vm.network "private_network", type: "dhcp"
