@@ -292,12 +292,19 @@ services:
     init: true
     restart: unless-stopped
     environment:
-      PROTONVPN_SERVER: nl-free-127.protonvpn.net
+      # Quote this value as server name can contain '#'.
+      PROTONVPN_SERVER: "nl-free-127.protonvpn.net"
+      # Set this to 1 to show debug logs for issue forms.
+      DEBUG: "1"
+      # Set this to 1 to enable kill-switch.
+      KILL_SWITCH: "1"
     # NET_ADMIN capability is mandatory!
     cap_add:
       - NET_ADMIN
     # sysctl net.ipv4.conf.all.rp_filter is mandatory!
     # net.ipv6.conf.all.disable_ipv6 disables IPv6 as protonVPN does not support IPv6.
+    # 'net.*' sysctls are not required on application containers,
+    # as they share network stack with protonwire container.
     sysctls:
       net.ipv4.conf.all.rp_filter: 2
       net.ipv6.conf.all.disable_ipv6: 1
@@ -328,6 +335,7 @@ services:
 >
 > - It is **essential** to expose/publish port(s) _on protonwire container_, instead of application container.
 > - **SHOULD NOT** run the container as privileged. Adding capability `CAP_NET_ADMIN` **AND** defined `sysctls` should be sufficient.
+> - Value for `PROTONVPN_SERVER` must be enclosed within quotes as server name can contain '#'
 
 ## Podman
 
