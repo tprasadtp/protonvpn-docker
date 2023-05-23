@@ -244,6 +244,12 @@ docker_manifests:
     - 'ghcr.io/tprasadtp/{{.ProjectName}}:{{ .Version }}-amd64'
     - 'ghcr.io/tprasadtp/{{.ProjectName}}:{{ .Version }}-arm64'
 
+  # MAJOR
+  - name_template: 'ghcr.io/tprasadtp/{{.ProjectName}}:{{ .Major }}{{ if .Prerelease }}-unstable{{ end }}'
+    image_templates:
+    - 'ghcr.io/tprasadtp/{{.ProjectName}}:{{ .Version }}-amd64'
+    - 'ghcr.io/tprasadtp/{{.ProjectName}}:{{ .Version }}-arm64'
+
   # Commit SHA
   - name_template: 'ghcr.io/tprasadtp/{{.ProjectName}}:{{ .FullCommit }}'
     image_templates:
@@ -264,6 +270,12 @@ docker_manifests:
 
   # MAJOR.MINOR
   - name_template: 'ghcr.io/tprasadtp/protonvpn:{{ .Major }}.{{ .Minor }}{{ if .Prerelease }}-unstable{{ end }}'
+    image_templates:
+    - 'ghcr.io/tprasadtp/protonvpn:{{ .Version }}-amd64'
+    - 'ghcr.io/tprasadtp/protonvpn:{{ .Version }}-arm64'
+
+  # MAJOR
+  - name_template: 'ghcr.io/tprasadtp/protonvpn:{{ .Major }}{{ if .Prerelease }}-unstable{{ end }}'
     image_templates:
     - 'ghcr.io/tprasadtp/protonvpn:{{ .Version }}-amd64'
     - 'ghcr.io/tprasadtp/protonvpn:{{ .Version }}-arm64'
