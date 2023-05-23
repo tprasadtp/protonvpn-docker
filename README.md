@@ -437,7 +437,7 @@ ExecStart=podman run \
     --sdnotify=container \
     --cgroups=split \
     --publish=8000:8000 \
-    ghcr.io/tprasadtp/protonwire:dev
+    ghcr.io/tprasadtp/protonwire:7
 ExecStopPost=podman rm --force --ignore --depend -t 10 protonwire
 
 [Install]
