@@ -114,7 +114,7 @@ in following locations.
 | Name | Default/Required | Description
 |---|---|---
 | `PROTONVPN_SERVER` | REQUIRED | (String) ProtonVPN server to connect to.
-| `WIREGUARD_PRIVATE_KEY` | -  | (String) Wireguard Private key
+| `WIREGUARD_PRIVATE_KEY` | Required if not specified via mount or secrets  | (String) Wireguard Private key
 | `IPCHECK_URL` | https://protonwire-api.vercel.app/v1/client/ip  | (String) URL to check client IP.
 | `IPCHECK_INTERVAL` | `60` | (Integer) Interval between internal health-checks in seconds. Set this to `0` to disable IP checks.
 | `SKIP_DNS_CONFIG` | false | (Boolean) Set this to `1` or `true` to skip configuring DNS.
@@ -218,6 +218,76 @@ Environment:
 - Use `protonwire healthcheck --silent --container` as the `HEALTHCHECK` command.
 Same can be used as liveness probe and readiness probe for Kubernetes.
 
+## Docker Compose
+
+> **Note**
+>
+> Because docker does not provide a reliable way to bring up containers in an ordered
+> manner and lacks `sd_notify` support for containers(see bugs like #178),
+> it is recommended to use [podman](#podman) with systemd.
+
+If entire stack is in a single compose file, then `network_mode: service:protonwire` on the services which should be routed via VPN. If the VPN stack is **NOT** in same compose file use `network_mode: container:<protonwire-container-name>`. Use [`podman-compose`](https://github.com/containers/podman-compose) for use with podman.
+
+As an example, run caddy web-server, proxying https://ip.me, via VPN using the compose config given below. Once the stack is up, visiting the http://localhost:8000, or `curl -s http://localhost:8000` should show VPN's country and IP address.
+
+<!--diana::dynamic:protonwire-sample-compose-file:begin-->
+```yaml
+version: '2.3'
+services:
+  protonwire:
+    container_name: protonwire
+    # Use semver tags or sha256 hashes of manifests.
+    # using latest tag can lead to issues when used with
+    # automatic image updaters like watchtower.
+    image: ghcr.io/tprasadtp/protonwire:latest
+    init: true
+    restart: unless-stopped
+    environment:
+      # Quote this value as server name can contain '#'.
+      PROTONVPN_SERVER: "nl-free-127.protonvpn.net"
+      # Set this to 1 to show debug logs for issue forms.
+      DEBUG: "0"
+      # Set this to 0 to disable kill-switch.
+      KILL_SWITCH: "1"
+    # NET_ADMIN capability is mandatory!
+    cap_add:
+      - NET_ADMIN
+    # sysctl net.ipv4.conf.all.rp_filter is mandatory!
+    # net.ipv6.conf.all.disable_ipv6 disables IPv6 as protonVPN does not support IPv6.
+    # 'net.*' sysctls are not required on application containers,
+    # as they share network stack with protonwire container.
+    sysctls:
+      net.ipv4.conf.all.rp_filter: 2
+      net.ipv6.conf.all.disable_ipv6: 1
+    volumes:
+      - type: tmpfs
+        target: /tmp
+      - type: bind
+        source: private.key
+        target: /etc/protonwire/private-key
+        read_only: true
+    ports:
+      - 8000:80
+  # This is sample application which will be routed over VPN
+  # Replace this with your preferred application(s).
+  caddy_proxy:
+    image: caddy:latest
+    network_mode: service:protonwire
+    command: |
+      caddy reverse-proxy \
+          --change-host-header \
+          --from :80 \
+          --to https://ip.me:443
+```
+<!--diana::dynamic:protonwire-sample-compose-file:end-->
+
+
+> **Note**
+>
+> - It is **essential** to expose/publish port(s) _on protonwire container_, instead of application container.
+> - **SHOULD NOT** run the container as privileged. Adding capability `CAP_NET_ADMIN` **AND** defined `sysctls` should be sufficient.
+> - Value for `PROTONVPN_SERVER` must be enclosed within quotes as server name can contain '#'
+
 ## Podman
 
 <p align="center">
@@ -228,14 +298,15 @@ Same can be used as liveness probe and readiness probe for Kubernetes.
 
 This section covers running containers via podman. But for deployments use [podman's systemd integration](#running-podman-containers-with-systemd).
 
-> **Warning**
->
-> podman versions older than 4.3 are **NOT** supported.
-
 - Create a podman secret for private key
 
     ```console
     sudo podman secret create protonwire-private-key <PRIVATE_KEY|PATH_TO_PRIVATE_KEY>
+    ```
+- Create a podman network for use with containers
+
+    ```console
+    sudo podman network create protonwire --driver=bridge
     ```
 
 - Run _protonwire_ container.
@@ -243,10 +314,12 @@ This section covers running containers via podman. But for deployments use [podm
     ```console
     sudo podman run \
         --name=protonwire-demo \
-        --replace \
-        -it \
-        --tz=local \
+        --network=protonwire \
         --init \
+        --replace \
+        --tz=local \
+        --tty=true \
+        --interactive \
         --tmpfs=/tmp \
         --secret="protonwire-private-key,mode=600" \
         --env=PROTONVPN_SERVER="nl-free-127.protonvpn.net" \
@@ -277,8 +350,7 @@ This section covers running containers via podman. But for deployments use [podm
     > * `mode=600` in secret mount is important, as script refuses to use
     > private key with insecure permissions.
 
-- Create app(s) sharing network namespace with `protonwire` container. As an example, we are using two caddy servers to proxy website which shows IP info. Replace these with your application container(s) like pyload,
-[firefox](https://docs.linuxserver.io/images/docker-firefox) etc.
+- Create app(s) sharing network namespace with `protonwire` container. As an example, we are using two caddy servers to proxy website which shows IP info. Replace these with your application container(s) like [pyload](https://github.com/pyload/pyload#docker-images), [firefox](https://docs.linuxserver.io/images/docker-firefox) etc.
 
     ```console
     sudo podman run \
@@ -291,7 +363,7 @@ This section covers running containers via podman. But for deployments use [podm
         caddy reverse-proxy --change-host-header --from :8000 --to https://ip.me:443
     ```
 
-- Verify that application containers are using VPN by visiting http://localhost:8000.
+- Verify that application containers are using VPN by visiting http://<hostname or IP>:8000.
 
 ## Running podman containers with systemd
 
@@ -301,15 +373,14 @@ But, provides following features,
 - Integration with `sd_notify`. This allows containers depending on protonwire
 to start only when protonwire is up **and** healthy.
 - Dependency ordering during upgrades.
-- Lightweight and secure because there is no big docker daemon running.
 - Use well known systemctl to see status of containers.
 
 <details>
 <summary>Click here Show/Hide Steps to run protonwire podman container using systemd</summary>
 
-> **Warning**
->
-> This feature is experimental and is **NOT** covered by semver compatibility guarantees.
+- This feature is experimental and is **NOT** covered by semver compatibility guarantees.
+- Only podman version 4.5 or later is supported due to missing `--ignore` flag on network create command in older versions. You can ignore this by removing
+`ExecStartPre=podman network create protonwire --ignore --driver=bridge` from `container-protonwire.service` and manually creating the bridge network.
 
 ### Create a podman secret
 
@@ -413,12 +484,14 @@ TimeoutStartSec=180
 # - Environment variables are read from /etc/protonwire/*.env files
 #   and are only passed down if they are defined.
 ExecStartPre=podman rm --force --depend --ignore --time 20 protonwire
+ExecStartPre=podman network create protonwire --ignore --driver=bridge
 ExecStart=podman run \
     --name=protonwire \
+    --network=protonwire \
+    --init \
     --detach \
     --replace \
     --tz=local \
-    --init \
     --tmpfs=/tmp \
     --secret=protonwire-private-key,mode=600 \
     --env=PROTONVPN_SERVER \
@@ -684,76 +757,6 @@ For example, we can run caddy to proxy `https://ip.me/` via VPN. Visiting http:/
     > **Note**
     >
     > There are no port mappings done here! It should be done on the VPN container!
-
-## Docker Compose
-
-> **Note**
->
-> Because docker does not provide a reliable way to bring up containers in an ordered
-> manner and lacks `sd_notify` support for containers(see bugs like #178),
-> it is recommended to use [podman](#podman) with systemd.
-
-If entire stack is in a single compose file, then `network_mode: service:protonwire` on the services which should be routed via VPN. If the VPN stack is **NOT** in same compose file use `network_mode: container:<protonwire-container-name>`.
-
-As an example, run caddy web-server, proxying https://ip.me, via VPN using the compose config given below. Once the stack is up, visiting the http://localhost:8000, or `curl -s http://localhost:8000` should show VPN's country and IP address.
-
-<!--diana::dynamic:protonwire-sample-compose-file:begin-->
-```yaml
-version: '2.3'
-services:
-  protonwire:
-    container_name: protonwire
-    # Use semver tags or sha256 hashes of manifests.
-    # using latest tag can lead to issues when used with
-    # automatic image updaters like watchtower.
-    image: ghcr.io/tprasadtp/protonwire:latest
-    init: true
-    restart: unless-stopped
-    environment:
-      # Quote this value as server name can contain '#'.
-      PROTONVPN_SERVER: "nl-free-127.protonvpn.net"
-      # Set this to 1 to show debug logs for issue forms.
-      DEBUG: "0"
-      # Set this to 0 to disable kill-switch.
-      KILL_SWITCH: "1"
-    # NET_ADMIN capability is mandatory!
-    cap_add:
-      - NET_ADMIN
-    # sysctl net.ipv4.conf.all.rp_filter is mandatory!
-    # net.ipv6.conf.all.disable_ipv6 disables IPv6 as protonVPN does not support IPv6.
-    # 'net.*' sysctls are not required on application containers,
-    # as they share network stack with protonwire container.
-    sysctls:
-      net.ipv4.conf.all.rp_filter: 2
-      net.ipv6.conf.all.disable_ipv6: 1
-    volumes:
-      - type: tmpfs
-        target: /tmp
-      - type: bind
-        source: private.key
-        target: /etc/protonwire/private-key
-        read_only: true
-    ports:
-      - 8000:80
-  # This is sample application which will be routed over VPN
-  # Replace this with your preferred application(s).
-  caddy_proxy:
-    image: caddy:latest
-    network_mode: service:protonwire
-    command: |
-      caddy reverse-proxy \
-          --change-host-header \
-          --from :80 \
-          --to https://ip.me:443
-```
-<!--diana::dynamic:protonwire-sample-compose-file:end-->
-
-
-> **Note**
->
-> - It is **essential** to expose/publish port(s) _on protonwire container_, instead of application container.
-> - **SHOULD NOT** run the container as privileged. Adding capability `CAP_NET_ADMIN` **AND** defined `sysctls` should be sufficient.
-> - Value for `PROTONVPN_SERVER` must be enclosed within quotes as server name can contain '#'
 
 ## Dependencies
 
