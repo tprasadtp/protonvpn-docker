@@ -51,7 +51,7 @@ function __print_version() {
     printf "protonwire version %s(%s)\n" "$PROTONWIRE_VERSION" "$PROTONWIRE_COMMIT"
 }
 
-function __is_stderr_colorable() {
+function __is_stdout_colorable() {
     # CLICOLOR_FORCE is set and CLICOLOR_FORCE != 0, force colors
     if [[ -n ${CLICOLOR_FORCE} ]] && [[ ${CLICOLOR_FORCE} != "0" ]]; then
         return 0
@@ -127,7 +127,7 @@ function __logger_core_event_handler() {
     local lvl_colorized
     local lvl_reset
 
-    if __is_stderr_colorable; then
+    if __is_stdout_colorable; then
         lvl_colorized="true"
         # shellcheck disable=SC2155
         lvl_reset="\e[0m"
@@ -200,7 +200,7 @@ function __logger_core_event_handler() {
         ;;
     esac
 
-    printf "${lvl_color}%s %s ${lvl_reset}\n" "${lvl_string}" "$lvl_msg" 1>&2
+    printf "${lvl_color}%s %s ${lvl_reset}\n" "${lvl_string}" "$lvl_msg"
 }
 
 function log_trace() {
