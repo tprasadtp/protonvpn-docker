@@ -17,7 +17,6 @@ fi
 trap __cleanup_bg_tasks EXIT
 trap __sigterm_handler SIGTERM
 trap __sigint_handler SIGINT
-trap __sigabrt_handler SIGABRT
 
 function __sigterm_handler() {
     log_warning "Received SIGTERM, exiting..."
@@ -25,20 +24,14 @@ function __sigterm_handler() {
         log_debug "Helathcheck errors - $__PROTONWIRE_HC_ERRORS"
         if [[ $__PROTONWIRE_HC_ERRORS == "0" ]]; then
             exit 0
+        else
+            exit 1
         fi
     fi
-    exit 1
 }
 
 function __sigint_handler() {
     log_warning "Received SIGINT, exiting..."
-    __protonvpn_disconnect
-    exit 1
-}
-
-# SIGABRT is not supported in containers.
-function __sigabrt_handler() {
-    log_warning "Received SIGABRT, exiting..."
     __protonvpn_disconnect
     exit 1
 }
@@ -62,22 +55,6 @@ function __is_stdout_colorable() {
     fi
 
     if [[ -t 2 ]]; then
-        return 0
-    fi
-    return 1
-}
-
-function __is_stdout_colorable() {
-    # CLICOLOR_FORCE is set and CLICOLOR_FORCE != 0, force colors
-    if [[ -n ${CLICOLOR_FORCE} ]] && [[ ${CLICOLOR_FORCE} != "0" ]]; then
-        return 0
-
-    # CLICOLOR == 0 or NO_COLOR is set and not empty or TERM is dumb or linux
-    elif [[ -n ${NO_COLOR} ]] || [[ ${CLICOLOR} == "0" ]] || [[ ${TERM} == "dumb" ]] || [[ ${TERM} == "linux" ]]; then
-        return 1
-    fi
-
-    if [[ -t 1 ]]; then
         return 0
     fi
     return 1
@@ -350,16 +327,12 @@ function __is_valid_ipcheck_url() {
         ;;
     https://*)
         local curl_rc="-1"
+        local curl_opts="-sSfL"
+        if __is_debug; then
+            curl_opts="-vvvfL"
+        fi
         {
-            curl \
-                --fail \
-                --location \
-                --max-time 20 \
-                --connect-timeout 30 \
-                --silent \
-                --show-error \
-                --user-agent 'protonwire/v7' \
-                --output "${__PROTONWIRE_HCR}" \
+            curl "${curl_opts}" -m 20 -A 'protonwire/v7' -o "${__PROTONWIRE_HCR}" \
                 "${IPCHECK_URL}" 2>&1 | log_tail "curl-ipcheck-url" &
         }
         wait $!
@@ -491,7 +464,6 @@ function __systemd_notify() {
         shift
     done
 
-    # check if status message is defined
     if [[ -z $status ]]; then
         log_error "Status is not defined or empty!"
         return 1
@@ -651,7 +623,7 @@ function __check_tools() {
         "timeout" # coreutils
         "wg"      # wireguard-tools | wireguard-tools-wg
         "sysctl"  # procps
-        # "flock"   # flock | linux-utils
+        "flock"   # flock | linux-utils
     )
 
     # Detect how to update DNS and add required commands to list of commands to check
@@ -1011,7 +983,7 @@ function protonvpn_looper_cmd() {
 
     # Initial ready and watchdog notification.
     if __has_notify_socket; then
-        log_debug "Notifying systemd that we are ready"
+        log_notice "Notifying systemd that we are ready"
         if ! __systemd_notify --ready; then
             log_error "Failed to notify systemd!"
             __protonvpn_disconnect
@@ -1084,11 +1056,6 @@ function protonvpn_looper_cmd() {
                     log_error "Failed to re-connect to ${PROTONVPN_SERVER}"
                 fi
             else
-                if [[ $__PROTONWIRE_HC_ERRORS -gt 0 ]]; then
-                    log_warning "Connection re-established"
-                    __PROTONWIRE_HC_ERRORS=0
-                fi
-
                 if [[ $watchdog_pings == "true" ]]; then
                     if __has_notify_socket; then
                         if ! __systemd_notify --watchdog; then
@@ -1185,16 +1152,13 @@ function protonvpn_fetch_metadata() {
         local api_call="${METADATA_URL}/${api_server_name}"
         log_debug "API - ${api_call}"
         local curl_rc="-1"
+        local curl_opts="-sSfL"
+        if __is_debug; then
+            curl_opts="-vvvfL"
+        fi
         # we use wait to ensure the term signals can be handled properly
-        { curl \
-            --fail \
-            --location \
-            --max-time 30 \
-            --connect-timeout 20 \
-            --silent \
-            --show-error \
-            --user-agent 'protonwire/v7' \
-            --output "${__PROTONWIRE_SRV_INFO_FILE}.bak" \
+        { flock --timeout 30 --conflict-exit-code 32 "${__PROTONWIRE_SRV_INFO_FILE}.lock" \
+            curl "${curl_opts}" -m 30 -A 'protonwire/v7' -o "${__PROTONWIRE_SRV_INFO_FILE}.bak" \
             "${api_call}" 2>&1 | log_tail "curl" & }
         wait $!
         curl_rc="$?"
@@ -1217,10 +1181,13 @@ function protonvpn_fetch_metadata() {
             log_error "Failed to refresh ProtonVPN server metadata (failed to resolve domain)"
             return 1
         elif [[ $curl_rc -eq 28 ]]; then
-            log_error "Failed to refresh ProtonVPN server metadata (timeout)"
+            log_error "Failed to refresh ProtonVPN server metadata (curl timeout)"
             return 1
         elif [[ $curl_rc -eq 22 ]]; then
             log_error "Failed to refresh ProtonVPN server metadata (server name is invalid or not found)"
+            return 1
+        elif [[ $curl_rc -eq 32 ]]; then
+            log_error "Failed to refresh ProtonVPN server metadata (flock timeout)"
             return 1
         else
             log_error "Failed to refresh ProtonVPN server metadata (curl exit code: ${curl_rc})"
@@ -1241,8 +1208,8 @@ function protonvpn_fetch_metadata() {
 # Healthcheck via status file age
 function protonvpn_healthcheck_status_file() {
     if [[ $IPCHECK_INTERVAL == "0" ]]; then
-        log_error "Healthchecks are disabled, cannot use status file!"
-        return 1
+        log_warning "Healthchecks are disabled, cannot use status file!"
+        return 0
     fi
 
     __detect_paths
@@ -1296,7 +1263,7 @@ function __protonvpn_verify_connection() {
     fi
 
     if [[ -z ${__PROTONWIRE_SRV_INFO} ]]; then
-        log_error "__PROTONWIRE_SRV_INFO is undefined!"
+        log_debug "__PROTONWIRE_SRV_INFO is undefined!"
         return 1
     fi
 
@@ -1357,17 +1324,16 @@ function __protonvpn_verify_connection() {
     fi
 
     local hc_response_rc=-1
+    local curl_opts="-sSfL"
+    if __is_debug; then
+        curl_opts="-vvvfL"
+    fi
     # Invoke healthcheck API and save response
     log_debug "Checking client IP via $IPCHECK_URL"
     {
-        curl \
-            --max-time 20 \
-            --silent \
-            --output "${__PROTONWIRE_HCR}" \
-            --fail \
-            --location \
-            --user-agent "protonwire/v7" \
-            "$IPCHECK_URL" 2>/dev/null &
+        flock --timeout 30 --conflict-exit-code 32 "${__PROTONWIRE_HCR}.lock" \
+            curl "${curl_opts}" -m 30 -A 'protonwire/v7' -o "${__PROTONWIRE_HCR}" \
+            "$IPCHECK_URL" 2>&1 | log_tail "curl" &
     }
     wait $!
     hc_response_rc="$?"
@@ -1377,7 +1343,10 @@ function __protonvpn_verify_connection() {
         log_error "Failed to resolve DNS domain ($IPCHECK_URL)"
         return 1
     elif [[ $hc_response_rc == 28 ]]; then
-        log_error "curl failed to connect to $$IPCHECK_URL (timeout)"
+        log_error "Failed to connect to $IPCHECK_URL (timeout)"
+        return 1
+    elif [[ $curl_rc -eq 32 ]]; then
+        log_error "Failed to check IP via $IPCHECK_URL (flock timeout)"
         return 1
     elif [[ $hc_response_rc != 0 ]]; then
         log_error "curl command exited with $hc_response_rc"
@@ -1894,7 +1863,7 @@ function __fetch_metadata_with_retries() {
 function __protonvpn_pre_connect_get_endpoints_and_keys() {
     # Ensure __PROTONWIRE_SRV_INFO is defined
     if [[ -z ${__PROTONWIRE_SRV_INFO} ]]; then
-        log_error "__PROTONWIRE_SRV_INFO is undefined!"
+        log_debug "__PROTONWIRE_SRV_INFO is undefined!"
         return 1
     fi
 
@@ -2001,7 +1970,7 @@ function __protonvpn_pre_connect_get_endpoints_and_keys() {
 function __protonvpn_verify_server_attributes() {
     # Ensure __PROTONWIRE_SRV_INFO is defined
     if [[ -z ${__PROTONWIRE_SRV_INFO} ]]; then
-        log_error "__PROTONWIRE_SRV_INFO is undefined!"
+        log_debug "__PROTONWIRE_SRV_INFO is undefined!"
         return 1
     fi
 
@@ -2714,35 +2683,18 @@ function __automatic_server_selection_error_msg() {
 }
 
 function display_usage() {
-    if __is_stdout_colorable; then
-        local NC=$'\e[0m'
-        local BOLD=$'\e[1m'
-        local YELLOW=$'\e[38;5;220m'
-        local CYAN=$'\e[38;5;51m'
-        local ORANGE=$'\e[38;5;208m'
-        local TEAL=$'\e[38;5;192m'
-        local MAGENTA=$'\e[38;5;219m'
-    else
-        local NC
-        local BOLD
-        local YELLOW
-        local CYAN
-        local ORANGE
-        local TEAL
-        local MAGENTA
-    fi
     cat <<EOF
 
-${BOLD}ProtonVPN WireGuard Client${NC}
+ProtonVPN WireGuard Client
 
-${BOLD}${YELLOW}Usage:${NC} protonwire [OPTIONS...]
-${BOLD}${YELLOW}or:${NC} protonwire [OPTIONS...] c|connect [SERVER]
-${BOLD}${YELLOW}or:${NC} protonwire [OPTIONS...] d|disconnect
-${BOLD}${YELLOW}or:${NC} protonwire [OPTIONS...] check
-${BOLD}${YELLOW}or:${NC} protonwire [OPTIONS...] disable-killswitch
-${BOLD}${YELLOW}or:${NC} protonwire [OPTIONS...] help
+Usage: protonwire [OPTIONS...]
+or: protonwire [OPTIONS...] c|connect [SERVER]
+or: protonwire [OPTIONS...] d|disconnect
+or: protonwire [OPTIONS...] check
+or: protonwire [OPTIONS...] disable-killswitch
+or: protonwire [OPTIONS...] help
 
-${BOLD}${CYAN}Options:${NC}
+Options:
   -k, --private-key FILE|KEY    Wireguard private key or
                                 file containing private key
       --container               Run as container
@@ -2764,15 +2716,15 @@ ${BOLD}${CYAN}Options:${NC}
   -h, --help                    Display this help and exit
       --version                 Display version and exit
 
-${BOLD}${TEAL}Examples:${NC}
+Examples:
   protonwire connect nl-1       Connect to server nl-1
   protonwire d --kill-switch    Disconnect from current server and disable kill-switch
   protonwire verify [SERVER]    Check if connected to a server
 
-${BOLD}${ORANGE}Files:${NC}
+Files:
   /etc/protonwire/private-key   WireGuard private key
 
-${BOLD}${MAGENTA}Environment:${NC}
+Environment:
   WIREGUARD_PRIVATE_KEY         WireGuard private key or file
   PROTONVPN_SERVER              ProtonVPN server name
   IPCHECK_INTERVAL              Custom IP check interval in seconds (default 60)
@@ -2804,10 +2756,12 @@ function main() {
             cmd_mode="VERSION"
             ;;
         --verbose | --debug | -v)
+            DEBUG="1"
             LOG_LVL="0"
             ((++log_lvl_v_lock))
             ;;
         --quiet | --silent | -q)
+            DEBUG="0"
             LOG_LVL=40
             ((++log_lvl_q_lock))
             ;;
@@ -2853,7 +2807,6 @@ function main() {
         --secure-core)
             __PROTONWIRE_FEATURE_SECURE_CORE="true"
             ;;
-        # ISO 3166-1 alpha-2
         --cc | --country)
             shift
             __PROTONWIRE_FEATURE_COUNTRY="$1"
@@ -2910,19 +2863,16 @@ function main() {
         ;;
     esac
 
-    # check --debug conflicts with --quiet
     if [[ ${log_lvl_q_lock} -gt 0 ]] && [[ ${log_lvl_v_lock} -gt 0 ]]; then
         log_error "Cannot use --debug/-v and --quiet/-q at the same time."
         ((++args_errors))
     fi
 
-    # Loop mode
     if [[ ${looper_lock} -gt 1 ]]; then
         log_error "Cannot use --container and --systemd at the same time."
         ((++args_errors))
     fi
 
-    # Check if more than one command is specified
     if [[ $cmd_lock -gt 1 ]]; then
         log_error "More than one exclusive command specified!"
         ((++args_errors))
