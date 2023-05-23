@@ -123,8 +123,20 @@ ip -6 rule | grep 51822 | cut -f 1 -d ':' | xargs ip rule del priority
 
 ## Manually Disconnecting from VPN
 
-Please use `protonwire disconnect` optionally with (`--kill-switch` flag) as it handles things properly.
-If not possible, try the following.
+Please use `protonwire disconnect` optionally with (`--kill-switch` flag) as it handles things properly. If not possible, try the following.
+
+- Restore the DNS if using systemd-resolved via,
+    ```
+    resolvectl revert protonwire0
+    ```
+- If using version 7.1.1 and lower and **NOT** using systemd-resolved (like in containers), restore the DNS using the following commands.
+    ```bash
+    resolvconf -f -d protonwire0.wg
+    ```
+- If running version 7.2.0 and and later and **NOT** using systemd-resolved (like in containers)  restore the DNS using following commands.
+    ```bash
+    cat /etc/resolv.conf.protonwire > /etc/resolv.conf && rm /etc/resolv.conf.protonwire
+    ```
 
 ```bash
 resolvectl revert protonwire0   # only if using systemd-resolved

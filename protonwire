@@ -563,15 +563,15 @@ function __detect_dns_updater() {
                     log_debug "Using systemd-resolved for DNS"
                     __PROTONWIRE_DNS_UPDATER="systemd-resolved"
                 else
-                    log_debug "Using resolvconf(8) for DNS (/etc/resolv.conf is not a symlink)"
+                    log_debug "Using /etc/resolv.conf for DNS (not a symlink to stub)"
                     __PROTONWIRE_DNS_UPDATER="resolvconf"
                 fi
             else
-                log_debug "Using resolvconf(8) for DNS (systemd-resolved is not running)"
+                log_debug "Using /etc/resolv.conf for DNS (systemd-resolved is not running)"
                 __PROTONWIRE_DNS_UPDATER="resolvconf"
             fi
         else
-            log_debug "Using resolvconf(8) for DNS (systemd is not available)"
+            log_debug "Using /etc/resolv.conf for DNS (systemd is not available)"
             __PROTONWIRE_DNS_UPDATER="resolvconf"
         fi
     else
@@ -664,9 +664,6 @@ function __check_tools() {
         )
         ;;
     resolvconf)
-        commands+=(
-            "resolvconf" # resolvconf | openresolv
-        )
         # Check if resolvconf can update /etc/resolv.conf
         if [[ ! -w /etc/resolv.conf ]]; then
             log_error "Cannot update DNS, /etc/resolv.conf is not writable"
@@ -763,9 +760,7 @@ function __run_checks() {
 function __resolvctl_up_hook() {
     local errs=0
 
-    # Configure search/routing domains and the
-    # default-route before configuring the DNS server
-    # as per systemd-resolved documentation recommendation.
+    # Configure search/routing domains and the default-route before configuring the DNS server.
     if resolvectl domain protonwire0 "~." 2>&1 | log_tail "resolvectl-domain"; then
         log_success "Set routing domain to ~. (via resolvectl)"
     else
@@ -812,32 +807,79 @@ function __resolvctl_down_hook() {
     fi
 }
 
-# resolvconf hook
+# resolvconf hook. openresolv cannot be used because it uses mv sematics
+# and it is unsuitable for container management systems which bind mount /etc/resolv.conf.
 function __resolvconf_up_hook() {
-    local errs=0
-    if printf "nameserver 10.2.0.1" | timeout 5s resolvconf -a protonwire0.wg 2>&1 | log_tail "resolvconf set"; then
-        log_debug "Successfully updated /etc/resolv.conf (via resolvconf)"
-    else
-        log_error "Failed to update /etc/resolv.conf! (via resolvconf)"
-        ((++errs))
-    fi
+    local resolvconf_cur
+    resolvconf_cur="$(cat /etc/resolv.conf 2>/dev/null)"
+    if [[ $resolvconf_cur != *"nameserver 10.2.0.1"* ]]; then
+        log_debug "Updating /etc/resolv.conf"
+        if ! cp --force /etc/resolv.conf /etc/resolv.conf.protonwire 2>&1 | log_tail "resolvconf-backup"; then
+            log_error "Failed to create backup of /etc/resolv.conf"
+            return 1
+        fi
 
-    if [[ $errs -eq 0 ]]; then
-        return 0
+        local resolv_conf_vpn
+        printf -v resolv_conf_vpn "# This file is managed by protonwire. DO NOT EDIT.\n"
+        printf -v resolv_conf_vpn "%s# If you do not wish to use ProtonVPN DNS servers,\n" "$resolv_conf_vpn"
+        printf -v resolv_conf_vpn "%s# disable it via one of the following.\n" "$resolv_conf_vpn"
+        printf -v resolv_conf_vpn "%s#  - Set 'SKIP_DNS_CONFIG' envirpnment variable to '1'.\n" "$resolv_conf_vpn"
+        printf -v resolv_conf_vpn "%s#  - Use '--skip-dns-config' CLI flag.\n" "$resolv_conf_vpn"
+        printf -v resolv_conf_vpn "%s#\n" "$resolv_conf_vpn"
+        printf -v resolv_conf_vpn "%s# Your old DNS configration has been backed up at /etc/resolv.conf.protonwire.\n" "$resolv_conf_vpn"
+        printf -v resolv_conf_vpn "%s# protonvpn will automatically restore your previous DNS config upon disconnect.\n" "$resolv_conf_vpn"
+        printf -v resolv_conf_vpn "%s#\n" "$resolv_conf_vpn"
+        printf -v resolv_conf_vpn "%s%s\n" "$resolv_conf_vpn" "nameserver 10.2.0.1"
+
+        if printf "%s" "${resolv_conf_vpn}" >/etc/resolv.conf 2>/dev/null; then
+            log_success "DNS is is set to 10.2.0.1 via /etc/resolv.conf"
+            return 0
+        else
+            log_error "Failed to update /etc/resolv.conf"
+            return 1
+        fi
     else
-        __resolvconf_down_hook # ignore errors
+        log_success "DNS is already set to 10.2.0.1 in /etc/resolv.conf"
+        return 0
     fi
-    return 1
 }
 
 function __resolvconf_down_hook() {
-    if timeout 5s resolvconf -f -d protonwire0.wg 2>&1 | log_tail "resolvconf restore"; then
-        log_debug "Successfully restored /etc/resolv.conf (via resolvconf)"
-        return 0
+    local resolvconf_cur
+    local resolvconf_bak
+    resolvconf_cur="$(cat /etc/resolv.conf 2>/dev/null)"
+    resolvconf_bak="$(cat /etc/resolv.conf.protonwire 2>/dev/null)"
+    if [[ $resolvconf_cur == *"nameserver 10.2.0.1"* ]]; then
+        local errs=0
+        if [[ $resolvconf_bak != *"nameserver"* ]]; then
+            log_error "/etc/resolv.conf.protonwire is empty or invalid or does not exist"
+            ((++errs))
+        fi
+        log_debug "Restoring /etc/resolv.conf"
+        if cat /etc/resolv.conf.protonwire >/etc/resolv.conf 2>/dev/null; then
+            log_success "Reverted DNS configuration"
+        else
+            log_error "Failed to revert /etc/resolv.conf"
+            ((++errs))
+        fi
+        if [[ -f /etc/resolv.conf.protonwire ]]; then
+            log_debug "Removing backup /etc/resolv.conf.protonwire"
+            if ! rm -f /etc/resolv.conf.protonwire; then
+                log_error "Failed to remove backup /etc/resolv.conf.protonwire"
+                ((++errs))
+            fi
+        else
+            log_error "Backup resolv.conf not found - /etc/resolv.conf.protonwire"
+            ((++errs))
+        fi
+
+        if [[ $errs -eq 0 ]]; then
+            return 0
+        fi
+        return 1
     else
-        log_error "Failed to restore /etc/resolv.conf (via resolvconf)"
+        log_success "DNS is not configured to use 10.2.0.1 in /etc/resolv.conf"
     fi
-    return 1
 }
 
 function __detect_paths() {
@@ -886,10 +928,10 @@ function protonvpn_looper_cmd() {
         log_debug "Running as systemd unit, IDENTITY=$(id 2>&1)"
         ;;
     container)
-        log_debug "Running as container IDENTITY=$(id 2>&1)"
+        log_debug "Running as container USER=$(id -un 2>&1)"
         ;;
     *)
-        log_error "Invalid __PROTONWIRE_LOOPER - $__PROTONWIRE_LOOPER"
+        log_error "Invalid LOOPER - $__PROTONWIRE_LOOPER"
         return 1
         ;;
     esac
