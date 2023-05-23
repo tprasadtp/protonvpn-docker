@@ -1,0 +1,76 @@
+[Unit]
+Description=Example application using protonwire VPN container
+Documentation=https://github.com/tprasadtp/protonvpn-docker
+
+# Service Dependencies
+# ----------------------------------------
+Wants=network-online.target
+After=network-online.target
+RequiresMountsFor=%t/containers
+
+# Container Dependencies
+# These settings ensure this container is started
+# only after protonwire is up and healthy.
+# BOTH BindsTo and After MUST be specified.
+# ----------------------------------------
+PartOf=container-protonwire.service
+BindsTo=container-protonwire.service
+After=container-protonwire.service
+
+[Service]
+# Service Type
+# ----------------------------------------
+Type=notify
+NotifyAccess=all
+
+# Service Settings and Environment
+# ----------------------------------------
+Environment=PODMAN_SYSTEMD_UNIT=%n
+
+# Sandboxing (Filesystem, Network, CGroup)
+# ----------------------------------------
+# DO NOT ENABLE filesystem sandboxing.
+# DO NOT ENABLE network sandboxibg.
+# DO NOT ENABLE CGroup sandboxing.
+
+# Other Settings
+# ----------------------------------------
+IPAccounting=true
+CPUAccounting=true
+BlockIOAccounting=true
+MemoryAccounting=true
+TasksAccounting=true
+
+# Service lifecycle
+# ----------------------------------------
+Restart=on-failure
+
+# Service timeouts & Watchdog
+# ----------------------------------------
+TimeoutAbortSec=30
+TimeoutStopSec=30
+TimeoutStartSec=180
+
+# Service commands
+# ----------------------------------------
+# - This example uses caddy to proxy a website
+#   which shows your IP info.
+# - Replace this with your podman container along
+#   with required changes. Do note that there
+#   are no port mappings done here!
+ExecStart=podman run \
+    --name=protonwire-example-app \
+    --detach \
+    --replace \
+    --tz=local \
+    --init \
+    --cgroups=split \
+    --network=container:protonwire \
+    docker.io/library/caddy:latest \
+    caddy reverse-proxy --change-host-header --from :8000 --to https://ip.me:443
+ExecStop=podman stop --ignore -t 10 protonwire-example-app
+ExecStopPost=podman rm -f --ignore -t 10 protonwire-example-app
+
+[Install]
+WantedBy=default.target
+Also=container-protonwire.service

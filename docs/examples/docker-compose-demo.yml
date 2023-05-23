@@ -12,8 +12,8 @@ services:
       # Quote this value as server name can contain '#'.
       PROTONVPN_SERVER: "nl-free-127.protonvpn.net"
       # Set this to 1 to show debug logs for issue forms.
-      DEBUG: "1"
-      # Set this to 1 to enable kill-switch.
+      DEBUG: "0"
+      # Set this to 0 to disable kill-switch.
       KILL_SWITCH: "1"
     # NET_ADMIN capability is mandatory!
     cap_add:
