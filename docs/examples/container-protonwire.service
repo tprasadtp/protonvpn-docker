@@ -55,12 +55,14 @@ TimeoutStartSec=180
 # - Environment variables are read from /etc/protonwire/*.env files
 #   and are only passed down if they are defined.
 ExecStartPre=podman rm --force --depend --ignore --time 20 protonwire
+ExecStartPre=podman network create protonwire --ignore --driver=bridge
 ExecStart=podman run \
     --name=protonwire \
+    --network=protonwire \
+    --init \
     --detach \
     --replace \
     --tz=local \
-    --init \
     --tmpfs=/tmp \
     --secret=protonwire-private-key,mode=600 \
     --env=PROTONVPN_SERVER \
