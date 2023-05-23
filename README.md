@@ -59,7 +59,8 @@
 
 > **Warning**
 >
-> [gVisor](https://gvisor.dev) runtime is **NOT** supported!
+> * [gVisor](https://gvisor.dev) runtime is **NOT** supported!
+> * cgroup v1 API is not supported.
 
 Images are published at [ghcr.io/tprasadtp/protonwire][ghcr].
 
@@ -217,6 +218,411 @@ Environment:
 - Use `protonwire healthcheck --silent --container` as the `HEALTHCHECK` command.
 Same can be used as liveness probe and readiness probe for Kubernetes.
 
+## Podman
+
+<p align="center">
+  <a href="https://podman.io/" target="_blank" rel="noreferrer">
+    <img src="https://raw.githubusercontent.com/containers/podman/a655633f2dcf3cce60bfce63d383d4e8e1ae67a2/logo/podman-logo-source.svg" height="48" alt="podman">
+  </a>
+</p>
+
+This section covers running containers via podman. But for deployments use [podman's systemd integration](#running-podman-containers-with-systemd).
+
+> **Warning**
+>
+> podman versions older than 4.3 are **NOT** supported.
+
+- Create a podman secret for private key
+
+    ```console
+    sudo podman secret create protonwire-private-key <PRIVATE_KEY|PATH_TO_PRIVATE_KEY>
+    ```
+
+- Run _protonwire_ container.
+
+    ```console
+    sudo podman run \
+        --name=protonwire-demo \
+        --replace \
+        -it \
+        --tz=local \
+        --init \
+        --tmpfs=/tmp \
+        --secret="protonwire-private-key,mode=600" \
+        --env=PROTONVPN_SERVER="nl-free-127.protonvpn.net" \
+        --env=DEBUG=0 \
+        --env=KILL_SWITCH=1 \
+        --env=IPCHECK_INTERVAL=10 \
+        --cap-add=NET_ADMIN \
+        --sysctl=net.ipv4.conf.all.rp_filter=2 \
+        --sysctl=net.ipv6.conf.all.disable_ipv6=1 \
+        --publish=8000:8000 \
+        --health-start-period=15s \
+        --health-cmd="protonwire check --container --silent" \
+        --health-interval=120s \
+        --health-on-failure=stop \
+        --cgroups=split \
+        ghcr.io/tprasadtp/protonwire:7
+    ```
+
+    > **Note**
+    >
+    > * This example publishes container port 8000 to host port 8000.
+    > You **MUST** change these to match your application container(s).
+    > * To publish additional ports from other containers using this VPN
+    > (usually done via argument `--publish <host-port>:<container-port>`),
+    > it **MUST** be done on _protonwire_ container.
+    > * `--sysctl` flags are important! without these, container cannot
+    > create/manage WireGuard interface.
+    > * `mode=600` in secret mount is important, as script refuses to use
+    > private key with insecure permissions.
+
+- Create app(s) sharing network namespace with `protonwire` container. As an example, we are using two caddy servers to proxy website which shows IP info. Replace these with your application container(s) like pyload,
+[firefox](https://docs.linuxserver.io/images/docker-firefox) etc.
+
+    ```console
+    sudo podman run \
+        --name=protonwire-demo-app \
+        --replace=true \
+        --detach \
+        --network=container:protonwire-demo \
+        --tz=local \
+        docker.io/library/caddy:latest \
+        caddy reverse-proxy --change-host-header --from :8000 --to https://ip.me:443
+    ```
+
+- Verify that application containers are using VPN by visiting http://localhost:8000.
+
+## Running podman containers with systemd
+
+This is a bit more involved than just running a podman/docker run command.
+But, provides following features,
+
+- Integration with `sd_notify`. This allows containers depending on protonwire
+to start only when protonwire is up **and** healthy.
+- Dependency ordering during upgrades.
+- Lightweight and secure because there is no big docker daemon running.
+- Use well known systemctl to see status of containers.
+
+<details>
+<summary>Click here Show/Hide Steps to run protonwire podman container using systemd</summary>
+
+> **Warning**
+>
+> This feature is experimental and is **NOT** covered by semver compatibility guarantees.
+
+### Create a podman secret
+
+Create a podman secret for private key (if not done already)
+
+```console
+sudo podman secret create protonwire-private-key <PRIVATE_KEY>
+```
+
+## Cleanup demo containers
+
+Remove existing protonwire-demo containers if any. This is done to avoid connection limits
+and name conflicts.
+
+```
+sudo podman rm --force --ignore protonwire-demo-app
+sudo podman rm --force --ignore protonwire-demo
+```
+
+## Create settings file
+
+Create environment file(s) to save settings like server name and kill switch state etc.
+This detaches the configuration from systemd unit file and avoids
+reloading systemd when these settings are updated. Settings are defined as environment
+files in `/etc/protonwire/`. **ALL** files ending with `.env` are read by the systemd.
+
+```bash
+sudo mkdir -p /etc/protonwire
+sudo chmod 755 /etc/protonwire
+printf "PROTONVPN_SERVER=\"nl-free-127.protonvpn.net\"\nKILL_SWITCH=1\nDEBUG=0\n | sudo tee /etc/protonwire/settings.env
+```
+
+## Create systemd unit file for protonwire container
+
+> **Warning**
+>
+> While you can generate systemd unit file via `podman generate`, for protonwire container,
+> generated unit cannot be used without modification as dependent containers are **NOT**
+> handled correctly and are race-y.
+
+Use the following unit file as template. Tweak it as necessary. Be careful with
+sandboxing options as containers use namespaces and podman may depend on global shared data
+in `/tmp/` and a writable `/etc/`.
+
+<!--diana::dynamic:protonwire-container-unit-file:begin-->
+```ini
+[Unit]
+Description=ProtonVPN Wireguard Container
+Documentation=https://github.com/tprasadtp/protonvpn-docker
+
+# Service Dependencies
+# ----------------------------------------
+Wants=network-online.target
+After=network-online.target
+RequiresMountsFor=%t/containers
+
+[Service]
+# Service Type
+# ----------------------------------------
+Type=notify
+NotifyAccess=all
+
+# Service Settings and Environment
+# ----------------------------------------
+Environment=IPCHECK_INTERVAL=120
+# Loads all environment files from
+#  - /etc/ (for the system manager)
+#  - "$XDG_CONFIG_HOME" resolves to (for user managers)
+EnvironmentFile=-%E/protonwire/*.env
+Environment=PODMAN_SYSTEMD_UNIT=%n
+
+# Sandboxing (Filesystem, Network, CGroup)
+# ----------------------------------------
+# DO NOT ENABLE filesystem sandboxing.
+# DO NOT ENABLE network sandboxibg.
+# DO NOT ENABLE CGroup sandboxing.
+
+# Other Settings
+# ----------------------------------------
+IPAccounting=true
+CPUAccounting=true
+BlockIOAccounting=true
+MemoryAccounting=true
+TasksAccounting=true
+
+# Service lifecycle
+# ----------------------------------------
+Restart=on-failure
+
+# Service timeouts & Watchdog
+# ----------------------------------------
+TimeoutAbortSec=30
+TimeoutStopSec=30
+TimeoutStartSec=180
+
+# Service commands
+# ----------------------------------------
+# - This example only publishes a single port. port 8000 both on host and container.
+#   To add additional ports use --publish <host-port>:<contaner-port>.
+#   This flag can be used multiple times to map multiple ports.
+# - Environment variables are read from /etc/protonwire/*.env files
+#   and are only passed down if they are defined.
+ExecStartPre=podman rm --force --depend --ignore --time 20 protonwire
+ExecStart=podman run \
+    --name=protonwire \
+    --detach \
+    --replace \
+    --tz=local \
+    --init \
+    --tmpfs=/tmp \
+    --secret=protonwire-private-key,mode=600 \
+    --env=PROTONVPN_SERVER \
+    --env=KILL_SWITCH \
+    --env=IPCHECK_URL \
+    --env=IPCHECK_INTERVAL \
+    --env=SKIP_DNS_CONFIG \
+    --env=DEBUG \
+    --cap-add=NET_ADMIN \
+    --sysctl=net.ipv4.conf.all.rp_filter=2 \
+    --sysctl=net.ipv6.conf.all.disable_ipv6=1 \
+    --health-start-period=10s \
+    --health-interval="${IPCHECK_INTERVAL}s" \
+    --health-cmd="protonwire check --container --silent" \
+    --health-on-failure=stop \
+    --sdnotify=container \
+    --cgroups=split \
+    --publish=8000:8000 \
+    ghcr.io/tprasadtp/protonwire:dev
+ExecStopPost=podman rm --force --ignore --depend -t 10 protonwire
+
+[Install]
+WantedBy=default.target
+```
+<!--diana::dynamic:protonwire-container-unit-file:end-->
+
+> **Note**
+>
+> * This example publishes container port 8000 to host port 8000.
+> You **MUST** change these to match your application container(s).
+> * To publish additional ports from other containers using this VPN
+> (usually done via argument `--publish <host-port>:<container-port>`),
+> it **MUST** be done on _protonwire_ service.
+> * `--sysctl` flags are important! without these, container cannot
+> create/manage WireGuard interface.
+> * `mode=600` in secret mount is important, as script refuses to use
+> private key with insecure permissions.
+> * `--sdnotify=container` is important to avoid dependency issues like
+> [#178](https://github.com/tprasadtp/protonvpn-docker/issues/178) when using systemd.
+> * `--cgroups=split` is important as it places container processes in its own sub cgroup
+> under same service cgroup.
+
+### Create systemd unit file(s) for application container(s)
+
+> **Note**
+>
+> * If using `podman generate systemd`, Add following under `[Unit]` section
+> to generated `container-protonwire-example-app.service`
+> to ensure that containers depending on `container-protonwire.service` are also stopped
+> when service is stopped or fails. This also helps during container upgrades.
+>    ```ini
+>    BindsTo=container-protonwire.service
+>    PartOf=container-protonwire.service
+>    After=container-protonwire.service
+>    ```
+> * If using `podman generate systemd`, Add following under `[Install]` section
+> to ensure vpn container is enabled if any of the dependent units are enabled.
+>    ```ini
+>    Also=container-protonwire.service
+>    ```
+> * If container is `sd_notify` aware, use `--sdnotify=container` instead.
+
+<!--diana::dynamic:protonwire-app-unit-file:begin-->
+```ini
+[Unit]
+Description=Example application using protonwire VPN container
+Documentation=https://github.com/tprasadtp/protonvpn-docker
+
+# Service Dependencies
+# ----------------------------------------
+Wants=network-online.target
+After=network-online.target
+RequiresMountsFor=%t/containers
+
+# Container Dependencies
+# These settings ensure this container is started
+# only after protonwire is up and healthy.
+# BOTH BindsTo and After MUST be specified.
+# ----------------------------------------
+PartOf=container-protonwire.service
+BindsTo=container-protonwire.service
+After=container-protonwire.service
+
+[Service]
+# Service Type
+# ----------------------------------------
+Type=notify
+NotifyAccess=all
+
+# Service Settings and Environment
+# ----------------------------------------
+Environment=PODMAN_SYSTEMD_UNIT=%n
+
+# Sandboxing (Filesystem, Network, CGroup)
+# ----------------------------------------
+# DO NOT ENABLE filesystem sandboxing.
+# DO NOT ENABLE network sandboxibg.
+# DO NOT ENABLE CGroup sandboxing.
+
+# Other Settings
+# ----------------------------------------
+IPAccounting=true
+CPUAccounting=true
+BlockIOAccounting=true
+MemoryAccounting=true
+TasksAccounting=true
+
+# Service lifecycle
+# ----------------------------------------
+Restart=on-failure
+
+# Service timeouts & Watchdog
+# ----------------------------------------
+TimeoutAbortSec=30
+TimeoutStopSec=30
+TimeoutStartSec=180
+
+# Service commands
+# ----------------------------------------
+# - This example uses caddy to proxy a website
+#   which shows your IP info.
+# - Replace this with your podman container along
+#   with required changes. Do note that there
+#   are no port mappings done here!
+ExecStart=podman run \
+    --name=protonwire-example-app \
+    --detach \
+    --replace \
+    --tz=local \
+    --init \
+    --cgroups=split \
+    --network=container:protonwire \
+    docker.io/library/caddy:latest \
+    caddy reverse-proxy --change-host-header --from :8000 --to https://ip.me:443
+ExecStop=podman stop --ignore -t 10 protonwire-example-app
+ExecStopPost=podman rm -f --ignore -t 10 protonwire-example-app
+
+[Install]
+WantedBy=default.target
+Also=container-protonwire.service
+```
+<!--diana::dynamic:protonwire-app-unit-file:end-->
+
+### Reload systemd
+
+Reload systemd if necessary
+
+```console
+sudo systemctl daemon-reload
+```
+
+## Enable systemd units
+
+```
+sudo systemctl enable container-protonwire.service --now
+```
+
+## Verify containers are running
+
+<pre>systemctl status container-protonwire.service
+<font color="#B8BB26"><b>●</b></font> container-protonwire.service - ProtonVPN Wireguard Container
+     Loaded: loaded (/etc/systemd/system/container-protonwire.service; <font color="#D7D75F"><b>disabled</b></font>; preset: <font color="#B8BB26"><b>enabled</b></font>)
+     Active: <font color="#B8BB26"><b>active (running)</b></font> since Tue 2023-05-23 11:32:41 UTC; 19s ago
+       Docs: man:protonwire(1)
+             https://github.com/tprasadtp/protonvpn-docker
+   Main PID: 4345 (conmon)
+         IP: 16.2K in, 4.7K out
+      Tasks: 4 (limit: 495)
+     Memory: 14.8M
+        CPU: 1.824s
+     CGroup: /system.slice/container-protonwire.service
+             ├─libpod-payload-6b8a40f3d89bb03aa07bfc0eca52915c9cd3af6ce5952de84aa92386ca725398
+             │ ├─<font color="#8A8A8A">4348 /run/podman-init -- /usr/bin/protonwire connect --container</font>
+             │ ├─<font color="#8A8A8A">4351 /bin/bash /usr/bin/protonwire connect --container</font>
+             │ └─<font color="#8A8A8A">4766 sleep 60</font>
+             └─runtime
+               └─<font color="#8A8A8A">4345 /usr/bin/conmon --api-version 1 -c 6b8a40f3d89bb03aa07bfc0eca52915c9cd3af6ce5952de84aa92386ca725</font><span style="background-color:#EBDBB2"><font color="#282828">&gt;</font></span>
+<font color="#B8BB26"><b>vagrant@protonwire</b></font>:<font color="#83A598"><b>~</b></font>$
+</pre>
+
+<pre><font color="#B8BB26"><b>vagrant@protonwire</b></font>:<font color="#83A598"><b>~</b></font>$ sudo systemctl status container-protonwire-example-app.service
+<font color="#B8BB26"><b>●</b></font> container-protonwire-example-app.service - Example application using protonwire VPN container
+     Loaded: loaded (/etc/systemd/system/container-protonwire-example-app.service; <font color="#D7D75F"><b>disabled</b></font>; preset: <font color="#B8BB26"><b>enabled</b></font>)
+     Active: <font color="#B8BB26"><b>active (running)</b></font> since Tue 2023-05-23 12:18:34 UTC; 5s ago
+       Docs: https://github.com/tprasadtp/protonvpn-docker
+   Main PID: 10673 (conmon)
+         IP: 0B in, 0B out
+      Tasks: 11 (limit: 495)
+     Memory: 9.9M
+        CPU: 215ms
+     CGroup: /system.slice/container-protonwire-example-app.service
+             ├─libpod-payload-adba32e4d79f286e46fa30fe3b83a4810af8470a73b7655f9bf5d49a85e3433a
+             │ ├─<font color="#8A8A8A">10675 /run/podman-init -- caddy reverse-proxy --change-host-header --from :8000 --to https://ip.me:443</font>
+             │ └─<font color="#8A8A8A">10677 caddy reverse-proxy --change-host-header --from :8000 --to https://ip.me:443</font>
+             └─runtime
+               └─<font color="#8A8A8A">10673 /usr/bin/conmon --api-version 1 -c adba32e4d79f286e46fa30fe3b83a4810af8470a73b7655f9bf5d49a85e3</font><span style="background-color:#EBDBB2"><font color="#282828">&gt;</font></span>
+</pre>
+
+### Verify request is being proxied via VPN.
+
+Visit http://<host IP>:8000 in your browser and it should show VPN's location and IP address.
+
+</details>
+
 ## Docker
 
   <p align="center">
@@ -224,6 +630,12 @@ Same can be used as liveness probe and readiness probe for Kubernetes.
       <img src="https://static.prasadt.com/logos/software/docker/scalable/docker-engine-wide.svg" height="64" alt="docker">
     </a>
   </p>
+
+> **Note**
+>
+> Because docker does not provide a reliable way to bring up containers in an ordered
+> manner and lacks `sd_notify` support for containers(see bugs like #178),
+> it is recommended to use [podman](#podman) with systemd.
 
 - Pull docker image (if required)
     ```bash
@@ -275,6 +687,12 @@ For example, we can run caddy to proxy `https://ip.me/` via VPN. Visiting http:/
 
 ## Docker Compose
 
+> **Note**
+>
+> Because docker does not provide a reliable way to bring up containers in an ordered
+> manner and lacks `sd_notify` support for containers(see bugs like #178),
+> it is recommended to use [podman](#podman) with systemd.
+
 If entire stack is in a single compose file, then `network_mode: service:protonwire` on the services which should be routed via VPN. If the VPN stack is **NOT** in same compose file use `network_mode: container:<protonwire-container-name>`.
 
 As an example, run caddy web-server, proxying https://ip.me, via VPN using the compose config given below. Once the stack is up, visiting the http://localhost:8000, or `curl -s http://localhost:8000` should show VPN's country and IP address.
@@ -295,8 +713,8 @@ services:
       # Quote this value as server name can contain '#'.
       PROTONVPN_SERVER: "nl-free-127.protonvpn.net"
       # Set this to 1 to show debug logs for issue forms.
-      DEBUG: "1"
-      # Set this to 1 to enable kill-switch.
+      DEBUG: "0"
+      # Set this to 0 to disable kill-switch.
       KILL_SWITCH: "1"
     # NET_ADMIN capability is mandatory!
     cap_add:
@@ -336,75 +754,6 @@ services:
 > - It is **essential** to expose/publish port(s) _on protonwire container_, instead of application container.
 > - **SHOULD NOT** run the container as privileged. Adding capability `CAP_NET_ADMIN` **AND** defined `sysctls` should be sufficient.
 > - Value for `PROTONVPN_SERVER` must be enclosed within quotes as server name can contain '#'
-
-## Podman
-
-<p align="center">
-  <a href="https://podman.io/" target="_blank" rel="noreferrer">
-    <img src="https://raw.githubusercontent.com/containers/podman/a655633f2dcf3cce60bfce63d383d4e8e1ae67a2/logo/podman-logo-source.svg" height="48" alt="podman">
-  </a>
-</p>
-
-> **Warning**
->
-> - podman versions older than v4 (one included in Debian 11/Ubuntu 22.04 repos)
-> are **NOT** supported. It might be possible to use it to run the container,
-> but some flags and commands are missing(`--sysctl` flag on pod create,
-> `podman secret` commands etc.) and thus cannot be __supported__,
-> but may be used without those features.
-
-- Create a podman secret for private key
-    ```bash
-    sudo podman secret create protonwire-private-key <PRIVATE_KEY>
-    ```
-
-- Run protonwire container
-    ```bash
-    sudo podman run \
-        -it \
-        --rm \
-        --name protonwire \
-        --init \
-        --tz local \
-        --tmpfs /tmp \
-        --cap-add=NET_ADMIN \
-        --sysctl=net.ipv4.conf.all.rp_filter=2 \
-        --secret private-key,mode=600  \
-        --env PROTONVPN_SERVER=<SERVER-NAME> \
-        --publish 8000:80 \
-        ghcr.io/tprasadtp/protonwire:latest
-    ```
-
-    > **Warning**
-    >
-    > * To publish additional ports from other containers using this VPN (usually done via argument
-    > `-p host_port:container_port`), it **MUST** be done on the `protonwire` container!
-    > * `--sysctl` and `--cap-add` flags are important! without these, container cannot create/manage
-    > WireGuard interface.
-    > * `mode=600` in secret mounting is important as script refuses to use private key with insecure
-    > permissions.
-    > * podman rootless should also work just fine for most users, but is considered experimental.
-
-- To use VPN in other container(s), use `--net=container:protonwire` flag.
-For example, we can run caddy to proxy `https://ip.me` via VPN. Visiting http://localhost:8000, or `curl http://localhost:8000` should show VPN's country and IP address.
-
-    ```console
-    sudo podman run \
-        -it  \
-        --rm \
-        --name=protonwire-demo \
-        --net=container:protonwire \
-        caddy:latest \
-        caddy reverse-proxy \
-        --change-host-header \
-        --from :80 \
-        --to https://ip.me:443
-    ```
-
-## Run podman container as systemd unit
-
-[podman-generate-systemd](https://docs.podman.io/en/latest/markdown/podman-generate-systemd.1.html)
-can be used to generate systemd unit files for the entire pod.
 
 ## Dependencies
 
@@ -484,7 +833,7 @@ if running as systemd unit outside of containers.
 ## Systemd Integrations
 
 Provides rich systemd integration. Connected server kill-switch state is displayed with
-`systemctl status protonwire`.
+`systemctl status protonwire`. For running containers as systemd unit see [podman-systemd-integration](#podman-systemd-integration)
 
 <pre><font color="#B8BB26"><b>vagrant@debian-minimal</b></font>:<font color="#83A598"><b>~</b></font>$ systemctl status protonwire --no-pager
 <font color="#B8BB26"><b>●</b></font> protonwire.service - ProtonVPN Wireguard Client
@@ -608,11 +957,10 @@ or via `--skip-dns-config` CLI flag.
 Depend on `protonwire` unit by adding **ALL** the properties below to `[Unit]` section in
 dependent units. See [systemd.unit(5)][] for more info.
 
-- [`BindsTo=protonwire.service`][BindsTo]
-- [`Requisite=protonwire.service`][Requisite]
+- [`PartOf=protonwire.service`][PartOf]
 - [`After=protonwire.service`][After]
 
-This setup ensures that service depending on VPN will be **ONLY** started when `protonwire` is activated. (Dependent units still have to be enabled) If for some reason protonwire service becomes un-healthy and exits, `BindsTo` ensures that dependent unit will be stopped.
+This setup ensures that service depending on VPN will be **ONLY** started when `protonwire` is activated. (Dependent units still have to be enabled) If for some reason protonwire service becomes un-healthy and exits, `PartOf` ensures that dependent unit will be stopped.
 
 If system package already provides a systemd unit file for the service, use [drop-in][] units to configure dependencies.
 
@@ -641,9 +989,8 @@ make docker
 [resolved.conf(5)]:https://www.freedesktop.org/software/systemd/man/resolved.conf.html
 [systemd.network(5)]:https://www.freedesktop.org/software/systemd/man/systemd.network.html
 
-[Requisite]: https://www.freedesktop.org/software/systemd/man/systemd.unit.html#Requisite=
-[BindsTo]: https://www.freedesktop.org/software/systemd/man/systemd.unit.html#BindsTo=
-[After]: https://www.freedesktop.org/software/systemd/man/systemd.unit.html#Before=
+[PartOf]: https://www.freedesktop.org/software/systemd/man/systemd.unit.html#PartOf=
+[After]: https://www.freedesktop.org/software/systemd/man/systemd.unit.html#After=
 [RestrictNetworkInterfaces]: https://www.freedesktop.org/software/systemd/man/systemd.resource-control.html#RestrictNetworkInterfaces=
 [systemd.resource-control(5)]: https://www.freedesktop.org/software/systemd/man/systemd.resource-control.html#RestrictNetworkInterfaces=
 
