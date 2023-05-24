@@ -1,0 +1,63 @@
+name: metadata-gh-pages
+on:
+  workflow_dispatch:
+    inputs:
+      DEBUG:
+        description: Enable debug logs for metadata
+        required: false
+        default: "no"
+        type: choice
+        options:
+          - "yes"
+          - "no"
+  push:
+    branches:
+      - "*"
+  schedule:
+    - cron: "30 * * * *"
+jobs:
+  deploy:
+    # exclude dependabot from running this workflow.
+    if: ${{ github.actor != 'dependabot[bot]' }}
+
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+
+      - name: Install python dependencies
+        run: |
+          sudo apt-get install -y \
+          python3-gnupg \
+          python3-requests \
+          python3-bcrypt \
+          python3-coloredlogs
+
+      - name: Generate metadata
+        run: ./scripts/generate-server-metadata --output ./metadata
+        env:
+          PROTON_USERNAME: ${{ secrets.PROTON_USERNAME }}
+          PROTON_PASSWORD: ${{ secrets.PROTON_PASSWORD }}
+          DEBUG: ${{ inputs.DEBUG }}
+
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v1
+        with:
+          path: metadata
+
+      - name: Deploy to GitHub Pages
+        if: github.ref == 'refs/heads/master'
+        id: deployment
+        uses: actions/deploy-pages@v2

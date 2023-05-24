@@ -891,6 +891,11 @@ def write_metadata(
     with open(metadata_ts_file, "w", encoding="utf-8") as f:
         json.dump(metadata_ts, f, indent=2)
 
+    index_file = metadata_dir / Path("index.html")
+    logging.info("Writing - %s", index_file)
+    with open(index_file, "w", encoding="utf-8") as f:
+        json.dump(metadata_ts, f, indent=2)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)

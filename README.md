@@ -37,9 +37,6 @@
   <a href="https://protonwire-api.vercel.app/" target="_blank" rel="noreferrer">
     <img src="https://img.shields.io/badge/dynamic/json?label=servers&query=server_count&url=https%3A%2F%2Fprotonwire-api.vercel.app&logo=protonvpn&labelColor=3a3a3a&logoColor=white&color=7f50a6" height="24" alt="badge-server-count">
   </a>
-  <a href="https://github.com/tprasadtp/protonwire-api" target="_blank" rel="noreferrer">
-    <img src="https://img.shields.io/badge/dynamic/json?label=commit&query=commit&url=https%3A%2F%2Fprotonwire-api.vercel.app%2Fcommit.json&logo=git&labelColor=3a3a3a&logoColor=white&color=7f50a6" height="24" alt="badge-metadata-commit">
-  </a>
 </p>
 
 ## Features
@@ -375,12 +372,12 @@ to start only when protonwire is up **and** healthy.
 - Dependency ordering during upgrades.
 - Use well known systemctl to see status of containers.
 
-<details>
-<summary>Click here Show/Hide Steps to run protonwire podman container using systemd</summary>
-
-- This feature is experimental and is **NOT** covered by semver compatibility guarantees.
-- Only podman version 4.5 or later is supported due to missing `--ignore` flag on network create command in older versions. You can ignore this by removing
-`ExecStartPre=podman network create protonwire --ignore --driver=bridge` from `container-protonwire.service` and manually creating the bridge network.
+> **Warning**
+>
+> - This feature is experimental and is **NOT** covered by semver compatibility guarantees.
+> - Only podman version 4.5 or later is supported due to missing `--ignore` flag on network create
+> command in older versions. You can ignore this by removing
+> `ExecStartPre=podman network create protonwire --ignore --driver=bridge` from `container-protonwire.> service` and manually creating the bridge network.
 
 ### Create a podman secret
 
@@ -390,17 +387,17 @@ Create a podman secret for private key (if not done already)
 sudo podman secret create protonwire-private-key <PRIVATE_KEY>
 ```
 
-## Cleanup demo containers
+### Cleanup demo containers
 
-Remove existing protonwire-demo containers if any. This is done to avoid connection limits
-and name conflicts.
+Remove existing protonwire-demo containers (if any).
+This is done to avoid connection limits and name conflicts.
 
 ```
 sudo podman rm --force --ignore protonwire-demo-app
 sudo podman rm --force --ignore protonwire-demo
 ```
 
-## Create settings file
+### Create settings file
 
 Create environment file(s) to save settings like server name and kill switch state etc.
 This detaches the configuration from systemd unit file and avoids
@@ -413,7 +410,7 @@ sudo chmod 755 /etc/protonwire
 printf "PROTONVPN_SERVER=\"nl-free-127.protonvpn.net\"\nKILL_SWITCH=1\nDEBUG=0\n | sudo tee /etc/protonwire/settings.env
 ```
 
-## Create systemd unit file for protonwire container
+### Create systemd unit file for protonwire container
 
 > **Warning**
 >
@@ -424,6 +421,9 @@ printf "PROTONVPN_SERVER=\"nl-free-127.protonvpn.net\"\nKILL_SWITCH=1\nDEBUG=0\n
 Use the following unit file as template. Tweak it as necessary. Be careful with
 sandboxing options as containers use namespaces and podman may depend on global shared data
 in `/tmp/` and a writable `/etc/`.
+
+<details>
+<summary>Show/Hide container-protonwire.service template</summary>
 
 <!--diana::dynamic:protonwire-container-unit-file:begin-->
 ```ini
@@ -534,6 +534,8 @@ WantedBy=default.target
 > * `--cgroups=split` is important as it places container processes in its own sub cgroup
 > under same service cgroup.
 
+</details>
+
 ### Create systemd unit file(s) for application container(s)
 
 > **Note**
@@ -553,6 +555,9 @@ WantedBy=default.target
 >    Also=container-protonwire.service
 >    ```
 > * If container is `sd_notify` aware, use `--sdnotify=container` instead.
+
+<details>
+<summary>Show/Hide container-protonwire-example-app.service template</summary>
 
 <!--diana::dynamic:protonwire-app-unit-file:begin-->
 ```ini
@@ -635,6 +640,8 @@ Also=container-protonwire.service
 ```
 <!--diana::dynamic:protonwire-app-unit-file:end-->
 
+</details>
+
 ### Reload systemd
 
 Reload systemd if necessary
@@ -692,9 +699,7 @@ sudo systemctl enable container-protonwire.service --now
 
 ### Verify request is being proxied via VPN.
 
-Visit http://<host IP>:8000 in your browser and it should show VPN's location and IP address.
-
-</details>
+Visit http://[host IP or localhost]:8000 in your browser and it should show VPN's location and IP address.
 
 ## Docker
 
@@ -960,10 +965,10 @@ or via `--skip-dns-config` CLI flag.
 Depend on `protonwire` unit by adding **ALL** the properties below to `[Unit]` section in
 dependent units. See [systemd.unit(5)][] for more info.
 
-- [`PartOf=protonwire.service`][PartOf]
+- [`BindsTo=protonwire.service`][BindsTo]
 - [`After=protonwire.service`][After]
 
-This setup ensures that service depending on VPN will be **ONLY** started when `protonwire` is activated. (Dependent units still have to be enabled) If for some reason protonwire service becomes un-healthy and exits, `PartOf` ensures that dependent unit will be stopped.
+This setup ensures that service depending on VPN will be **ONLY** started when `protonwire` is activated. (Dependent units still have to be enabled) If for some reason protonwire service becomes un-healthy and exits, dependent unit will be stopped.
 
 If system package already provides a systemd unit file for the service, use [drop-in][] units to configure dependencies.
 
@@ -993,6 +998,7 @@ make docker
 [systemd.network(5)]:https://www.freedesktop.org/software/systemd/man/systemd.network.html
 
 [PartOf]: https://www.freedesktop.org/software/systemd/man/systemd.unit.html#PartOf=
+[BindsTo]: https://www.freedesktop.org/software/systemd/man/systemd.unit.html#BindsTo=
 [After]: https://www.freedesktop.org/software/systemd/man/systemd.unit.html#After=
 [RestrictNetworkInterfaces]: https://www.freedesktop.org/software/systemd/man/systemd.resource-control.html#RestrictNetworkInterfaces=
 [systemd.resource-control(5)]: https://www.freedesktop.org/software/systemd/man/systemd.resource-control.html#RestrictNetworkInterfaces=

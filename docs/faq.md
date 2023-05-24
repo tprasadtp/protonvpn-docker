@@ -191,17 +191,34 @@ You can use any of the following services for verification. They **MUST RETURN O
 > Connection: keep-alive
 > ```
 
-## Metadata updates
+## Metadata updates/URL
 
-Metadata updates includes updating server IPs, feature flags on servers, exit IPs and their public keys.
-It also applies some workarounds to API quirks or bugs. Usually it should be automatic.
+Metadata updates includes updating server IPs, feature flags on servers, exit IPs and their
+public keys. It also applies some workarounds to API quirks or bugs. Usually it should be automatic.
 But Proton API and libraries are in constant state of ~~chaos~~ flux
 and documentation is virtually non-existent or incorrect. So stuff might break.
 Bulk of the work is done via `scripts/generate-server-metadata`
 
+- https://protonwire-api.vercel.app/v1/server (default)
+- https://tprasadtp.github.io/protonvpn-docker/v1/server (beta)
+
 ## Known Issues
 
-- Running multiple instances of this __outside of containers__ is not supported.
+- Running multiple instances of this __outside of containers__ on same host is not supported.
+
+## Kubernetes
+
+Currently no egress gateway supports proxying both TCP and UDP
+[istio/istio#1430](https://github.com/istio/istio/issues/1430),
+[cilium/cilium#19642](https://github.com/cilium/cilium/issues/19642),
+__and__ enforce it from pod startup
+[cilium/cilium#23976](https://github.com/cilium/cilium/issues/23976).
+
+Best solution is to build your own pod definitions with __all__ the apps
+running in a __single pod__ and use protonwire container with command
+`protonwire connect --kill-switch` as init container. This ensures all the containers in
+your pod are using the VPN. Do note that `.cluster` domains like `<service>.<namespace>.svc.cluster` are **NOT** resolved (unless your use `SKIP_CONFIG_DNS=1`) as ProtonVPN DNS server is used.
+Do remember to apply required sysctls to the pod created.
 
 ## Known Bugs in Upstream API/libraries
 
