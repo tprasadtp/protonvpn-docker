@@ -300,38 +300,29 @@ This section covers running containers via podman. But for deployments use [podm
     ```console
     sudo podman secret create protonwire-private-key <PRIVATE_KEY|PATH_TO_PRIVATE_KEY>
     ```
-- Create a podman network for use with containers
-
-    ```console
-    sudo podman network create protonwire --driver=bridge
-    ```
 
 - Run _protonwire_ container.
 
     ```console
     sudo podman run \
-        --name=protonwire-demo \
-        --network=protonwire \
+        -it \
         --init \
         --replace \
         --tz=local \
-        --tty=true \
-        --interactive \
         --tmpfs=/tmp \
+        --name=protonwire-demo \
         --secret="protonwire-private-key,mode=600" \
         --env=PROTONVPN_SERVER="nl-free-127.protonvpn.net" \
         --env=DEBUG=0 \
         --env=KILL_SWITCH=1 \
-        --env=IPCHECK_INTERVAL=10 \
         --cap-add=NET_ADMIN \
         --sysctl=net.ipv4.conf.all.rp_filter=2 \
         --sysctl=net.ipv6.conf.all.disable_ipv6=1 \
         --publish=8000:8000 \
-        --health-start-period=15s \
+        --health-start-period=20s \
         --health-cmd="protonwire check --container --silent" \
         --health-interval=120s \
         --health-on-failure=stop \
-        --cgroups=split \
         ghcr.io/tprasadtp/protonwire:7
     ```
 
@@ -351,11 +342,11 @@ This section covers running containers via podman. But for deployments use [podm
 
     ```console
     sudo podman run \
-        --name=protonwire-demo-app \
-        --replace=true \
-        --detach \
-        --network=container:protonwire-demo \
+        -it \
+        --rm \
         --tz=local \
+        --name=protonwire-demo-app \
+        --network=container:protonwire-demo \
         docker.io/library/caddy:latest \
         caddy reverse-proxy --change-host-header --from :8000 --to https://ip.me:443
     ```
@@ -375,9 +366,7 @@ to start only when protonwire is up **and** healthy.
 > **Warning**
 >
 > - This feature is experimental and is **NOT** covered by semver compatibility guarantees.
-> - Only podman version 4.5 or later is supported due to missing `--ignore` flag on network create
-> command in older versions. You can ignore this by removing
-> `ExecStartPre=podman network create protonwire --ignore --driver=bridge` from `container-protonwire.> service` and manually creating the bridge network.
+> - Only podman version 4.5 or later is supported due to missing.
 
 ### Create a podman secret
 
@@ -423,7 +412,7 @@ sandboxing options as containers use namespaces and podman may depend on global 
 in `/tmp/` and a writable `/etc/`.
 
 <details>
-<summary>Show/Hide container-protonwire.service template</summary>
+<summary>Show/Hide `container-protonwire.service` template</summary>
 
 <!--diana::dynamic:protonwire-container-unit-file:begin-->
 ```ini
@@ -483,11 +472,12 @@ TimeoutStartSec=180
 #   This flag can be used multiple times to map multiple ports.
 # - Environment variables are read from /etc/protonwire/*.env files
 #   and are only passed down if they are defined.
+# - --cgroups=split will work better with systemd,
+#    but results in failed unit when stopped with (code=exited, status=219/CGROUP).
+#
 ExecStartPre=podman rm --force --depend --ignore --time 20 protonwire
-ExecStartPre=podman network create protonwire --ignore --driver=bridge
 ExecStart=podman run \
     --name=protonwire \
-    --network=protonwire \
     --init \
     --detach \
     --replace \
@@ -508,7 +498,6 @@ ExecStart=podman run \
     --health-cmd="protonwire check --container --silent" \
     --health-on-failure=stop \
     --sdnotify=container \
-    --cgroups=split \
     --publish=8000:8000 \
     ghcr.io/tprasadtp/protonwire:7
 ExecStopPost=podman rm --force --ignore --depend -t 10 protonwire
@@ -531,8 +520,6 @@ WantedBy=default.target
 > private key with insecure permissions.
 > * `--sdnotify=container` is important to avoid dependency issues like
 > [#178](https://github.com/tprasadtp/protonvpn-docker/issues/178) when using systemd.
-> * `--cgroups=split` is important as it places container processes in its own sub cgroup
-> under same service cgroup.
 
 </details>
 
@@ -557,7 +544,7 @@ WantedBy=default.target
 > * If container is `sd_notify` aware, use `--sdnotify=container` instead.
 
 <details>
-<summary>Show/Hide container-protonwire-example-app.service template</summary>
+<summary>Show/Hide `container-protonwire-example-app.service` template</summary>
 
 <!--diana::dynamic:protonwire-app-unit-file:begin-->
 ```ini
@@ -627,7 +614,6 @@ ExecStart=podman run \
     --replace \
     --tz=local \
     --init \
-    --cgroups=split \
     --network=container:protonwire \
     docker.io/library/caddy:latest \
     caddy reverse-proxy --change-host-header --from :8000 --to https://ip.me:443
@@ -658,44 +644,10 @@ sudo systemctl enable container-protonwire.service --now
 
 ## Verify containers are running
 
-<pre>systemctl status container-protonwire.service
-<font color="#B8BB26"><b>●</b></font> container-protonwire.service - ProtonVPN Wireguard Container
-     Loaded: loaded (/etc/systemd/system/container-protonwire.service; <font color="#D7D75F"><b>disabled</b></font>; preset: <font color="#B8BB26"><b>enabled</b></font>)
-     Active: <font color="#B8BB26"><b>active (running)</b></font> since Tue 2023-05-23 11:32:41 UTC; 19s ago
-       Docs: man:protonwire(1)
-             https://github.com/tprasadtp/protonvpn-docker
-   Main PID: 4345 (conmon)
-         IP: 16.2K in, 4.7K out
-      Tasks: 4 (limit: 495)
-     Memory: 14.8M
-        CPU: 1.824s
-     CGroup: /system.slice/container-protonwire.service
-             ├─libpod-payload-6b8a40f3d89bb03aa07bfc0eca52915c9cd3af6ce5952de84aa92386ca725398
-             │ ├─<font color="#8A8A8A">4348 /run/podman-init -- /usr/bin/protonwire connect --container</font>
-             │ ├─<font color="#8A8A8A">4351 /bin/bash /usr/bin/protonwire connect --container</font>
-             │ └─<font color="#8A8A8A">4766 sleep 60</font>
-             └─runtime
-               └─<font color="#8A8A8A">4345 /usr/bin/conmon --api-version 1 -c 6b8a40f3d89bb03aa07bfc0eca52915c9cd3af6ce5952de84aa92386ca725</font><span style="background-color:#EBDBB2"><font color="#282828">&gt;</font></span>
-<font color="#B8BB26"><b>vagrant@protonwire</b></font>:<font color="#83A598"><b>~</b></font>$
-</pre>
-
-<pre><font color="#B8BB26"><b>vagrant@protonwire</b></font>:<font color="#83A598"><b>~</b></font>$ sudo systemctl status container-protonwire-example-app.service
-<font color="#B8BB26"><b>●</b></font> container-protonwire-example-app.service - Example application using protonwire VPN container
-     Loaded: loaded (/etc/systemd/system/container-protonwire-example-app.service; <font color="#D7D75F"><b>disabled</b></font>; preset: <font color="#B8BB26"><b>enabled</b></font>)
-     Active: <font color="#B8BB26"><b>active (running)</b></font> since Tue 2023-05-23 12:18:34 UTC; 5s ago
-       Docs: https://github.com/tprasadtp/protonvpn-docker
-   Main PID: 10673 (conmon)
-         IP: 0B in, 0B out
-      Tasks: 11 (limit: 495)
-     Memory: 9.9M
-        CPU: 215ms
-     CGroup: /system.slice/container-protonwire-example-app.service
-             ├─libpod-payload-adba32e4d79f286e46fa30fe3b83a4810af8470a73b7655f9bf5d49a85e3433a
-             │ ├─<font color="#8A8A8A">10675 /run/podman-init -- caddy reverse-proxy --change-host-header --from :8000 --to https://ip.me:443</font>
-             │ └─<font color="#8A8A8A">10677 caddy reverse-proxy --change-host-header --from :8000 --to https://ip.me:443</font>
-             └─runtime
-               └─<font color="#8A8A8A">10673 /usr/bin/conmon --api-version 1 -c adba32e4d79f286e46fa30fe3b83a4810af8470a73b7655f9bf5d49a85e3</font><span style="background-color:#EBDBB2"><font color="#282828">&gt;</font></span>
-</pre>
+```
+sudo systemctl status container-protonwire.service
+sudo systemctl status container-protonwire-example-app.service
+```
 
 ### Verify request is being proxied via VPN.
 
