@@ -64,7 +64,6 @@ ExecStart=podman run \
     --replace \
     --tz=local \
     --init \
-    --cgroups=split \
     --network=container:protonwire \
     docker.io/library/caddy:latest \
     caddy reverse-proxy --change-host-header --from :8000 --to https://ip.me:443

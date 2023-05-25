@@ -54,11 +54,12 @@ TimeoutStartSec=180
 #   This flag can be used multiple times to map multiple ports.
 # - Environment variables are read from /etc/protonwire/*.env files
 #   and are only passed down if they are defined.
+# - --cgroups=split will work better with systemd,
+#    but results in failed unit when stopped with (code=exited, status=219/CGROUP).
+#
 ExecStartPre=podman rm --force --depend --ignore --time 20 protonwire
-ExecStartPre=podman network create protonwire --ignore --driver=bridge
 ExecStart=podman run \
     --name=protonwire \
-    --network=protonwire \
     --init \
     --detach \
     --replace \
@@ -79,7 +80,6 @@ ExecStart=podman run \
     --health-cmd="protonwire check --container --silent" \
     --health-on-failure=stop \
     --sdnotify=container \
-    --cgroups=split \
     --publish=8000:8000 \
     ghcr.io/tprasadtp/protonwire:7
 ExecStopPost=podman rm --force --ignore --depend -t 10 protonwire
