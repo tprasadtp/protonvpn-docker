@@ -1,0 +1,44 @@
+name: Support Request
+description: Support Request
+title: ""
+labels: ["help"]
+body:
+  # version
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: |
+        - Version of the package/container or commit hash
+        - If unable to detect or not applicable, leave the field as is.
+    validations:
+      required: true
+
+  - type: textarea
+    id: support-info
+    attributes:
+      label: Support Request
+      description: |
+        Details of your support request.
+        Please be specific. Include details with relevant links/data.
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: code-of-conduct
+    attributes:
+      label: Code of Conduct & PII Redaction
+      description: |
+        By submitting this issue, you agree to follow code of conduct for this repository.
+        In case the repository is missing code of conduct, Contributor Covenant code of conduct applies.
+        Please also ensure that you remove or redact any sensitive personally identifying information
+        like IP addresses and secrets like your API keys from logs and report included here.
+      options:
+        - label: I have verified that this feature request is not a duplicate and is not not addressed by the [FAQ](https://github.com/tprasadtp/protonvpn-docker/blob/master/docs/faq.md) and [Troubleshooting](https://github.com/tprasadtp/protonvpn-docker/blob/master/docs/help.md).
+          required: true
+        - label: This is not a bug report or feature request.
+          required: true
+        - label: I agree to follow this project's Code of Conduct.
+          required: true
+        - label: I have removed any sensitive personally identifying information(PII) and secrets from in this issue report.
+          required: true

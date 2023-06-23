@@ -202,9 +202,22 @@ Bulk of the work is done via `scripts/generate-server-metadata`
 - https://protonwire-api.vercel.app/v1/server (default)
 - https://tprasadtp.github.io/protonvpn-docker/v1/server (beta)
 
+## LAN/Local DNS Server and API endpoints
+
+By default ProtonVPN's DNS servers are used _after_ the connection is up and running.
+However, some DNS queries **MUST** go through default gateway/router when the wireguard interface is not up or configured. However effort is made to switch to ProtonVPN DNS server as soon as the Wireguard link is up. As metadata endpoints can be queried before the VPN is setup,
+you might need to allowlist following DNS names from your local DNS server (Pi-Hole, PFSense etc.)
+or your gateway/router.
+
+Do note that changes to this list is **NOT** covered by semver compatibility
+guarantees. If your are _not_ using default metadata and ip check endpoints this can be ignored.
+
+- `protonwire-api.vercel.app`
+- `icanhazip.com`
+
 ## Known Issues
 
-- Running multiple instances of this __outside of containers__ on same host is not supported.
+- Running multiple instances of this __outside of containers__ on _same host_ is not supported.
 
 ## Kubernetes
 
