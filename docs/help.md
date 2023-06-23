@@ -123,7 +123,7 @@ ip -6 rule | grep 51822 | cut -f 1 -d ':' | xargs ip rule del priority
 
 ## Manually Disconnecting from VPN
 
-Please use `protonwire disconnect` optionally with (`--kill-switch` flag) as it handles things properly. If not possible, try the following.
+Please use `protonwire disconnect --kill-switch` as it handles things properly. If not possible, try the following.
 
 - Restore the DNS if using systemd-resolved via,
     ```
@@ -133,20 +133,18 @@ Please use `protonwire disconnect` optionally with (`--kill-switch` flag) as it 
     ```bash
     resolvconf -f -d protonwire0.wg
     ```
-- If running version 7.2.0 and and later and **NOT** using systemd-resolved (like in containers)  restore the DNS using following commands.
+- If running version 7.2.0 and and later and **NOT** using systemd-resolved (like in containers) restore the DNS using following commands.
     ```bash
     cat /etc/resolv.conf.protonwire > /etc/resolv.conf && rm /etc/resolv.conf.protonwire
     ```
-
-```bash
-resolvectl revert protonwire0   # only if using systemd-resolved
-resolvconf -f -d protonwire0.wg # only if not using systemd-resolved
-ip -4 rule del not fwmark 51821 table 51821
-ip -6 rule del not fwmark 51821 table 51821
-ip -4 route flush table 51821
-ip -6 route flush table 51821
-ip link del protonwire0
-```
+- Remove routing rules and interfaces
+    ```bash
+    ip -4 rule del not fwmark 51821 table 51821
+    ip -6 rule del not fwmark 51821 table 51821
+    ip -4 route flush table 51821
+    ip -6 route flush table 51821
+    ip link del protonwire0
+    ```
 
 [emptyDir]: https://kubernetes.io/docs/concepts/storage/volumes/#emptydir
 [docker-compse-volumes]: https://docs.docker.com/compose/compose-file/compose-file-v3/#long-syntax-3
