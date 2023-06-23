@@ -32,7 +32,7 @@ body:
   - type: dropdown
     id: dns-protocol
     attributes:
-      label: DNS Protocol
+      label: Host DNS Protocol
       options:
         - Default DNS resolver
         - DNS over HTTPS (DoH)
