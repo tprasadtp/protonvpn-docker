@@ -32,7 +32,7 @@ jobs:
           version: latest
           install-only: true
       - name: Install Cosign
-        uses: sigstore/cosign-installer@v3.1.0
+        uses: sigstore/cosign-installer@v3.1.1
       - name: Install help2man
         run: sudo apt-get install -y help2man
       - name: Login to GitHub Container Registry
