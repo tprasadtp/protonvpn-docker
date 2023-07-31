@@ -339,7 +339,8 @@ This section covers running containers via podman. But for deployments use [podm
     > * `mode=600` in secret mount is important, as script refuses to use
     > private key with insecure permissions.
 
-- Create app(s) sharing network namespace with `protonwire` container. As an example, we are using two caddy servers to proxy website which shows IP info. Replace these with your application container(s) like [pyload](https://github.com/pyload/pyload#docker-images), [firefox](https://docs.linuxserver.io/images/docker-firefox) etc.
+- Create app(s) sharing network namespace with `protonwire` container. As an example, we are using caddy
+to proxy website which shows IP info. Replace these with your application container(s) like [pyload](https://github.com/pyload/pyload#docker-images), [firefox](https://docs.linuxserver.io/images/docker-firefox) etc.
 
     ```console
     sudo podman run \
