@@ -623,7 +623,7 @@ function __check_tools() {
         "timeout" # coreutils
         "wg"      # wireguard-tools | wireguard-tools-wg
         "sysctl"  # procps
-        # "flock"   # flock | linux-utils
+        "flock"   # flock | linux-utils
     )
 
     # Detect how to update DNS and add required commands to list of commands to check
@@ -1157,7 +1157,8 @@ function protonvpn_fetch_metadata() {
             curl_opts="-vfL"
         fi
         # we use wait to ensure the term signals can be handled properly
-        { curl "${curl_opts}" -m 30 -A 'protonwire/v7' -o "${__PROTONWIRE_SRV_INFO_FILE}.bak" \
+        { flock --timeout 30 --conflict-exit-code 32 "${__PROTONWIRE_SRV_INFO_FILE}.lock" \
+            curl "${curl_opts}" -m 30 -A 'protonwire/v7' -o "${__PROTONWIRE_SRV_INFO_FILE}.bak" \
             "${api_call}" 2>&1 | log_tail "curl" & }
         wait $!
         curl_rc="$?"
@@ -1330,7 +1331,8 @@ function __protonvpn_verify_connection() {
     # Invoke healthcheck API and save response
     log_debug "Checking client IP via $IPCHECK_URL"
     {
-        curl "${curl_opts}" -m 30 -A 'protonwire/v7' -o "${__PROTONWIRE_HCR}" \
+        flock --timeout 30 --conflict-exit-code 32 "${__PROTONWIRE_HCR}.lock" \
+            curl "${curl_opts}" -m 30 -A 'protonwire/v7' -o "${__PROTONWIRE_HCR}" \
             "$IPCHECK_URL" 2>&1 | log_tail "curl" &
     }
     wait $!
