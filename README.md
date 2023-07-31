@@ -79,6 +79,7 @@ Images are published at [ghcr.io/tprasadtp/protonwire][ghcr].
 
 - Log in to ProtonVPN and go to **Downloads** → **WireGuard configuration**.
 - Enter a name for the key, and select features to enable like NetShield and VPN Accelerator & click create.
+  Some users have reported issues (#236,#211) when NetShield is set to `Block malware, ads and trackers`. Please see [Troubleshooting] for a work-around.
 - Generated config might look something like below,
     ```ini
     [Interface]
