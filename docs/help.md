@@ -18,9 +18,10 @@ Script should take care of that by adding IPs of servers in the same pool to lis
 
 It appears that ProtonVPN DNS servers are blocking connection to `https://protonwire-api.vercel.app/v1/client/ip` when Netshield option is set to `Block malware, ads and trackers`.
 This IP endpoint simply redirects a valid IPcheck endpoint which works for most users, currently set to `https://icanhazip.com`. It is [controlled by cloudflare and is hosted on cloudflare workers](https://major.io/p/a-new-future-for-icanhazip/). It is not a malware/tracker. Please ask Proton Support to either remove it from their blocklist, use another `IPCHECK_URL` endpoint, or set Netshield option to `Block malware only`
+Following `IPCHECK_URL` endpoints can be used.
 
 - `https://checkip.amazonaws.com/` (may not work with IPv6 servers)
-- `https://api.ipify.org`
+- `https://api.ipify.org/`
 
 Alternatively, you can host your own `IPCHECK_URL` endpoint on cloudflare workers using the snippet below.
 The snippet below will not work in worker's preview pane as it depends on
