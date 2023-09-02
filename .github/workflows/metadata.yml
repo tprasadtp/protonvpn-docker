@@ -43,7 +43,7 @@ jobs:
 
       - name: Generate bot token
         id: bot-token
-        uses: tibdex/github-app-token@b62528385c34dbc9f38e5f4225ac829252d1ea92
+        uses: tibdex/github-app-token@0d49dd721133f900ebd5e0dff2810704e8defbc6
         with:
           repository: ${{ vars.METADATA_REPO }}
           app_id: ${{ vars.METADATA_BOT_APP_ID }}
