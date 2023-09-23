@@ -25,7 +25,7 @@ jobs:
           GH_REPO: ${{ github.repository }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout latest tag
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ steps.get_latest_release.outputs.TAG_NAME }}
       - uses: actions/cache@v3
