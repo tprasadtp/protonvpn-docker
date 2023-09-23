@@ -36,7 +36,7 @@ jobs:
       - name: Install help2man
         run: sudo apt-get install -y help2man
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
