@@ -24,16 +24,19 @@ jobs:
         env:
           GH_REPO: ${{ github.repository }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Checkout latest tag
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ steps.get_latest_release.outputs.TAG_NAME }}
+
       - uses: actions/cache@v3
         with:
           path: .trivy
           key: ${{ runner.os }}-trivy-${{ github.run_id }}
           restore-keys: |
             ${{ runner.os }}-trivy-
+
       - name: Run Trivy vulnerability scanner
         id: trivy
         uses: aquasecurity/trivy-action@fbd16365eb88e12433951383f5e99bd901fc618f
@@ -45,6 +48,7 @@ jobs:
           image-ref: 'ghcr.io/tprasadtp/protonwire:latest'
           format: 'sarif'
           output: 'trivy-results.sarif'
+
       - name: Upload Trivy scan results to GitHub Security tab
         if: github.ref == 'refs/heads/master' && always()
         uses: github/codeql-action/upload-sarif@v2
