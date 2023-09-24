@@ -312,3 +312,12 @@ release:
   extra_files:
     - glob: dist/protonwire
     - glob: dist/protonwire.1
+
+docker_signs:
+  - cmd: cosign
+    artifacts: manifests
+    output: true
+    args:
+      - "sign"
+      - "${artifact}@${digest}"
+      - --yes

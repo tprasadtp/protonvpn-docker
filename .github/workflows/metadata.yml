@@ -12,7 +12,8 @@ on:
         - "no"
   push:
     branches:
-      - "*"
+      - "main"
+      - "master"
   schedule:
     - cron: "30 * * * *"
 jobs:
@@ -22,7 +23,7 @@ jobs:
     if: ${{ github.actor != 'dependabot[bot]' }}
     steps:
       - name: Checkout project repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           persist-credentials: false
 
@@ -44,13 +45,14 @@ jobs:
       - name: Generate bot token
         id: bot-token
         uses: tibdex/github-app-token@b62528385c34dbc9f38e5f4225ac829252d1ea92
+        # uses: actions/create-github-app-token@v1
         with:
           repository: ${{ vars.METADATA_REPO }}
           app_id: ${{ vars.METADATA_BOT_APP_ID }}
           private_key: ${{ secrets.APP_PRIVATE_KEY }}
 
       - name: Checkout metadata repo to protonwire-api-deploy
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: ${{ vars.METADATA_REPO }}
           path: protonwire-api-deploy
