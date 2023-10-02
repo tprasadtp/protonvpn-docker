@@ -292,18 +292,6 @@ docker_manifests:
     - 'ghcr.io/tprasadtp/protonvpn:{{ .Version }}-amd64'
     - 'ghcr.io/tprasadtp/protonvpn:{{ .Version }}-arm64'
 
-# docker_signs:
-#   - id: default
-#     cmd: cosign
-#     args:
-#       - "sign"
-#       - "--key=cosign.key"
-#       - "--upload=false"
-#       - "${artifact}@${digest}"
-#       - "--yes"
-#     artifacts: all
-#     output: true
-
 release:
   mode: replace
   ids:

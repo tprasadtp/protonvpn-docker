@@ -1,23 +1,28 @@
 #syntax=docker/dockerfile:1.2
-FROM alpine:3.18.4 as base
+FROM debian:bookworm-20230919-slim as base
 
 FROM base
 
+RUN rm -f /etc/apt/apt.conf.d/docker-clean \
+    && echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/buildkit-cache
+
+# Install Packages
 # hadolint ignore=DL3008,DL3009
-RUN --mount=type=cache,sharing=private,target=/var/cache/apk \
-    apk update \
-    && apk add \
-        bash \
-        flock \
+RUN --mount=type=cache,sharing=private,target=/var/lib/apt \
+    --mount=type=cache,sharing=private,target=/var/cache/apt \
+    apt-get update -qq \
+    && DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends --yes \
+        ca-certificates \
         curl \
-        iproute2-minimal \
-        libcap \
-        procps \
         netcat-openbsd \
+        bind9-host \
+        wireguard-tools \
+        procps \
+        util-linux \
         jq \
-        htop \
-        bind-tools \
-        wireguard-tools-wg
+        libcap2-bin \
+        iproute2 \
+        htop
 
 COPY --chown=root:root \
     --chmod=0755 \
