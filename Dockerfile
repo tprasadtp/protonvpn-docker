@@ -27,6 +27,7 @@ RUN --mount=type=tmpfs,target=/var/lib/apt/lists \
         socat \
         natpmpc \
         openresolv \
+        iputils-ping \
         htop
 
 COPY --chown=root:root --chmod=0755 protonwire /usr/bin/protonwire
