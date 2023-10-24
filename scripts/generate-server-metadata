@@ -9,6 +9,7 @@ Get ProtonVPN server metadata
 
 import argparse
 import base64
+import copy
 import hashlib
 import json
 import logging
@@ -591,7 +592,6 @@ def write_metadata(
     username: str,
     password: str,
     metadata_dir: Path,
-    verbose: bool = False,
     generate_list: bool = False,
     save_api_resp: bool = False,
 ):
@@ -658,7 +658,7 @@ def write_metadata(
     logging.info("Processing Data")
 
     srv_count = 0
-
+    stat_file_count = 0
     logical_node_list: List[LogicalNode] = []
 
     for logical_server in logicals["LogicalServers"]:
@@ -818,7 +818,6 @@ def write_metadata(
         )
 
         logical_node_list.append(logical_node)
-
         try:
             logging.debug("Writing(JSON) - %s", logical_node.Name)
             logical_node_file_upper = metadata_dir_json_v1_srv / Path(
@@ -828,6 +827,7 @@ def write_metadata(
                 f.writelines(
                     (json.dumps(obj=logical_node, indent=2, default=vars))
                 )
+                stat_file_count += 1
             logical_node_file_lc = metadata_dir_json_v1_srv / Path(
                 logical_node_lowercase_name.Name.replace("#", "-")
             )
@@ -835,6 +835,7 @@ def write_metadata(
                 f.writelines(
                     (json.dumps(obj=logical_node_lowercase_name, indent=2, default=vars))
                 )
+                stat_file_count += 1
         except Exception:
             logging.exception(
                 "Failed to write JSON - %s",
@@ -851,9 +852,30 @@ def write_metadata(
                 f.writelines(
                     (json.dumps(obj=logical_node, indent=2, default=vars))
                 )
+                stat_file_count += 1
         except Exception:
             logging.exception("Failed to write JSON - %s", logical_node.DNS)
             sys.exit(1)
+
+        # IP Mappings
+        for srv_node in logical_node.Nodes:
+            try:
+                logical_node_single_endpoint = copy.deepcopy(logical_node)
+                logical_node_single_endpoint.Nodes = [srv_node]
+                if len(logical_node_single_endpoint.Nodes) != 1:
+                    logging.error("More than one node found for : %s", srv_node.Endpoint)
+                logging.debug("Writing(IP) - %s", srv_node.Endpoint)
+                srv_ip_file_dns = metadata_dir_json_v1_srv / Path(
+                    srv_node.Endpoint
+                )
+                with open(srv_ip_file_dns, "w", encoding="utf-8") as f:
+                    f.writelines(
+                        (json.dumps(obj=logical_node_single_endpoint, indent=2, default=vars))
+                    )
+                    stat_file_count += 1
+            except Exception:
+                logging.exception("Failed to write JSON - %s", srv_node.Endpoint)
+                sys.exit(1)
 
     if generate_list:
         logical_node_list_file = metadata_dir_json_v1 / Path("list")
@@ -885,6 +907,9 @@ def write_metadata(
     metadata_ts = {
         "info": "Protonwire - Metadata API",
         "repo": "https://github.com/tprasadtp/protonwire",
+        "stat": {
+            "files": stat_file_count,
+        },
         "timestamp": time.strftime("%b %d %H:%M UTC"),
         "server_count": srv_count,
     }
@@ -895,6 +920,7 @@ def write_metadata(
     logging.info("Writing - %s", index_file)
     with open(index_file, "w", encoding="utf-8") as f:
         json.dump(metadata_ts, f, indent=2)
+    logging.info("Sever files - %d", stat_file_count)
 
 
 if __name__ == "__main__":
@@ -996,5 +1022,4 @@ if __name__ == "__main__":
         metadata_dir=Path(args.output),
         generate_list=args.generate_list,
         save_api_resp=args.save_api_response,
-        verbose=args.verbose,
     )
