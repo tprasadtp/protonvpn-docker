@@ -43,13 +43,13 @@ jobs:
           DEBUG: ${{ inputs.DEBUG }}
 
       - name: Generate bot token
+        uses: actions/create-github-app-token@v1
         id: bot-token
-        uses: tibdex/github-app-token@b62528385c34dbc9f38e5f4225ac829252d1ea92
-        # uses: actions/create-github-app-token@v1
         with:
-          repository: ${{ vars.METADATA_REPO }}
-          app_id: ${{ vars.METADATA_BOT_APP_ID }}
-          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+          app-id: ${{ vars.METADATA_BOT_APP_ID }}
+          repositories: ${{ vars.METADATA_REPO_NAME }}
+          owner: ${{ vars.METADATA_REPO_OWNER }}
+          private-key: ${{ secrets.METADATA_BOT_APP_PRIVATE_KEY }}
 
       - name: Checkout metadata repo to protonwire-api-deploy
         uses: actions/checkout@v4
