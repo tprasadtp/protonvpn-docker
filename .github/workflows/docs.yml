@@ -12,7 +12,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+
       - name: Run GoReleaser
         run: make update-readme
+
       - name: Check if README is up-to date
         run: git diff --exit-code README.md

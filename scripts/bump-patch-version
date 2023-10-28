@@ -1,0 +1,52 @@
+#!/usr/bin/env python3
+
+"""
+Script to bump patch version
+"""
+
+
+import argparse
+import logging
+import sys
+
+try:
+    import coloredlogs
+    coloredlogs.install(
+        level=logging.INFO, fmt="%(asctime)s [%(levelname)8s] %(message)s"
+    )
+except ImportError:
+    logging.basicConfig(level=logging.INFO)
+
+try:
+    import semantic_version
+except ImportError:
+    logging.critical(
+        "Failed to import semantic_version package, install via pip semantic-version or "
+        "apt-get install python3-semantic-version package"
+    )
+    sys.exit(1)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__)
+
+    parser.add_argument(
+        "version",
+        type=str,
+        metavar="VERSION",
+        default=None,
+        help="Current latest version",
+    )
+
+    args = parser.parse_args()
+
+    try:
+        v = semantic_version.Version(args.version)
+        if v.prerelease is None or len(v.prerelease) == 0:
+            print(v.next_patch())
+        else:
+            logging.error("Pre release versions are not supported %s", args.version)
+            sys.exit(1)
+
+    except ValueError:
+        logging.error("Invalid semantic version %s", args.version)

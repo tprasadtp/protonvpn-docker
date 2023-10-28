@@ -1,56 +1,59 @@
 name: security
 on:
   workflow_dispatch:
+    inputs:
+      IMAGE_TAG:
+        description: Tag of the image to scan
+        required: false
+        default: "latest"
+        type: string
   schedule:
     - cron: "0 21 * * FRI"
-permissions:
-  contents: read
-  security-events: write
 jobs:
-  trivy:
+  scan:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
     steps:
-      - name: Get tag for latest release
-        id: get_latest_release
-        run: |
-          latest_release_tag="$(gh api repos/${GH_REPO}/releases/latest --jq '.tag_name')"
-          if [[ -n $latest_release_tag ]]; then
-              echo "::debug::Tag for latest release is - $latest_release_tag"
-              echo "TAG_NAME=$latest_release_tag" >> "$GITHUB_OUTPUT"
-          else
-              echo "::error::Failed to get tag for latest release($latest_release_tag)"
-              exit 1
-          fi
-        env:
-          GH_REPO: ${{ github.repository }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Checkout latest tag
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: ${{ steps.get_latest_release.outputs.TAG_NAME }}
-
-      - uses: actions/cache@v3
-        with:
-          path: .trivy
-          key: ${{ runner.os }}-trivy-${{ github.run_id }}
-          restore-keys: |
-            ${{ runner.os }}-trivy-
 
       - name: Run Trivy vulnerability scanner
         id: trivy
-        uses: aquasecurity/trivy-action@b77b85c0254bba6789e787844f0585cde1e56320
-        with:
-          scan-type: 'image'
-          vuln-type: os
-          severity: HIGH,CRITICAL
-          ignore-unfixed: true
-          image-ref: 'ghcr.io/tprasadtp/protonwire:latest'
-          format: 'sarif'
-          output: 'trivy-results.sarif'
+        continue-on-error: true
+        run: |
+          mkdir -p build/trivy/cache
+          mkdir -p build/trivy/output
+          docker run --rm \
+            --mount "type=bind,src=$(pwd)/build/trivy/cache,dst=/root/.cache" \
+            --mount "type=bind,src=$(pwd)/build/trivy/output,dst=/trivy/output" \
+            ghcr.io/aquasecurity/trivy:latest \
+              image \
+              --vuln-type="os" \
+              --severity="MEDIUM,HIGH,CRITICAL" \
+              --ignore-unfixed \
+              --exit-code=5 \
+              --format=sarif \
+              --output=/trivy/output/trivy.sarif \
+              ghcr.io/tprasadtp/protonwire:${IMAGE_TAG:-latest}
+        env:
+          IMAGE_TAG: ${{ inputs.IMAGE_TAG }}
 
-      - name: Upload Trivy scan results to GitHub Security tab
-        if: github.ref == 'refs/heads/master' && always()
+      - name: Export Trivy Status
+        id: trivy-status
+        run: |
+          if [[ -e /build/trivy/output/trivy.sarif ]]; then
+            echo "TRIVY_SARIF=true" >> "$GITHUB_OUTPUT"
+            if [[ $TRIVY_STATUS == "failure"  ]]; then
+              echo "TRIVY_REBUILD=true" >> "$GITHUB_OUTPUT"
+            fi
+          fi
+        env:
+          TRIVY_STATUS: ${{steps.trivy.outcome}}
+
+      - name: Upload Trivy scan results to GitHub Security
+        if: github.ref == 'refs/heads/master' && steps.trivy-status.outputs.TRIVY_SARIF == 'true'
         uses: github/codeql-action/upload-sarif@v2
         with:
-          sarif_file: 'trivy-results.sarif'
+          sarif_file: 'build/trivy/output/trivy.sarif'

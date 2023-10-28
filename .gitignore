@@ -144,3 +144,4 @@ logicals.json
 .mypy_cache/
 .envrc
 COMMIT_NOTES.md
+build/
