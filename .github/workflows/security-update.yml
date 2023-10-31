@@ -39,8 +39,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
 
       - name: Install python3-semantic-version
         run: sudo apt-get install -y python3-semantic-version
