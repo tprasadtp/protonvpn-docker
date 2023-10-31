@@ -16,13 +16,33 @@ on:
         type: string
   push:
     branches:
-      - "debug-patch-update-1"
+      - "update-patch-update-custom-app-1"
 jobs:
   bump-patch:
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
+      - name: Generate bot token
+        uses: actions/create-github-app-token@v1
+        id: bot-token
+        with:
+          app-id: ${{ vars.AUTO_UPDATE_BOT_APP_ID }}
+          private-key: ${{ secrets.AUTO_UPDATE_BOT_APP_PRIVATE_KEY }}
+
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ steps.bot-token.outputs.token }}
+          persist-credentials: true
+
+      - name: Install python3-semantic-version
+        run: sudo apt-get install -y python3-semantic-version
+
+      - name: Configure Git
+        run: |
+          git config user.name ${{ vars.AUTO_UPDATE_BOT_USERNAME }}
+          git config user.email ${{ vars.AUTO_UPDATE_BOT_EMAIL }}
+
       - name: Get tag for latest release
         id: get-latest-tag
         run: |
@@ -36,17 +56,7 @@ jobs:
           fi
         env:
           GITHUB_REPO: ${{ github.repository }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - uses: actions/checkout@v4
-
-      - name: Install python3-semantic-version
-        run: sudo apt-get install -y python3-semantic-version
-
-      - name: Configure Git
-        run: |
-          git config user.name ${{ vars.METADATA_BOT_GIT_USERNAME }}
-          git config user.email ${{ vars.METADATA_BOT_GIT_EMAIL }}
+          GITHUB_TOKEN: ${{ steps.bot-token.outputs.token }}
 
       - name: Bump Patch version
         id: bump-patch-version
@@ -70,4 +80,3 @@ jobs:
           git push origin "${NEW_TAG}"
         env:
           NEW_TAG: ${{ steps.bump-patch-version.outputs.NEW_TAG }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
