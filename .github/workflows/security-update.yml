@@ -1,0 +1,66 @@
+name: security-update
+on:
+  workflow_call:
+    inputs:
+      cve-list:
+        description: List of comma separated CVEs.
+        required: false
+        default: ""
+        type: string
+  workflow_dispatch:
+    inputs:
+      cve-list:
+        description: List of comma separated CVEs.
+        required: false
+        default: ""
+        type: string
+jobs:
+  bump-patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Get tag for latest release
+        id: get-latest-tag
+        run: |
+          latest_release_tag="$(gh api repos/${GITHUB_REPO}/releases/latest --jq '.tag_name')"
+          if [[ -n $latest_release_tag ]]; then
+              echo "::debug::Tag for latest release is - $latest_release_tag"
+              echo "TAG=$latest_release_tag" >> "$GITHUB_OUTPUT"
+          else
+              echo "::error::Failed to get tag for latest release($latest_release_tag)"
+              exit 1
+          fi
+        env:
+          GITHUB_REPO: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Install python3-semantic-version
+        run: sudo apt-get install -y python3-semantic-version
+
+      - name: Configure Git
+        run: |
+          git config user.name ${{ vars.METADATA_BOT_GIT_USERNAME }}
+          git config user.email ${{ vars.METADATA_BOT_GIT_EMAIL }}
+
+      - name: Bump Patch version
+        run: |
+          new_tag="$(./scripts/bump-patch-version "${VERSION}")"
+          echo "NEW_TAG=$new_tag" >> "$GITHUB_OUTPUT"
+          git tag -m "Fix ${CVE_LIST:-security-vulnerabilities}" "${new_tag}"
+          echo "NEW_TAG=$new_tag"
+        env:
+          VERSION: ${{ steps.get-latest-tag.outputs.TAG }}
+          CVE_LIST: ${{ inputs.cve-list }}
+
+      - name: Bump Patch version
+        if: github.ref == 'refs/heads/master'
+        run: |
+          git push origin "${new_tag}"
+        env:
+          NEW_TAG: ${{ steps.get-latest-tag.outputs.NEW_TAG }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

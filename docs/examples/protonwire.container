@@ -1,0 +1,32 @@
+[Unit]
+Description=Example application using protonwire VPN container
+Documentation=https://github.com/tprasadtp/protonvpn-docker
+
+[Container]
+Notify=true
+
+# Runtime configuration
+Image=ghcr.io/tprasadtp/protonwire:7
+AddCapability=NET_ADMIN
+RunInit=true
+Sysctl=net.ipv4.conf.all.rp_filter=2
+Sysctl=net.ipv6.conf.all.disable_ipv6=1
+Timezone=local
+
+# Mounts
+Tmpfs=/tmp
+
+# Healthcheck
+HealthCmd=protonwire check --container --quiet
+HealthInterval=2m
+HealthRetries=3
+HealthStartPeriod=30s
+HealthTimeout=20s
+
+# Ports
+# This example only publishes a single port. port 8000 both on host and container.
+# Add as many ports as your applications require.
+PublishPort=8000
+
+[Install]
+WantedBy=default.target
