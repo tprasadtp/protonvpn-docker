@@ -14,6 +14,9 @@ on:
         required: false
         default: ""
         type: string
+  push:
+    branches:
+      - "debug-patch-update-1"
 jobs:
   bump-patch:
     runs-on: ubuntu-latest
@@ -52,13 +55,18 @@ jobs:
         run: |
           new_tag="$(./scripts/bump-patch-version "${VERSION}")"
           echo "NEW_TAG=$new_tag" >> "$GITHUB_OUTPUT"
-          git tag -m "Fix ${CVE_LIST:-security-vulnerabilities}" "${new_tag}"
-          echo "NEW_TAG=$new_tag"
         env:
           VERSION: ${{ steps.get-latest-tag.outputs.TAG }}
           CVE_LIST: ${{ inputs.cve-list }}
 
-      - name: Bump Patch version
+      - name: Create New Tag
+        run: |
+          git tag -m "Fix ${CVE_LIST:-security-vulnerabilities}" "${NEW_TAG}"
+          git tag --list
+        env:
+          NEW_TAG: ${{ steps.bump-patch-version.outputs.NEW_TAG }}
+
+      - name: Push New Tag
         if: github.ref == 'refs/heads/master'
         run: |
           git push origin "${new_tag}"
