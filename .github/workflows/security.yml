@@ -40,20 +40,8 @@ jobs:
         env:
           IMAGE_TAG: ${{ inputs.IMAGE_TAG }}
 
-      - name: Export Trivy Status
-        id: trivy-status
-        run: |
-          if [[ -e /build/trivy/output/trivy.sarif ]]; then
-            echo "TRIVY_SARIF=true" >> "$GITHUB_OUTPUT"
-            if [[ $TRIVY_STATUS == "failure"  ]]; then
-              echo "TRIVY_REBUILD=true" >> "$GITHUB_OUTPUT"
-            fi
-          fi
-        env:
-          TRIVY_STATUS: ${{steps.trivy.outcome}}
-
       - name: Upload Trivy scan results to GitHub Security
-        if: github.ref == 'refs/heads/master' && steps.trivy-status.outputs.TRIVY_SARIF == 'true'
+        if: github.ref == 'refs/heads/master'
         uses: github/codeql-action/upload-sarif@v2
         with:
           sarif_file: 'build/trivy/output/trivy.sarif'
