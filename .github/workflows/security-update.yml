@@ -69,7 +69,7 @@ jobs:
       - name: Push New Tag
         if: github.ref == 'refs/heads/master'
         run: |
-          git push origin "${new_tag}"
+          git push origin "${NEW_TAG}"
         env:
           NEW_TAG: ${{ steps.bump-patch-version.outputs.NEW_TAG }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
