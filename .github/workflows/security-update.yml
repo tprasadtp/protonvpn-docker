@@ -48,6 +48,7 @@ jobs:
           git config user.email ${{ vars.METADATA_BOT_GIT_EMAIL }}
 
       - name: Bump Patch version
+        id: bump-patch-version
         run: |
           new_tag="$(./scripts/bump-patch-version "${VERSION}")"
           echo "NEW_TAG=$new_tag" >> "$GITHUB_OUTPUT"
@@ -62,5 +63,5 @@ jobs:
         run: |
           git push origin "${new_tag}"
         env:
-          NEW_TAG: ${{ steps.get-latest-tag.outputs.NEW_TAG }}
+          NEW_TAG: ${{ steps.bump-patch-version.outputs.NEW_TAG }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
