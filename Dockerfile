@@ -1,5 +1,5 @@
 #syntax=docker/dockerfile:1.2
-FROM alpine:3.18.4 as base
+FROM alpine:3.18.5 as base
 
 FROM base
 
