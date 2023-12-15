@@ -11,8 +11,6 @@ on:
           - "yes"
           - "no"
   push:
-    branches:
-      - "*"
   schedule:
     - cron: "30 * * * *"
 jobs:

@@ -3,9 +3,23 @@ updates:
   - package-ecosystem: docker
     labels:
       - "dependabot"
-      - "dependencies"
       - "dep/docker"
       - "luna/autoupdate"
+    commit-message:
+      prefix: "chore(deps):"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "saturday"
+    pull-request-branch-name:
+      separator: "-"
+
+  - package-ecosystem: docker
+    labels:
+      - "dependabot"
+      - "dep/docker"
+      - "luna/autoupdate"
+    target-branch: release/7.2
     commit-message:
       prefix: "chore(deps):"
     directory: "/"
@@ -18,7 +32,6 @@ updates:
   - package-ecosystem: github-actions
     labels:
       - "dependabot"
-      - "dependencies"
       - "dep/github-actions"
       - "luna/autoupdate"
     commit-message:
