@@ -45,7 +45,7 @@ snapshot: ## Build snapshot
 .PHONY: release
 release: ## Build release
 	goreleaser release \
-		--clean
+		--clean \
 		--skip-publish \
 		--skip-validate  \
 		--skip-announce \

@@ -2,7 +2,7 @@ project_name: protonwire
 
 snapshot:
   # This should be semver otherwise triggers https://github.com/goreleaser/goreleaser/issues/2081
-  name_template: "{{ incpatch .Version }}-devel"
+  name_template: "{{ .Version }}-SNAPSHOT-{{.ShortCommit}}"
 
 builds:
   - id: build-binary
@@ -286,18 +286,6 @@ docker_manifests:
     image_templates:
     - 'ghcr.io/tprasadtp/protonvpn:{{ .Version }}-amd64'
     - 'ghcr.io/tprasadtp/protonvpn:{{ .Version }}-arm64'
-
-# docker_signs:
-#   - id: default
-#     cmd: cosign
-#     args:
-#       - "sign"
-#       - "--key=cosign.key"
-#       - "--upload=false"
-#       - "${artifact}@${digest}"
-#       - "--yes"
-#     artifacts: all
-#     output: true
 
 release:
   mode: replace
