@@ -799,6 +799,7 @@ function __resolvconf_up_hook() {
         printf -v resolv_conf_vpn "%s#  - Use '--skip-dns-config' CLI flag.\n" "$resolv_conf_vpn"
         printf -v resolv_conf_vpn "%s#\n" "$resolv_conf_vpn"
         printf -v resolv_conf_vpn "%s# Your old DNS configration has been backed up at /etc/resolv.conf.protonwire.\n" "$resolv_conf_vpn"
+        printf -v resolv_conf_vpn "%s# Do not delete it, as it will cause issues when disconnecting.\n" "$resolv_conf_vpn"
         printf -v resolv_conf_vpn "%s# protonvpn will automatically restore your previous DNS config upon disconnect.\n" "$resolv_conf_vpn"
         printf -v resolv_conf_vpn "%s#\n" "$resolv_conf_vpn"
         printf -v resolv_conf_vpn "%s%s\n" "$resolv_conf_vpn" "nameserver 10.2.0.1"
@@ -1107,7 +1108,14 @@ function protonvpn_fetch_metadata() {
         shift
     done
 
-    # to avoid urlencoding as server names contain '#' replace it with '-' as required by API.
+    # warn users to use dns names as some server names appear to be random and rotated
+    # Bug: https://github.com/tprasadtp/protonvpn-docker/issues/287
+    # Bug: https://github.com/tprasadtp/protonvpn-docker/issues/260
+    if [[ "$PROTONVPN_SERVER" == *"#"* ]]; then
+        log_warning "Consider using DNS name for server ${PROTONVPN_SERVER:-NA}"
+    fi
+
+    # To avoid urlencoding as server names may contain '#' replace it with '-' as required by API.
     local api_server_name
     api_server_name="${PROTONVPN_SERVER//#/-}"
 
@@ -1178,13 +1186,16 @@ function protonvpn_fetch_metadata() {
                 return 1
             fi
         elif [[ $curl_rc -eq 6 ]]; then
-            log_error "Failed to refresh ProtonVPN server metadata (failed to resolve domain)"
+            log_error "Failed to refresh ProtonVPN server metadata (failed to resolve DNS)"
+            log_error "See https://github.com/tprasadtp/protonvpn-docker/blob/master/docs/help.md for troubleshooting."
             return 1
         elif [[ $curl_rc -eq 28 ]]; then
             log_error "Failed to refresh ProtonVPN server metadata (curl timeout)"
             return 1
         elif [[ $curl_rc -eq 22 ]]; then
             log_error "Failed to refresh ProtonVPN server metadata (server name is invalid or not found)"
+            log_error "Please verify that server ${PROTONVPN_SERVER:NA} is valid and available on {rotonVPN Website"
+            log_error "See https://github.com/tprasadtp/protonvpn-docker/blob/master/docs/help.md for troubleshooting."
             return 1
         elif [[ $curl_rc -eq 32 ]]; then
             log_error "Failed to refresh ProtonVPN server metadata (flock timeout)"
@@ -2726,7 +2737,7 @@ Files:
 
 Environment:
   WIREGUARD_PRIVATE_KEY         WireGuard private key or file
-  PROTONVPN_SERVER              ProtonVPN server name
+  PROTONVPN_SERVER              ProtonVPN server
   IPCHECK_INTERVAL              Custom IP check interval in seconds (default 60)
   IPCHECK_URL                   IP check endpoint URL (must be secure)
   SKIP_DNS_CONFIG               Set to '1' to skip configuring DNS
