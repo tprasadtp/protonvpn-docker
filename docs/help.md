@@ -41,6 +41,16 @@ async function handleRequest(request) {
 }
 ```
 
+## Failed to refresh ProtonVPN server metadata (server name is invalid or not found)
+
+Please verify that server name is valid and is online. Proton sometimes changes server names
+and thus it may be unavailable. It is recommended to use DNS name like `node-nl-03.protonvpn.net`
+instead of server name like `NL-FREE#343013`.
+
+- Log in to ProtonVPN and go to **Downloads** → **WireGuard configuration**.
+- Verify that server you are trying to connect is listed, available and is online.
+- Use little down arrow to copy server's DNS name to be used as `PROTONVPN_SERVER`.
+
 ## tmpfs or `/tmp` issues with containers
 
 Please use `tmpfs` mounts for `/tmp`

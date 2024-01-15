@@ -124,10 +124,8 @@ in following locations.
 
 ## PROTONVPN_SERVER
 
-This should be server name like `NL#1`(or `NL-1`) or domain name like,
-`node-nl-01.protonvpn.net` (recommended). Automatic server selection
-by setting `PROTONVPN_SERVER` to `P2P`, `RANDOM` and other methods are
-**NOT SUPPORTED**. See [this](https://github.com/tprasadtp/protonvpn-docker/blob/master/docs/faq.md#why-automatic-server-selection-is-not-supported) for more info.
+This should be server DNS name like, `node-nl-01.protonvpn.net`.
+Though server name like `NL#1`(or `NL-1`) is supported it is not recommended.
 
 > **Warning**
 >
@@ -201,7 +199,7 @@ Files:
 
 Environment:
   WIREGUARD_PRIVATE_KEY         WireGuard private key or file
-  PROTONVPN_SERVER              ProtonVPN server name
+  PROTONVPN_SERVER              ProtonVPN server
   IPCHECK_INTERVAL              Custom IP check interval in seconds (default 60)
   IPCHECK_URL                   IP check endpoint URL (must be secure)
   SKIP_DNS_CONFIG               Set to '1' to skip configuring DNS

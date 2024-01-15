@@ -29,16 +29,15 @@ body:
     validations:
       required: true
 
-  - type: dropdown
-    id: dns-protocol
+  - type: checkboxes
+    id: server-validation
     attributes:
-      label: Host DNS Protocol
+      label: Server Validation
       options:
-        - Default DNS resolver
-        - DNS over HTTPS (DoH)
-        - DNS over TLS (DoT)
-    validations:
-      required: true
+        - label: I have verified that the servers I am trying to connect to are available under my plan.
+          required: true
+        - label: I have verified that the servers I am trying to connect to are online and available.
+          required: true
 
   - type: textarea
     id: logs

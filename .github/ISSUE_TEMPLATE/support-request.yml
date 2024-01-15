@@ -1,7 +1,7 @@
 name: Support Request
 description: Support Request
-title: ""
-labels: ["help"]
+title: "[QUESTION]:"
+labels: ["help", "question"]
 body:
   # version
   - type: input
