@@ -1,5 +1,5 @@
 #syntax=docker/dockerfile:1.2
-FROM debian:bookworm-20231218-slim as base
+FROM debian:bookworm-20240110-slim as base
 
 FROM base
 
