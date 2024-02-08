@@ -26,6 +26,32 @@ Please visit https://www.wireguard.com/install/ or contact device manufacturer.
 - If response is something like `<ip-address> dev protonwire0 table 51821 src 10.2.0.2 uid 0`,
 then the IP address will be routed via VPN.
 
+## Server DNS name is not available or unknown
+
+If for some reason you are not able to get server DNS name, and server name does not work
+for you, Try using IP address as `PROTONVPN_SERVER` or as CLI argument. IP address of server
+can be obtained from `[Peer]` section of the generated WireGuard configuration.
+
+```ini
+[Interface]
+# Key for <name>
+# VPN Accelerator = on
+PrivateKey = KLjfIMiuxPskM4+DaSUDmL2uSIYKJ9Wap+CHvs0Lfkw=
+Address = 10.2.0.2/32
+DNS = 10.2.0.1
+
+[Peer]
+# NL-FREE#128
+PublicKey = jbTC1lYeHxiz1LNSJHQMKDTq6sHgcWxkBwXvt7GWo1E=
+AllowedIPs = 0.0.0.0/0
+Endpoint = 91.229.23.180:51820
+```
+
+In the above example, server's IP address is `91.229.23.180`. Use it as value for `PROTONVPN_SERVER`.
+If using docker-compose or kubernetes _do not forget to quote it_ to avoid any weird YAML issues.
+
+> This may not work for IPv6 servers and should be considered experimental.
+
 ## How to check if systemd-resolved is in use
 
 - If using Ubuntu/Fedora with defaults most likely using systemd-resolved is in use for local DNS.

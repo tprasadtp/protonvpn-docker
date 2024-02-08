@@ -1300,31 +1300,8 @@ function __protonvpn_verify_connection() {
         log_debug "Connected to peer - ${configured_endpoints[*]}"
     fi
 
-    # verify if server is correct.
-    local node_name
-    local node_dns
+    # Verify if server is correct.
     declare -a allowed_exit_ips
-
-    node_name="$(jq -r --arg peer "${configured_endpoints[0]}" 'select(.Nodes[].PublicKey==$peer) | .Name' <<<"${__PROTONWIRE_SRV_INFO}" 2>/dev/null)"
-    node_dns="$(jq -r --arg peer "${configured_endpoints[0]}" 'select(.Nodes[].PublicKey==$peer) | .DNS' <<<"${__PROTONWIRE_SRV_INFO}" 2>/dev/null)"
-
-    if [[ -n $PROTONVPN_SERVER ]]; then
-        if [[ ${PROTONVPN_SERVER^^} == "${node_name^^}" ]] ||
-            [[ ${PROTONVPN_SERVER^^//#/-} == "${node_name^^}" ]] ||
-            [[ ${PROTONVPN_SERVER,,} == "${node_dns,,}" ]]; then
-            log_debug "Connected to server: ${node_name:-NA}(${node_dns:-NA})"
-            # server attributes are only validated if flags are specified
-            if ! __protonvpn_verify_server_attributes; then
-                return 1
-            fi
-        else
-            log_error "Expected to be connected to server $PROTONVPN_SERVER, but is connected to ${node_name:-NA}(${node_dns:-NA})"
-            return 1
-        fi
-    else
-        log_debug "PROTONVPN_SERVER is not specified, only validating exit IPs"
-    fi
-
     readarray -t allowed_exit_ips < <(jq -r ".ExitIPs[]" <<<"${__PROTONWIRE_SRV_INFO}" 2>/dev/null)
     log_debug "Allowed ExitIPs  - ${allowed_exit_ips[*]}"
 
@@ -1378,25 +1355,25 @@ function __protonvpn_verify_connection() {
             if __has_notify_socket; then
                 local status_msg
                 if __is_enable_killswitch; then
-                    status_msg="Connected to ${node_dns} (via $client_ip, with KillSwitch)"
+                    status_msg="Connected to ${PROTONVPN_SERVER} (as $client_ip, with KillSwitch)"
                 else
-                    status_msg="Connected to ${node_dns} (via $client_ip)"
+                    status_msg="Connected to ${PROTONVPN_SERVER} (as $client_ip)"
                 fi
                 log_debug "$status_msg"
                 if ! __systemd_notify --status "$status_msg"; then
                     log_error "Failed to notify status to systemd"
                 fi
             else
-                log_success "Connected to ${node_dns:-NA} (via $client_ip)"
+                log_success "Connected to ${PROTONVPN_SERVER:-NA} (as $client_ip)"
             fi
             return 0
         fi
     done
-    log_error "Your current IP address - ${client_ip} is not in the list for server ${node_dns:-NA}"
+    log_error "Your current IP address - ${client_ip} is not in the list for server ${PROTONVPN_SERVER:-NA}"
     log_error "Your current IP address - ${client_ip} must belong to set (${allowed_exit_ips[*]})"
 
     if __has_notify_socket; then
-        if ! __systemd_notify --status "ExitIP mismatch for server ${node_dns:-NA} (via $client_ip)"; then
+        if ! __systemd_notify --status "ExitIP mismatch for server ${PROTONVPN_SERVER:-NA} (as $client_ip)"; then
             log_error "Failed to notify error status to systemd"
         fi
     fi
