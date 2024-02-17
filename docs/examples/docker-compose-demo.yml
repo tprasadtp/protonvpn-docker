@@ -4,7 +4,7 @@ services:
     container_name: protonwire
     # Use semver tags or sha256 hashes of manifests.
     # using latest tag can lead to issues when used with
-    # automatic image updaters like watchtower.
+    # automatic image updaters like watchtower/podman.
     image: ghcr.io/tprasadtp/protonwire:latest
     init: true
     restart: unless-stopped

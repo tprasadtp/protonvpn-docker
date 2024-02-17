@@ -59,6 +59,44 @@ Please use `tmpfs` mounts for `/tmp`
 - For docker-compose see [docker-compse-volumes].
 - For Kubernetes pods, use `emptyDir` with `emptyDir.medium` field to `Memory` See [emptyDir] for more info.
 
+## WireGuard interface creation fails
+
+```log
+[TRACE   ] (ip-link) RTNETLINK answers: Not supported
+[ERROR   ] WireGuard interface creation failed!
+```
+
+This typically happens on a older machine or NAS/embedded devices
+as Wireguard support might not be present in the kernel.
+Please visit https://www.wireguard.com/install/ or contact device manufacturer.
+
+## Server DNS name is not available or unknown
+
+If for some reason you are not able to get server DNS name, and server name does not work
+for you, Try using IP address as `PROTONVPN_SERVER` or as CLI argument. IP address of server
+can be obtained from `[Peer]` section of the generated WireGuard configuration.
+
+```ini
+[Interface]
+# Key for <name>
+# VPN Accelerator = on
+PrivateKey = KLjfIMiuxPskM4+DaSUDmL2uSIYKJ9Wap+CHvs0Lfkw=
+Address = 10.2.0.2/32
+DNS = 10.2.0.1
+
+[Peer]
+# NL-FREE#128
+PublicKey = jbTC1lYeHxiz1LNSJHQMKDTq6sHgcWxkBwXvt7GWo1E=
+AllowedIPs = 0.0.0.0/0
+Endpoint = 91.229.23.180:51820
+```
+
+In the above example, server's IP address is `91.229.23.180`. Use it as value for `PROTONVPN_SERVER`.
+If using docker-compose or kubernetes _do not forget to quote it_ to avoid any weird YAML issues.
+
+> This may not work for IPv6 servers and should be considered experimental.
+
+
 ## DNS leak protection and Kubernetes
 
 On Kubernetes using ProtonVPN DNS **WILL** break resolving `.cluster` domains. You can use [external-dns](https://github.com/kubernetes-sigs/external-dns) and use public DNS zones for your hosted services or use DoH or DoT on kubernetes **nodes** and use `SKIP_DNS_CONFIG` or `--skip-dns-config`.
@@ -85,11 +123,11 @@ User namespaces can cause file permission issues. If you have problem accessing 
 
 ## Cannot update DNS, /etc/resolv.conf is not writable
 
-- Try to run as `root` and ensure /etc/resolv.conf is writable.
+Try to run as `root` and ensure /etc/resolv.conf is writable.
 
 ## Transport endpoint is not connected errors when using systemd
 
-- Turn off `DynamicUser` and `RemoveIPC` from you unit configuration and reload systemd.
+Turn off `DynamicUser` and `RemoveIPC` from you unit configuration and reload systemd.
 
 ## Systemd unit failed with some error
 
@@ -149,15 +187,6 @@ User namespaces can cause file permission issues. If you have problem accessing 
         protonwire connect --debug <server-name>
     ```
 
-## Manually Disabling Kill-Switch for version 7.0.3 and lower (route table 51822)
-
-```bash
-ip -4 route flush table 51822
-ip -4 rule | grep 51822 | cut -f 1 -d ':' | xargs ip rule del priority
-ip -6 route flush table 51822
-ip -6 rule | grep 51822 | cut -f 1 -d ':' | xargs ip rule del priority
-```
-
 ## Manually Disconnecting from VPN
 
 Please use `protonwire disconnect --kill-switch` as it handles things properly. If not possible, try the following.
@@ -166,11 +195,7 @@ Please use `protonwire disconnect --kill-switch` as it handles things properly. 
     ```
     resolvectl revert protonwire0
     ```
-- If using version 7.1.1 and lower and **NOT** using systemd-resolved (like in containers), restore the DNS using the following commands.
-    ```bash
-    resolvconf -f -d protonwire0.wg
-    ```
-- If running version 7.2.0 and and later and **NOT** using systemd-resolved (like in containers) restore the DNS using following commands.
+- If **NOT** using systemd-resolved (like in containers) restore the DNS using following commands.
     ```bash
     cat /etc/resolv.conf.protonwire > /etc/resolv.conf && rm /etc/resolv.conf.protonwire
     ```

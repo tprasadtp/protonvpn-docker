@@ -9,67 +9,11 @@ it might result in a single VPN server to be selected as "best" and might cause 
 - It is possible to do some client side validations that a server supports features like P2P, steaming etc. by using `--p2p`, `--streaming`, `--secure-core` flags with connect/healthcheck command.
 - It is [unlikely that ProtonVPN will remove auth requirements](https://github.com/Rafficer/linux-cli-community/issues/21). (VPN server IP addresses and Public keys are meant to be __public__ anyways).
 
-## WireGuard interface creation fails
-
-```log
-[TRACE   ] (ip-link) RTNETLINK answers: Not supported
-[ERROR   ] WireGuard interface creation failed!
-```
-
-This typically happens on a older machine or NAS/embedded devices
-as Wireguard support might not be present in the kernel.
-Please visit https://www.wireguard.com/install/ or contact device manufacturer.
-
-## Using systemd credentials
-
-- Create drop-in unit directory
-
-    ```
-    sudo mkdir -p /etc/systemd/system/protonwire.service.d
-    ```
-
-- Create encrypted credentials
-    ```
-    sudo sh -c 'systemd-ask-password -n | (printf "[Service]\n" && systemd-creds encrypt --name=protonwire-private-key -p - -) > /etc/systemd/system/protonwire.service.d/10-protonwire-private-key.conf'
-    ```
-
-- Reload systemd
-
-    ```
-    sudo systemctl daemon-reload
-    ```
-
 ## How to check if an address is being routed via VPN via CLI
 
 - Run `ip route get <ip-address>`
 - If response is something like `<ip-address> dev protonwire0 table 51821 src 10.2.0.2 uid 0`,
 then the IP address will be routed via VPN.
-
-## Server DNS name is not available or unknown
-
-If for some reason you are not able to get server DNS name, and server name does not work
-for you, Try using IP address as `PROTONVPN_SERVER` or as CLI argument. IP address of server
-can be obtained from `[Peer]` section of the generated WireGuard configuration.
-
-```ini
-[Interface]
-# Key for <name>
-# VPN Accelerator = on
-PrivateKey = KLjfIMiuxPskM4+DaSUDmL2uSIYKJ9Wap+CHvs0Lfkw=
-Address = 10.2.0.2/32
-DNS = 10.2.0.1
-
-[Peer]
-# NL-FREE#128
-PublicKey = jbTC1lYeHxiz1LNSJHQMKDTq6sHgcWxkBwXvt7GWo1E=
-AllowedIPs = 0.0.0.0/0
-Endpoint = 91.229.23.180:51820
-```
-
-In the above example, server's IP address is `91.229.23.180`. Use it as value for `PROTONVPN_SERVER`.
-If using docker-compose or kubernetes _do not forget to quote it_ to avoid any weird YAML issues.
-
-> This may not work for IPv6 servers and should be considered experimental.
 
 ## How to check if systemd-resolved is in use
 
@@ -153,7 +97,7 @@ If using docker-compose or kubernetes _do not forget to quote it_ to avoid any w
     - `240.0.0.0/4`
     - `2000::/3` (Only if IPv6 is enabled)
 
-> **Warning**
+> [!IMPORTANT]
 >
 > - You should let protonwire manage this table.
 > - Any modification to this table outside of protonwire CLI
@@ -175,19 +119,6 @@ WireGuard is not a chatty protocol. However for _most_ if not all use cases, end
 
 - This is only possible with `systemd-resolved`. After connecting to VPN (via `protonwire connect <SERVER>`). Verify split dns configuration using `resolvectl query <domain>` and check the interface being used to resolve it.
 - Ensure that DHCP server/router or VPN gateway advertises search domains. They will be automatically picked up if using NetworkManager(most desktops) or `systemd-networkd` (most servers) or `ifupdown` hooks.
-
-## Running systemd unit as non-root user
-
-- Unit **MUST** have `CAP_NET_ADMIN` capability
-- Unit **MUST NOT** run as DynamicUser
-- Unit **MUST NOT** use `RemoveIPC=yes`
-- You **MUST** use `systemd-resolved` for DNS
-- If using `systemd-resolved`, polkit rules **MUST** allow unit's user to invoke to following D-Bus actions
-    - `org.freedesktop.resolve1.set-dns-servers`
-    - `org.freedesktop.resolve1.set-domains`
-    - `org.freedesktop.resolve1.set-default-route`
-    - `org.freedesktop.resolve1.revert`
-    - `org.freedesktop.resolve1.set-dnssec`
 
 ## Use with corporate/other VPN
 
@@ -240,8 +171,13 @@ You can use any of the following services for verification. They **MUST RETURN O
 
 Metadata updates includes updating server IPs, feature flags on servers, exit IPs and their
 public keys. It also applies some workarounds to API quirks or bugs. Usually it should be automatic.
-But Proton API and libraries are in constant state of ~~chaos~~ flux
-and documentation is virtually non-existent or incorrect. So stuff might break.
+
+- But, Proton API and libraries are in constant state of ~~chaos~~ development and documentation is ~~virtually~~ actually non-existent.
+- Some servers appear to flip flop between ONLINE and OFFLINE state in loop (like every hour), appear and disappear randomly (sometimes just two servers weirdly appearing and disappearing every hour or so).
+- Server's Entry IP sometimes appears to be its ExitIP and sometimes Exit IP of some other
+server is the assigned public IP.
+- Some ExitIPs do not appear **anywhere** in the response returned by `/vpn/logicals`
+
 Bulk of the work is done via `scripts/generate-server-metadata`
 
 - https://protonwire-api.vercel.app/v1/server (default)
@@ -275,14 +211,4 @@ __and__ enforce it from pod startup
 Best solution is to build your own pod definitions with __all__ the apps
 running in a __single pod__ and use protonwire container with command
 `protonwire connect --kill-switch` as init container. This ensures all the containers in
-your pod are using the VPN. Do note that `.cluster` domains like `<service>.<namespace>.svc.cluster` are **NOT** resolved (unless your use `SKIP_CONFIG_DNS=1`) as ProtonVPN DNS server is used.
-Do remember to apply required sysctls to the pod created.
-
-## Known Bugs in Upstream API/libraries
-
-> Proton API and libraries are in constant state of ~~chaos~~ development and documentation is ~~virtually~~ actually non-existent.
-
-- Some servers appear to flip flop between ONLINE and OFFLINE state in loop (like every hour), appear and disappear randomly (sometimes just two servers weirdly appearing and disappearing every hour or so).
-- Server's Entry IP sometimes appears to be its ExitIP and sometimes Exit IP of some other
-server is the assigned public IP.
-- Some ExitIPs do not appear **anywhere** in the response returned by `/vpn/logicals`
+your pod are using the VPN. Do note that `.cluster` domains like `<service>.<namespace>.svc.cluster` are **NOT** resolved (unless your use `SKIP_CONFIG_DNS=1`) as ProtonVPN DNS server is used. Do remember to apply required sysctls to the pod created.

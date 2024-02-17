@@ -105,5 +105,3 @@ clean: ## clean
 update-readme: ## Update README
 	sed -i '/<!--diana::dynamic:protonwire-help:begin-->/,/<!--diana::dynamic:protonwire-help:end-->/!b;//!d;/<!--diana::dynamic:protonwire-help:end-->/e echo "<pre>" && ./protonwire --help && echo "</pre>"' README.md
 	sed -i '/<!--diana::dynamic:protonwire-sample-compose-file:begin-->/,/<!--diana::dynamic:protonwire-sample-compose-file:end-->/!b;//!d;/<!--diana::dynamic:protonwire-sample-compose-file:end-->/e echo "\\\`\\\`\\\`yaml" && cat docs/examples/docker-compose-demo.yml && echo "\\\`\\\`\\\`"' README.md
-	sed -i '/<!--diana::dynamic:protonwire-container-unit-file:begin-->/,/<!--diana::dynamic:protonwire-container-unit-file:end-->/!b;//!d;/<!--diana::dynamic:protonwire-container-unit-file:end-->/e echo "\\\`\\\`\\\`ini" && cat docs/examples/container-protonwire.service && echo "\\\`\\\`\\\`"' README.md
-	sed -i '/<!--diana::dynamic:protonwire-app-unit-file:begin-->/,/<!--diana::dynamic:protonwire-app-unit-file:end-->/!b;//!d;/<!--diana::dynamic:protonwire-app-unit-file:end-->/e echo "\\\`\\\`\\\`ini" && cat docs/examples/container-protonwire-example-app.service && echo "\\\`\\\`\\\`"' README.md
