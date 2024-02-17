@@ -57,36 +57,43 @@ release-prod: ## Build release and publish
 
 .PHONY: install
 install: ## Install protonwire
-	@./scripts/goreleaser-wrapper build
+	@if [[ ! -e /etc/polkit-1/localauthority/10-vendor.d ]]; then install -g root -o root -m 755 -d /etc/polkit-1/localauthority/10-vendor.d; fi
+	install -g root -o root -m 644 systemd/polkit/protonwire.pkla /etc/polkit-1/localauthority/10-vendor.d/protonwire.pkla
+
+	@if [[ ! -e /etc/sysctl.d ]]; then install -g root -o root -m 755 -d /etc/sysctl.d; fi
+	install -g root -o root -m 644 systemd/sysctl.d/protonwire.conf /etc/sysctl.d/protonwire.conf
+
+	@if [[ ! -e /etc/systemd/system ]]; then install -g root -o root -m 755 -d /etc/systemd/system; fi
+	install -g root -o root -m 644 systemd/system/protonwire.service /etc/systemd/system/protonwire.service
+
+	@if [[ ! -e /etc/sysusers.d ]]; then install -g root -o root -m 755 -d /etc/sysusers.d; fi
+	install -g root -o root -m 644 systemd/sysusers.d/protonwire.conf /etc/sysusers.d/protonwire.conf
+
+	@if [[ ! -e /etc/tmpfiles.d ]]; then install -g root -o root -m 755 -d /etc/tmpfiles.d; fi
+	install -g root -o root -m 644 systemd/tmpfiles.d/protonwire.conf /etc/tmpfiles.d/protonwire.conf
 
 	@if [[ ! -e /usr/local/bin ]]; then install -g root -o root -m 755 -d /usr/local/bin; fi
 	install -g root -o root -m 755 protonwire /usr/local/bin/protonwire
 
-	@if [[ ! -e /etc/polkit-1/localauthority/10-vendor.d ]]; then install -g root -o root -m 755 -d /etc/polkit-1/localauthority/10-vendor.d; fi
-	install -g root -o root -m 644 systemd/polkit/protonwire.pkla /etc/polkit-1/localauthority/10-vendor.d/protonwire.pkla
-
-	@if [[ ! -e /usr/local/lib/sysctl.d ]]; then install -g root -o root -m 755 -d /usr/local/lib/sysctl.d; fi
-	install -g root -o root -m 644 systemd/sysctl.d/protonwire.conf /usr/local/lib/sysctl.d/protonwire.conf
-
-	@if [[ ! -e /usr/local/lib/systemd/system ]]; then install -g root -o root -m 755 -d /usr/local/lib/systemd/system; fi
-	install -g root -o root -m 644 systemd/system/protonwire.service /usr/local/lib/systemd/system/protonwire.service
-
-	@if [[ ! -e /usr/local/lib/sysusers.d ]]; then install -g root -o root -m 755 -d /usr/local/lib/sysusers.d; fi
-	install -g root -o root -m 644 systemd/sysusers.d/protonwire.conf /usr/local/lib/sysusers.d/protonwire.conf
-
 	@if [[ ! -e /usr/local/man/man1 ]]; then install -g root -o root -m 755 -d /usr/local/man/man1; fi
 	help2man --no-info --manual="ProtonWire - ProtonVPN Wireguard Client" ./protonwire | install -g root -o root -m 644 /dev/stdin /usr/local/man/man1/protonwire.1
 
-	systemctl restart systemd-sysusers.service
+	systemd-sysusers protonwire.conf
+	/usr/lib/systemd/systemd-sysctl protonwire.conf
+	systemd-tmpfiles --create protonwire.conf
 	systemctl daemon-reload
 
 .PHONY: uninstall
 uninstall: ## Uninstall protonwire
-	rm -f /usr/local/bin/protonwire
-	rm -f /usr/local/lib/sysctl.d/protonwire.conf
-	rm -f /usr/local/lib/systemd/system/protonwire.service
-	rm -f /usr/local/lib/sysusers.d/protonwire.conf
+	protonwire disable-killswitch || true
+	systemctl disable --now protonwire || true
+	rm -f /etc/polkit-1/localauthority/10-vendor.d/protonwire.pkla
+	rm -f /etc/sysctl.d/protonwire.conf
+	rm -f /etc/systemd/system/protonwire.service
+	rm -f /etc/sysusers.d/protonwire.conf
+	rm -f /etc/tmpfiles.d/protonwire.conf
 	rm -f /usr/local/man/man1/protonwire.1
+	rm -f /usr/local/bin/protonwire
 	systemctl daemon-reload
 
 .PHONY: clean
