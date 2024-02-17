@@ -4,13 +4,15 @@
 
 set -e
 
+echo "Disabling kill switch (if any)"
+protonwire disable-killswitch || true
 echo "Stopping unit potonwire"
-systemctl stop -q potonwire || true
+systemctl stop -q protonwire || true
 
 for i in $(seq 100); do
     echo "Waiting until unit $unit is stopped [attempt $i]"
-    if ! systemctl is-active -q potonwire; then
-        echo "potonwire is stopped."
+    if ! systemctl is-active -q protonwire; then
+        echo "protonwire is stopped."
         break
     fi
     sleep 0.5
