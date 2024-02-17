@@ -20,6 +20,25 @@ This typically happens on a older machine or NAS/embedded devices
 as Wireguard support might not be present in the kernel.
 Please visit https://www.wireguard.com/install/ or contact device manufacturer.
 
+## Using systemd credentials
+
+- Create drop-in unit directory
+
+    ```
+    sudo mkdir -p /etc/systemd/system/protonwire.service.d
+    ```
+
+- Create encrypted credentials
+    ```
+    sudo sh -c 'systemd-ask-password -n | (printf "[Service]\n" && systemd-creds encrypt --name=protonwire-private-key -p - -) > /etc/systemd/system/protonwire.service.d/10-protonwire-private-key.conf'
+    ```
+
+- Reload systemd
+
+    ```
+    sudo systemctl daemon-reload
+    ```
+
 ## How to check if an address is being routed via VPN via CLI
 
 - Run `ip route get <ip-address>`
@@ -201,7 +220,7 @@ You can use any of the following services for verification. They **MUST RETURN O
   * https://icanhazip.com/
   * https://checkip.amazonaws.com/
 
-> **Warning**
+> [!WARNING]
 >
 > Do not use ip.me as health-check endpoint, as they seem to do
 > user agent whitelisting and return html page, when user agent

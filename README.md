@@ -47,17 +47,11 @@
 - Supports running as systemd unit (natively and as podman container)
 - Supports roaming clients
 
-> **Note**
->
-> For old OpenVPN based container's documentation,
-> See [here](https://github.com/tprasadtp/protonvpn-docker/tree/release/v5).
-
 ## Container Images
 
-> **Warning**
+> [!WARNING]
 >
-> * [gVisor](https://gvisor.dev) runtime is **NOT** supported!
-> * cgroup v1 API is not supported.
+> [gVisor](https://gvisor.dev) and cgroup v1 runtime is **NOT** supported!
 
 Images are published at [ghcr.io/tprasadtp/protonwire][ghcr].
 
@@ -66,14 +60,15 @@ Images are published at [ghcr.io/tprasadtp/protonwire][ghcr].
 - If using Debian 11 (Buster) or later, Raspberry Pi OS (Buster) or later, Fedora, ArchLinux, Linux Mint 20.x or later, RHEL 9 or later, Alma Linux 9 or later, CentOS 9 Stream, Ubuntu 20.04 or later have the required kernel module built-in.
 - Kernel versions 5.6 or later.
 - If **NONE** of the above conditions can be satisfied, install WireGuard. Your distribution might already package DKMS module or provide signed kernels with WireGuard built-in. Visit https://www.wireguard.com/install/ for more info.
-    > **Note**
-    >
-    > If running as a container, Wireguard **MUST** be installed on the host, **not** the container.
-
 - To check current kernel version run,
     ```bash
     uname -r
     ```
+
+> [!IMPORTANT]
+>
+> If running as a container, Wireguard **MUST** be installed on the host, **not** the container.
+
 
 ## Generating WireGuard Private Key
 
@@ -136,7 +131,7 @@ Though server name like `NL#1`(or `NL-1`) is supported it is not recommended.
 
 ## KillSwitch
 
-> **Warning**
+> [!WARNING]
 >
 > This feature is experimental and is **NOT** covered by semver compatibility guarantees.
 
@@ -165,7 +160,7 @@ or: protonwire [OPTIONS...] c|connect [SERVER]
 or: protonwire [OPTIONS...] d|disconnect
 or: protonwire [OPTIONS...] check
 or: protonwire [OPTIONS...] disable-killswitch
-or: protonwire [OPTIONS...] help
+or: protonwire [OPTIONS...] server-info [SERVER]
 
 Options:
   -k, --private-key FILE|KEY    Wireguard private key or
@@ -178,7 +173,7 @@ Options:
       --check-interval INT      IP check interval in seconds (default 60)
       --check-url URL           IP check endpoint URL
       --skip-dns-config         Skip configuring DNS.
-                                (Useful for Kubernetes and Nomad)
+                                (Useful for Kubernetes and Consul)
       --kill-switch             Enable killswitch (Experimental)
       --p2p                     Verify if specified server supports P2P
       --streaming               Verify if specified server supports streaming
@@ -201,7 +196,7 @@ Environment:
   WIREGUARD_PRIVATE_KEY         WireGuard private key or file
   PROTONVPN_SERVER              ProtonVPN server
   IPCHECK_INTERVAL              Custom IP check interval in seconds (default 60)
-  IPCHECK_URL                   IP check endpoint URL (must be secure)
+  IPCHECK_URL                   IP check endpoint URL (must be https://)
   SKIP_DNS_CONFIG               Set to '1' to skip configuring DNS
   KILL_SWITCH                   Set to '1' to enable killswitch (Experimental)
   DEBUG                         Set to '1' to enable debug logs
@@ -215,12 +210,6 @@ Environment:
 Same can be used as liveness probe and readiness probe for Kubernetes.
 
 ## Docker Compose
-
-> **Note**
->
-> Because docker does not provide a reliable way to bring up containers in an ordered
-> manner and lacks `sd_notify` support for containers(see bugs like #178),
-> it is recommended to use [podman](#podman) with systemd.
 
 If entire stack is in a single compose file, then `network_mode: service:protonwire` on the services which should be routed via VPN. If the VPN stack is **NOT** in same compose file use `network_mode: container:<protonwire-container-name>`. Use [`podman-compose`](https://github.com/containers/podman-compose) for use with podman.
 
@@ -278,7 +267,7 @@ services:
 <!--diana::dynamic:protonwire-sample-compose-file:end-->
 
 
-> **Note**
+> [!IMPORTANT]
 >
 > - It is **essential** to expose/publish port(s) _on protonwire container_, instead of application container.
 > - **SHOULD NOT** run the container as privileged. Adding capability `CAP_NET_ADMIN` **AND** defined `sysctls` should be sufficient.
@@ -325,18 +314,6 @@ This section covers running containers via podman. But for deployments use [podm
         ghcr.io/tprasadtp/protonwire:7
     ```
 
-    > **Note**
-    >
-    > * This example publishes container port 8000 to host port 8000.
-    > You **MUST** change these to match your application container(s).
-    > * To publish additional ports from other containers using this VPN
-    > (usually done via argument `--publish <host-port>:<container-port>`),
-    > it **MUST** be done on _protonwire_ container.
-    > * `--sysctl` flags are important! without these, container cannot
-    > create/manage WireGuard interface.
-    > * `mode=600` in secret mount is important, as script refuses to use
-    > private key with insecure permissions.
-
 - Create app(s) sharing network namespace with `protonwire` container. As an example, we are using caddy
 to proxy website which shows IP info. Replace these with your application container(s) like [pyload](https://github.com/pyload/pyload#docker-images), [firefox](https://docs.linuxserver.io/images/docker-firefox) etc.
 
@@ -353,6 +330,19 @@ to proxy website which shows IP info. Replace these with your application contai
 
 - Verify that application containers are using VPN by visiting http://<hostname or IP>:8000.
 
+> [!IMPORTANT]
+>
+> * The above example publishes container port 8000 to host port 8000.
+> You **MUST** change these to match your application container(s).
+> * To publish additional ports from other containers using this VPN
+> (usually done via argument `--publish <host-port>:<container-port>`),
+> it **MUST** be done on _protonwire_ container.
+> * `--sysctl` flags are important! without these, container cannot
+> create/manage WireGuard interface.
+> * `mode=600` in secret mount is important, as script refuses to use
+> private key with insecure permissions.
+
+
 ## Running podman containers with systemd
 
 This is a bit more involved than just running a podman/docker run command.
@@ -363,7 +353,7 @@ to start only when protonwire is up **and** healthy.
 - Dependency ordering during upgrades.
 - Use well known systemctl to see status of containers.
 
-> **Warning**
+> [!IMPORTANT]
 >
 > - This feature is experimental and is **NOT** covered by semver compatibility guarantees.
 > - Only podman version 4.5 or later is supported due to missing.
@@ -507,7 +497,7 @@ WantedBy=default.target
 ```
 <!--diana::dynamic:protonwire-container-unit-file:end-->
 
-> **Note**
+> [!IMPORTANT]
 >
 > * This example publishes container port 8000 to host port 8000.
 > You **MUST** change these to match your application container(s).
@@ -661,12 +651,6 @@ Visit http://[host IP or localhost]:8000 in your browser and it should show VPN'
     </a>
   </p>
 
-> **Note**
->
-> Because docker does not provide a reliable way to bring up containers in an ordered
-> manner and lacks `sd_notify` support for containers(see bugs like #178),
-> it is recommended to use [podman](#podman) with systemd.
-
 - Pull docker image (if required)
     ```bash
     docker pull ghcr.io/tprasadtp/protonwire:latest
@@ -686,14 +670,14 @@ Visit http://[host IP or localhost]:8000 in your browser and it should show VPN'
         --mount type=bind,src=<absolute-path-to-key-file>,dst=/etc/protonwire/private-key,readonly \
         ghcr.io/tprasadtp/protonwire:latest
     ```
-    > **Warning**
-    >
-    > - To publish additional ports from other containers using this VPN, it **MUST** be done
-    >   on the `protonwire` container!
-    > - `--sysctl` and `--cap-add` flags are important! without these, container cannot create
-    > or manage WireGuard interfaces or routing.
-    > - docker rootless should also work just fine for most users, but is considered experimental.
 
+> [!IMPORTANT]
+>
+> - To publish additional ports from other containers using this VPN, it **MUST** be done
+>   on the `protonwire` container!
+> - `--sysctl` and `--cap-add` flags are important! without these, container cannot create
+> or manage WireGuard interfaces or routing.
+> - docker rootless should also work just fine for most users, but is considered experimental.
 
 - To use VPN in other container(s), use `--net=container:protonwire` flag.
 For example, we can run caddy to proxy `https://ip.me/` via VPN. Visiting http://localhost:8000, or `curl http://localhost:8000` should show VPN's country and IP address.
@@ -710,10 +694,6 @@ For example, we can run caddy to proxy `https://ip.me/` via VPN. Visiting http:/
             --from :80 \
             --to https://ip.me:443
     ```
-
-    > **Note**
-    >
-    > There are no port mappings done here! It should be done on the VPN container!
 
 ## Dependencies
 
@@ -786,7 +766,7 @@ if running as systemd unit outside of containers.
     sudo protonwire check
     ```
 
-> **Note**
+> [!TIP]
 >
 > Add `--debug` flag to see debug logs.
 
@@ -795,21 +775,25 @@ if running as systemd unit outside of containers.
 Provides rich systemd integration. Connected server kill-switch state is displayed with
 `systemctl status protonwire`. For running containers as systemd unit see [podman-systemd-integration](#podman-systemd-integration)
 
-<pre><font color="#B8BB26"><b>vagrant@debian-minimal</b></font>:<font color="#83A598"><b>~</b></font>$ systemctl status protonwire --no-pager
-<font color="#B8BB26"><b>●</b></font> protonwire.service - ProtonVPN Wireguard Client
-     Loaded: loaded (/usr/local/lib/systemd/system/protonwire.service; disabled; vendor preset: enabled)
-     Active: <font color="#B8BB26"><b>active (running)</b></font> since Wed 2023-04-12 21:17:31 UTC; 2min 47s ago
+<pre><font color="#26A269">prasad@fedora</font>:<font color="#26A269">~/Git/protonvpn-docker</font>$ systemctl status protonwire
+<font color="#26A269"><b>●</b></font> protonwire.service - ProtonVPN Wireguard Client
+     Loaded: loaded (/usr/local/lib/systemd/system/protonwire.service; <font color="#26A269"><b>enabled</b></font>; preset: <font color="#D7D75F"><b>disabled</b></font>)
+    Drop-In: /etc/systemd/system/protonwire.service.d
+             └─10-protonwire-private-key.conf
+             /usr/lib/systemd/system/service.d
+             └─10-timeout-abort.conf
+     Active: <font color="#26A269"><b>active (running)</b></font> since Fri 2024-02-16 22:19:58 CET; 2min 40s ago
        Docs: man:protonwire(1)
              https://github.com/tprasadtp/protonvpn-docker
-   Main PID: 7298 (protonwire)
-     Status: &quot;Connected to nl-free-127.protonvpn.net (via 185.107.56.83, with KillSwitch)&quot;
-         IP: 36.4K in, 11.6K out
-      Tasks: 2 (limit: 2336)
-     Memory: 2.3M
-        CPU: 2.302s
+   Main PID: 13815 (protonwire)
+     Status: &quot;<font color="#2AA1B3"><b>Connected to node-nl-03.protonvpn.net (as 89.39.107.205, with KillSwitch)</b></font>&quot;
+         IP: 24.3K in, 8.4K out
+      Tasks: 2 (limit: 4623)
+     Memory: 3.8M
+        CPU: 2.546s
      CGroup: /system.slice/protonwire.service
-             ├─7298 /bin/bash /usr/local/bin/protonwire connect --systemd --logfmt journald
-             └─8236 sleep 60
+             ├─<font color="#8A8A8A">13815 /bin/bash /usr/local/bin/protonwire connect --systemd --logfmt journald</font>
+             └─<font color="#8A8A8A">14188 sleep 60</font>
 </pre>
 
 ### Requirements
@@ -866,9 +850,6 @@ Provides rich systemd integration. Connected server kill-switch state is display
     sudo systemctl start protonwire
     ```
 -  Stop VPN service via
-    > **Warning**
-    >
-    > Units bound to protonwire unit will also be stopped.
 
     ```bash
     sudo systemctl stop protonwire
@@ -880,6 +861,7 @@ Provides rich systemd integration. Connected server kill-switch state is display
     ```
 
 - To check logs, use `journalctl -u protonwire`.
+
 - Disable VPN service via
     ```bash
     sudo systemctl disable --now protonwire
@@ -896,7 +878,7 @@ Provides rich systemd integration. Connected server kill-switch state is display
 
 ## systemd-resolved Split Horizon DNS
 
-> **Note**
+> [!IMPORTANT]
 >
 > Requires systemd version 244 or later.
 
@@ -924,7 +906,7 @@ This setup ensures that service depending on VPN will be **ONLY** started when `
 
 If system package already provides a systemd unit file for the service, use [drop-in][] units to configure dependencies.
 
-> **Note**
+> [!IMPORTANT]
 >
 > Don't forget to run `sudo systemctl daemon-reload` upon updating/installing unit files.
 
