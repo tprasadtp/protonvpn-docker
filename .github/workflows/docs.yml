@@ -11,7 +11,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Run GoReleaser
+      - name: Update README
         run: make update-readme
 
       - name: Check if README is up-to date
