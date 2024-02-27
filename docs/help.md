@@ -43,13 +43,56 @@ async function handleRequest(request) {
 
 ## Failed to refresh ProtonVPN server metadata (server name is invalid or not found)
 
-Please verify that server name is valid and is online. Proton sometimes changes server names
-and thus it may be unavailable. It is recommended to use DNS name like `node-nl-03.protonvpn.net`
-instead of server name like `NL-FREE#343013`.
+Please verify that server name is valid and is online.
 
-- Log in to ProtonVPN and go to **Downloads** → **WireGuard configuration**.
-- Verify that server you are trying to connect is listed, available and is online.
-- Use little down arrow to copy server's DNS name to be used as `PROTONVPN_SERVER`.
+Proton sometimes changes server names and thus it may be unavailable.
+It is recommended to use DNS name like `node-nl-03.protonvpn.net` or
+IP addresses instead of server name like `NL-FREE#343013`.
+
+IP address of server can be obtained from `[Peer]` section of the generated
+WireGuard configuration.
+
+```ini
+[Interface]
+# Key for <name>
+# VPN Accelerator = on
+PrivateKey = KLjfIMiuxPskM4+DaSUDmL2uSIYKJ9Wap+CHvs0Lfkw=
+Address = 10.2.0.2/32
+DNS = 10.2.0.1
+
+[Peer]
+# NL-FREE#343013
+PublicKey = MTNPR632U9GOxI+B8dMP+KgMJVEO2xQPrem2SuDfTkM=
+AllowedIPs = 0.0.0.0/0
+Endpoint = 89.39.107.188:51820
+```
+
+In the above example, server's IP address is `89.39.107.188`. Use it as value for `PROTONVPN_SERVER`.
+If using docker-compose or kubernetes _do not forget to quote it_ to avoid any weird YAML issues.
+
+Alternatively, you can use `server-info` sub command to get all server metadata and attributes.
+
+> [!IMPORTANT]
+>
+> This Requires protonwire version `7.3.0-beta3` or later.
+> This may not work for IPv6 servers and should be considered experimental.
+
+```bash
+protonwire server-info {SERVER_NAME_OR_IP}
+```
+
+```console
+[•] Refresing server metadata (for node-nl-03.protonvpn.net)
+[•] Successfully refreshed server metadata
+[•] Server Status        : ONLINE
+[•] Server Name          : NL-FREE#343013
+[•] Server DNS Name      : node-nl-03.protonvpn.net
+[•] Feature (Streaming)  : false
+[•] Feature (P2P)        : false
+[•] Feature (SecureCore) : false
+[•] Exit IPs             : 89.39.107.188 89.39.107.202 89.39.107.203 89.39.107.204 89.39.107.205
+[•] 89.39.107.188        : MTNPR632U9GOxI+B8dMP+KgMJVEO2xQPrem2SuDfTkM= (Public Key)
+```
 
 ## tmpfs or `/tmp` issues with containers
 
@@ -69,33 +112,6 @@ Please use `tmpfs` mounts for `/tmp`
 This typically happens on a older machine or NAS/embedded devices
 as Wireguard support might not be present in the kernel.
 Please visit https://www.wireguard.com/install/ or contact device manufacturer.
-
-## Server DNS name is not available or unknown
-
-If for some reason you are not able to get server DNS name, and server name does not work
-for you, Try using IP address as `PROTONVPN_SERVER` or as CLI argument. IP address of server
-can be obtained from `[Peer]` section of the generated WireGuard configuration.
-
-```ini
-[Interface]
-# Key for <name>
-# VPN Accelerator = on
-PrivateKey = KLjfIMiuxPskM4+DaSUDmL2uSIYKJ9Wap+CHvs0Lfkw=
-Address = 10.2.0.2/32
-DNS = 10.2.0.1
-
-[Peer]
-# NL-FREE#128
-PublicKey = jbTC1lYeHxiz1LNSJHQMKDTq6sHgcWxkBwXvt7GWo1E=
-AllowedIPs = 0.0.0.0/0
-Endpoint = 91.229.23.180:51820
-```
-
-In the above example, server's IP address is `91.229.23.180`. Use it as value for `PROTONVPN_SERVER`.
-If using docker-compose or kubernetes _do not forget to quote it_ to avoid any weird YAML issues.
-
-> This may not work for IPv6 servers and should be considered experimental.
-
 
 ## DNS leak protection and Kubernetes
 
