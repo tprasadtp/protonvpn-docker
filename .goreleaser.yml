@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
 project_name: protonwire
 
 snapshot:
@@ -20,109 +21,6 @@ builds:
 archives:
   - format: binary
 
-nfpms:
-  - id: linux-packages
-    file_name_template: "{{ .PackageName }}"
-    homepage: https://github.com/tprasadtp/protonwire
-    maintainer: Prasad Tengse <tprasadtp@users.noreply.github.com>
-    description: ProtonVPN Wireguard Client for Linux
-    license: GPLv3
-    formats:
-      - deb
-      - rpm
-
-    overrides:
-      deb:
-        dependencies:
-          - wireguard-tools
-          - iproute2
-          - procps
-          - curl
-          - jq
-          - bash
-          - coreutils
-          - openresolv|resolvconf|systemd
-
-        recommends:
-          - systemd
-          - policykit-1
-
-        scripts:
-          postinstall: debian/protonwire.postinstall
-          postremove: debian/protonwire.postremove
-          preremove: debian/protonwire.preremove
-
-      rpm:
-        dependencies:
-          - wireguard-tools
-          - iproute
-          - curl
-          - jq
-          - procps-ng
-          - bash
-          - coreutils
-          - openresolv|systemd-resolved
-        recommends:
-          - polkit
-          - polkit-pkla-compat
-
-        scripts:
-          postinstall: rpm/protonwire.postinstall
-          postremove: rpm/protonwire.postremove
-          preremove: rpm/protonwire.preremove
-
-    section: default
-    priority: extra
-    contents:
-      - src: systemd/sysctl.d/protonwire.conf
-        dst: /usr/lib/sysctl.d/protonwire.conf
-        file_info:
-          mode: 0644
-          owner: root
-          group: root
-
-      - src: systemd/sysusers.d/protonwire.conf
-        dst: /usr/lib/sysusers.d/protonwire.conf
-        file_info:
-          mode: 0644
-          owner: root
-          group: root
-
-      - src: systemd/tmpfiles.d/protonwire.conf
-        dst: /usr/lib/tmpfiles.d/protonwire.conf
-        file_info:
-          mode: 0644
-          owner: root
-          group: root
-
-      - src: systemd/system/protonwire.service
-        dst: /usr/lib/systemd/system/protonwire.service
-        file_info:
-          mode: 0644
-          owner: root
-          group: root
-
-      - src: systemd/polkit/protonwire.pkla
-        dst: /var/lib/polkit-1/localauthority/10-vendor.d/protonwire.pkla
-        file_info:
-          mode: 0644
-          owner: root
-          group: root
-
-      - src: systemd/polkit/protonwire.rules
-        dst: /usr/share/polkit-1/rules.d/protonwire.rules
-        file_info:
-          mode: 0644
-          owner: root
-          group: root
-
-      - src: dist/protonwire.1
-        dst: /usr/share/man/man1/protonwire.1
-        file_info:
-          mode: 0644
-          owner: root
-          group: root
-
 changelog:
   sort: asc
   groups:
@@ -144,14 +42,6 @@ changelog:
       - '^.*doc(s)?[(\\w)]*:+.*$'
       - '^.*release(s)?[(\\w)]*:+.*$'
       - '^.*bot(s)?[(\\w)]*:+.*$'
-
-checksum:
-  name_template: checksums.txt
-  algorithm: sha256
-  ids:
-    - linux-packages
-  extra_files:
-    - glob: dist/protonwire
 
 # Build docker images
 dockers:
@@ -289,12 +179,15 @@ docker_manifests:
 
 release:
   mode: replace
-  ids:
-    - linux-packages
   prerelease: auto
-  extra_files:
-    - glob: dist/protonwire
-    - glob: dist/protonwire.1
+
+  # Set this to true if you want to disable just the artifact upload to the SCM.
+  # If this is true, GoReleaser will still create the release with the
+  # changelog, but won't upload anything to it.
+  #
+  # Since: v1.11
+  # Templates: allowed (since v1.15)
+  skip_upload: true
 
 docker_signs:
   - cmd: cosign

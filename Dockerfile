@@ -1,9 +1,8 @@
 #syntax=docker/dockerfile:1.2
-FROM debian:bookworm-20240211-slim as base
+FROM debian:bookworm-20240311-slim as base
 
 FROM base
 
-# Install Packages
 # hadolint ignore=DL3008,DL3009
 RUN --mount=type=tmpfs,target=/var/lib/apt/lists \
     --mount=type=cache,sharing=private,target=/var/cache/apt \

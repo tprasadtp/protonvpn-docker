@@ -1,7 +1,9 @@
 {
-    "files.associations": {
-        "*.pkla": "ini",
-        "*.rules": "javascript"
-    },
-    "search.useIgnoreFiles": false,
+  "files.associations": {
+    "*.pkla": "ini",
+    "*.rules": "javascript",
+    "*.container": "systemd-unit-file",
+    "*.pod": "systemd-unit-file"
+  },
+  "search.useIgnoreFiles": false,
 }

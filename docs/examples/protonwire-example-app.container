@@ -1,0 +1,16 @@
+[Unit]
+Description=Example application using protonwire VPN container
+Documentation=https://github.com/tprasadtp/protonvpn-docker
+
+After=protonwire.service
+BindsTo=protonwire.service
+
+[Container]
+Pod=protonwire.pod
+Image=docker.io/library/caddy:latest
+Timezone=local
+RunInit=true
+Exec=caddy reverse-proxy --change-host-header --from :8000 --to https://ip.me:443
+
+[Install]
+WantedBy=default.target

@@ -1,9 +1,0 @@
-#!/usr/bin/bash
-# SPDX-License-Identifier: GPL-3.0
-# SPDX-FileCopyrightText: 2023 Prasad Tengse <tprasadtp@users.noreply.github.com>
-
-set -e
-
-systemd-sysusers protonwire.conf
-/usr/lib/systemd/systemd-sysctl protonwire.conf
-systemd-tmpfiles --create protonwire.conf

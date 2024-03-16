@@ -1,0 +1,26 @@
+[Unit]
+Description=Pod for apps using via ProtonVPN
+Documentation=https://github.com/tprasadtp/protonvpn-docker
+
+[Pod]
+# Name
+#
+# Define a pod name so that we can re-use the pod name later
+# without depending on auto generated pod names.
+PodName=protonwire
+
+# Network
+#
+# Name of the network. Alternatively use netwok Quadlet.
+# See https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html
+Network=protonwire
+
+# PublishPort
+#
+# This example only publishes a single port. port 8000 both on host and container.
+# Add as many ports as your applications require.
+# See https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html#pod-units-pod
+PublishPort=8000
+
+[Install]
+WantedBy=default.target

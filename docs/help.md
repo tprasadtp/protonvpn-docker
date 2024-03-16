@@ -131,87 +131,15 @@ to calculate `PROTONVPN_ALLOWED_SUBNETS_IPV6`.
 
 User namespaces can cause file permission issues. If you have problem accessing mounted secret files or sharing network stack, disable user namespaces for the container.
 
-## Systemd watchdog keeps killing the service
-
-- Check if its `IP mismatch` error
-- Try switching servers
-- If you keep encountering this issue, you can disable IP checks with by setting `IPCHECK_INTERVAL` to `0` or `--check-interval 0`.
-
 ## Cannot update DNS, /etc/resolv.conf is not writable
 
 Try to run as `root` and ensure /etc/resolv.conf is writable.
-
-## Transport endpoint is not connected errors when using systemd
-
-Turn off `DynamicUser` and `RemoveIPC` from you unit configuration and reload systemd.
-
-## Systemd unit failed with some error
-
-- Disable systemd unit `protonwire.service` for debugging.
-- Run transient unit via `systemd-run`
-    ```
-    sudo systemd-run \
-        --pty \
-        --same-dir \
-        --wait \
-        --collect \
-        --unit=protonwire-run.service \
-        --service-type=notify \
-        --property="Description=ProtonVPN Wireguard Client" \
-        --property="Documentation=man:protonwire(1)" \
-        --property="Documentation=https://github.com/tprasadtp/protonvpn-docker" \
-        --property="SupplementaryGroups=systemd-network" \
-        --property="NotifyAccess=all" \
-        --property="User=protonwire" \
-        --property="Group=protonwire" \
-        --property="SupplementaryGroups=systemd-network" \
-        --property="Environment=HOME=/var/lib/protonwire" \
-        --property="Environment=LANG=C.UTF-8" \
-        --property="EnvironmentFile=-/etc/defaults/protonwire" \
-        --property="EnvironmentFile=-/etc/protonwire/*.env" \
-        --property="AmbientCapabilities=CAP_NET_ADMIN" \
-        --property="CapabilityBoundingSet=CAP_NET_ADMIN" \
-        --property="SystemCallFilter=@system-service" \
-        --property="SystemCallArchitectures=native" \
-        --property="ProtectProc=invisible" \
-        --property="ProtectHostname=true" \
-        --property="PrivateTmp=yes" \
-        --property="ProtectControlGroups=true" \
-        --property="ProtectKernelModules=true" \
-        --property="ProtectKernelTunables=true" \
-        --property="ProtectKernelLogs=true" \
-        --property="KeyringMode=private" \
-        --property="RestrictNamespaces=true" \
-        --property="LockPersonality=true" \
-        --property="MemoryDenyWriteExecute=true" \
-        --property="RestrictSUIDSGID=true" \
-        --property="PrivateTmp=yes" \
-        --property="ProtectSystem=full" \
-        --property="StateDirectory=protonwire" \
-        --property="CacheDirectory=protonwire" \
-        --property="RuntimeDirectory=protonwire" \
-        --property="RuntimeDirectoryPreserve=restart" \
-        --property="IPAccounting=true" \
-        --property="CPUAccounting=true" \
-        --property="BlockIOAccounting=true" \
-        --property="MemoryAccounting=true" \
-        --property="TasksAccounting=true" \
-        --property="WatchdogSec=20" \
-        --property="TimeoutAbortSec=30" \
-        --property="TimeoutStopSec=30" \
-        --property="TimeoutStartSec=180" \
-        protonwire connect --debug <server-name>
-    ```
 
 ## Manually Disconnecting from VPN
 
 Please use `protonwire disconnect --kill-switch` as it handles things properly. If not possible, try the following.
 
-- Restore the DNS if using systemd-resolved via,
-    ```
-    resolvectl revert protonwire0
-    ```
-- If **NOT** using systemd-resolved (like in containers) restore the DNS using following commands.
+- Restore the DNS using following commands.
     ```bash
     cat /etc/resolv.conf.protonwire > /etc/resolv.conf && rm /etc/resolv.conf.protonwire
     ```
