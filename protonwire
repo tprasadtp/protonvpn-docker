@@ -366,9 +366,6 @@ function __is_bool_true() {
 }
 
 function __is_skip_dns_config() {
-    if [[ ${__PROTONWIRE_DNS_UPDATER,,} == "none" ]]; then
-        return 0
-    fi
     if __is_bool_true "${SKIP_DNS_CONFIG}"; then return 0; else return 1; fi
 }
 
@@ -386,45 +383,21 @@ function __has_notify_socket() {
 function __systemd_notify() {
     local status="${1}"
     if [[ -z ${1} ]]; then
-        log_error "Message is not defined or empty!"
+        log_error "Notify message is not defined or empty!"
         return 1
     fi
 
-    if has_command systemd-notify; then
-        if timeout 3s \
-            systemd-notify "${status}" 2>&1 | log_tail "systemd-notify"; then
-            return 0
-        else
-            log_debug "systemd-notify failed to send status ${status}"
-        fi
-    elif has_command nc; then
-        if printf "%s" "${status}" |
-            timeout 3s nc -w 0 -uU "$NOTIFY_SOCKET" 2>&1 | log_tail "nc-notify"; then
-            return 0
-        else
-            log_debug "nc failed to send status ${status}"
-        fi
+    if printf "%s" "${status}" |
+        timeout 3s nc -w 0 -uU "$NOTIFY_SOCKET" 2>&1 | log_tail "nc-notify"; then
+        return 0
     else
-        log_error "Neither systemd-notify nor nc is available!"
+        log_debug "nc failed to send status ${status}"
     fi
     return 1
 }
 
 function __sd_notify_checks() {
     local errs=0
-    if [[ ${WATCHDOG_USEC} =~ ^[1-9][0-9]+$ ]]; then
-        local ping_interval
-        ping_interval="$((WATCHDOG_USEC / 2000000))"
-        if [[ $ping_interval -lt 10 ]]; then
-            log_error "Watchdog ping interval is too low($ping_interval) should be at least 10 secs"
-            ((++errs))
-        else
-            log_debug "Watchdog ping interval is $ping_interval secs"
-        fi
-    else
-        log_debug "WATCHDOG_USEC is not set or invalid"
-    fi
-
     if [[ -n $NOTIFY_SOCKET ]]; then
         if [[ -S $NOTIFY_SOCKET ]]; then
             log_debug "NOTIFY_SOCKET is set to $NOTIFY_SOCKET"
@@ -443,85 +416,14 @@ function __sd_notify_checks() {
     return 1
 }
 
-function __detect_dns_updater() {
-    if [[ -n $__PROTONWIRE_DNS_UPDATER ]]; then
-        return 0
-    fi
-
-    if ! __is_skip_dns_config; then
-        if has_command systemctl; then
-            if systemctl is-active --quiet systemd-resolved; then
-                if [[ -L /etc/resolv.conf ]]; then
-                    log_debug "Using systemd-resolved for DNS"
-                    __PROTONWIRE_DNS_UPDATER="systemd-resolved"
-                else
-                    log_debug "Using /etc/resolv.conf for DNS (not a symlink to stub)"
-                    __PROTONWIRE_DNS_UPDATER="resolvconf"
-                fi
-            else
-                log_debug "Using /etc/resolv.conf for DNS (systemd-resolved is not running)"
-                __PROTONWIRE_DNS_UPDATER="resolvconf"
-            fi
-        else
-            log_debug "Using /etc/resolv.conf for DNS (systemd is not available)"
-            __PROTONWIRE_DNS_UPDATER="resolvconf"
-        fi
-    else
-        log_debug "Skipping DNS configuration"
-        __PROTONWIRE_DNS_UPDATER="none"
-    fi
-}
-
 function __check_caps() {
     if capsh --has-p=CAP_NET_ADMIN >/dev/null 2>&1; then
         log_debug "Can use CAP_NET_ADMIN capability"
         return 0
     else
         log_error "CAP_NET_ADMIN capability is not available!"
-        log_error "If running as systemd unit ensure 'AmbientCapabilities' is set to 'CAP_NET_ADMIN'"
         log_error "If running as podman/docker use --cap-add=CAP_NET_ADMIN flag."
-        log_error "Otherwise, run as root and/or add CAP_NET_ADMIN capability"
-    fi
-    return 1
-}
-
-function __check_systemd() {
-    local errs=0
-    if [[ $__PROTONWIRE_LOOPER == "systemd" ]]; then
-        if ! __sd_notify_checks; then
-            ((++errs))
-        fi
-        declare -ar systemd_populated_vars=(
-            "RUNTIME_DIRECTORY"
-            "CACHE_DIRECTORY"
-        )
-
-        for var in "${systemd_populated_vars[@]}"; do
-            if [[ -z ${!var} ]]; then
-                log_debug "$var is not defined!"
-            else
-                log_variable "$var"
-            fi
-        done
-    elif [[ $__PROTONWIRE_LOOPER == "container" ]]; then
-        if ! __sd_notify_checks; then
-            ((++errs))
-        fi
-
-        # Containers cannot change sysctls so check it now
-        if [[ $(sysctl -n net.ipv4.conf.all.rp_filter) != "2" ]]; then
-            ((++errs))
-            log_error "Invalid sysctl, net.ipv4.conf.all.rp_filter!=2"
-            log_error "If using docker/podman add --sysctl net.ipv4.conf.all.rp_filter=2 flag to your run command"
-            log_error "If using docker-compose add 'net.ipv4.conf.all.rp_filter: 2' under 'sysctls' section for protonvpn service."
-            log_error "If using Kubernetes see https://kubernetes.io/docs/tasks/administer-cluster/sysctl-cluster/ to set sysctl values."
-        fi
-    else
-        log_debug "--systemd/--container both are not specified"
-    fi
-
-    if [[ $errs -eq 0 ]]; then
-        return 0
+        log_error "If running in Kubernetes, See https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-capabilities-for-a-container"
     fi
     return 1
 }
@@ -540,26 +442,6 @@ function __check_tools() {
         "sysctl"  # procps
         "flock"   # flock | linux-utils
     )
-    __detect_dns_updater
-
-    case ${__PROTONWIRE_DNS_UPDATER,,} in
-    systemd-resolved)
-        commands+=(
-            "resolvectl" # systemd
-        )
-        ;;
-    resolvconf)
-        if [[ ! -w /etc/resolv.conf ]]; then
-            log_error "Cannot update DNS, /etc/resolv.conf is not writable"
-            ((++errs))
-        fi
-        ;;
-    none) ;;
-    *)
-        log_error "Unknown __PROTONWIRE_DNS_UPDATER - ${__PROTONWIRE_DNS_UPDATER:-NA}"
-        ((++errs))
-        ;;
-    esac
 
     declare -a missing_commands
     for command in "${commands[@]}"; do
@@ -588,8 +470,12 @@ function __run_checks() {
 
     __detect_paths
 
-    if ! __check_systemd; then
+    if [[ $(sysctl -n net.ipv4.conf.all.rp_filter) != "2" ]]; then
         ((++errs))
+        log_error "Invalid sysctl, net.ipv4.conf.all.rp_filter!=2"
+        log_error "If using docker/podman add --sysctl net.ipv4.conf.all.rp_filter=2 flag to your run command"
+        log_error "If using docker-compose add 'net.ipv4.conf.all.rp_filter: 2' under 'sysctls' section for protonvpn service."
+        log_error "If using Kubernetes see https://kubernetes.io/docs/tasks/administer-cluster/sysctl-cluster/ to set sysctl values."
     fi
 
     # check if any interfaces have reserved ip addresses
@@ -624,68 +510,10 @@ function __run_checks() {
         ((++errs))
     fi
 
-    # If IPCHECK_INTERVAL is defined, and it's not 0, then ensure that WATCHDOG_USEC is not defined
-    if [[ -n $IPCHECK_INTERVAL ]] &&
-        [[ $IPCHECK_INTERVAL != "0" ]] &&
-        [[ ${WATCHDOG_USEC} =~ ^[1-9][0-9]+$ ]]; then
-        log_error "IPCHECK_INTERVAL(${IPCHECK_INTERVAL}) cannot be used with systemd watchdog WATCHDOG_USEC(${WATCHDOG_USEC})"
-        ((++errs))
-    fi
-
     if [[ $errs -eq 0 ]]; then
         return 0
     fi
     return 1
-}
-
-function __resolvctl_up_hook() {
-    local errs=0
-
-    # Configure search/routing domains and the default-route before configuring the DNS server.
-    if resolvectl domain protonwire0 "~." 2>&1 | log_tail "resolvectl-domain"; then
-        log_success "Set routing domain to ~. (via resolvectl)"
-    else
-        log_error "Failed to set routing domain to ~. (via resolvectl)"
-        ((++errs))
-    fi
-
-    if resolvectl default-route protonwire0 "true" 2>&1 | log_tail "resolvectl-default-route"; then
-        log_success "Set default route"
-    else
-        log_error "Failed to set default DNS route (via resolvectl)"
-        ((++errs))
-    fi
-
-    if resolvectl dns protonwire0 "10.2.0.1" 2>&1 | log_tail "resolvectl-dns"; then
-        log_success "Set DNS server to 10.2.0.1 (via resolvectl)"
-    else
-        log_error "Failed to set DNS server to 10.2.0.1 (via resolvectl)"
-        ((++errs))
-    fi
-
-    if [[ $errs -eq 0 ]]; then
-        return 0
-    else
-        __resolvctl_down_hook # ignore errors
-    fi
-    return 1
-}
-
-function __resolvctl_down_hook() {
-    local errs=0
-    declare wg_iface
-    wg_iface="$(ip --json link | jq -r '.[] | select(.ifname=="protonwire0") | .ifname' 2>/dev/null)"
-    if [[ -n $wg_iface ]]; then
-        if resolvectl revert protonwire0 2>&1 | log_tail "resolvectl-revert"; then
-            log_success "Reverted systemd-resolved configuration for protonwire0"
-            return 0
-        else
-            log_error "Failed to revert systemd-resolved configuration for protonwire0"
-            return 1
-        fi
-    else
-        log_notice "Wireguard interface 'protonwire0' has already been deleted"
-    fi
 }
 
 # resolvconf hook. openresolv cannot be used because it uses mv sematics
@@ -765,40 +593,9 @@ function __resolvconf_down_hook() {
 }
 
 function __detect_paths() {
-    local runtime_dir
-
-    log_variable "RUNTIME_DIRECTORY"
-    log_variable "XDG_RUNTIME_DIR"
-
-    if [[ -z $RUNTIME_DIRECTORY ]]; then
-        if [[ -n $XDG_RUNTIME_DIR ]]; then
-            if [[ -d "$XDG_RUNTIME_DIR" ]] && [[ -w "${XDG_RUNTIME_DIR}" ]]; then
-                runtime_dir="$XDG_RUNTIME_DIR"
-                if [[ -z ${cache_dir} ]]; then
-                    cache_dir="${XDG_RUNTIME_DIR}"
-                fi
-            else
-                log_warning "XDG_RUNTIME_DIR(${XDG_RUNTIME_DIR}) is not a directory or not writable!"
-            fi
-        fi
-    else
-        if [[ -d $RUNTIME_DIRECTORY ]] && [[ -w $RUNTIME_DIRECTORY ]]; then
-            runtime_dir="${RUNTIME_DIRECTORY}"
-            if [[ -z ${cache_dir} ]]; then
-                cache_dir="${RUNTIME_DIRECTORY}"
-            fi
-        else
-            log_warning "RUNTIME_DIRECTORY($RUNTIME_DIRECTORY) is not a directory or not writable!"
-        fi
-    fi
-
-    if [[ -z ${runtime_dir} ]]; then
-        runtime_dir="/tmp" # fallback to tmp
-    fi
-
-    declare -g __PROTONWIRE_SRV_INFO_FILE="${runtime_dir%/}/protonwire.server.json"
-    declare -g __PROTONWIRE_HCR="${runtime_dir%/}/protonwire.hc.response"
-    declare -g __PROTONWIRE_HCS="${runtime_dir%/}/protonwire.hc.status"
+    declare -g __PROTONWIRE_SRV_INFO_FILE="/tmp/protonwire.server.json"
+    declare -g __PROTONWIRE_HCR="/tmp/protonwire.hc.response"
+    declare -g __PROTONWIRE_HCS="/tmp/protonwire.hc.status"
     log_variable "__PROTONWIRE_SRV_INFO_FILE"
     log_variable "__PROTONWIRE_HCR"
     log_variable "__PROTONWIRE_HCS"
@@ -806,19 +603,6 @@ function __detect_paths() {
 
 # looper command
 function protonvpn_looper_cmd() {
-    case "$__PROTONWIRE_LOOPER" in
-    systemd)
-        log_debug "Running as systemd unit, IDENTITY=$(id 2>&1)"
-        ;;
-    container)
-        log_debug "Running as container USER=$(id -un 2>&1)"
-        ;;
-    *)
-        log_error "Invalid LOOPER - $__PROTONWIRE_LOOPER"
-        return 1
-        ;;
-    esac
-
     if ! __run_checks; then
         log_error "Please fix the errors above and try again!"
         return 1
@@ -868,31 +652,16 @@ function protonvpn_looper_cmd() {
         return 1
     fi
 
-    local sleep_int=60
-    local watchdog_pings="false"
+    local sleep_int=120
 
-    # detect ping interval
-    if [[ -n $IPCHECK_INTERVAL ]]; then
-        if [[ $IPCHECK_INTERVAL == "0" ]] &&
-            [[ ${WATCHDOG_USEC} =~ ^[1-9][0-9]+$ ]]; then
-            sleep_int="$((WATCHDOG_USEC / 2000000))"
-            log_debug "Watchdog enabled, ping interval $sleep_int seconds"
-            watchdog_pings="true"
-        elif [[ $IPCHECK_INTERVAL != "0" ]]; then
-            sleep_int="$IPCHECK_INTERVAL"
-        fi
+    # configure ping interval
+    if [[ -n $IPCHECK_INTERVAL ]] && [[ $IPCHECK_INTERVAL != "0" ]]; then
+        sleep_int="$IPCHECK_INTERVAL"
     else
-        if [[ ${WATCHDOG_USEC} =~ ^[1-9][0-9]+$ ]]; then
-            sleep_int="$((WATCHDOG_USEC / 2000000))"
-            log_debug "Watchdog enabled, ping interval $sleep_int seconds"
-            watchdog_pings="true"
-        else
-            log_debug "Using default check interval 120s"
-            sleep_int="120"
-        fi
+        log_debug "Using default check interval ${sleep_int}s"
     fi
 
-    # Initial ready and watchdog notification.
+    # Initial ready notification.
     if __has_notify_socket; then
         log_notice "Notifying systemd that we are ready"
         if ! __systemd_notify "READY=1"; then
@@ -900,17 +669,8 @@ function protonvpn_looper_cmd() {
             __protonvpn_disconnect
             return 1
         fi
-
-        if [[ $watchdog_pings == "true" ]]; then
-            log_debug "Sending WATCHDOG ping"
-            if ! __systemd_notify "WATCHDOG=1"; then
-                log_error "Failed to notify systemd!"
-                __protonvpn_disconnect
-                return 1
-            fi
-        fi
     else
-        log_debug "No systemd notify socket found, skiping READY/WATCHDOG notification"
+        log_debug "No systemd notify socket found, skiping READY=1 notification"
     fi
 
     if [[ $IPCHECK_INTERVAL == "0" ]]; then
@@ -922,15 +682,6 @@ function protonvpn_looper_cmd() {
                 log_debug "Disconnect handler is active, exiting loop"
                 break
             fi
-
-            if [[ $watchdog_pings == "true" ]]; then
-                if __has_notify_socket; then
-                    if ! __systemd_notify "WATCHDOG=1"; then
-                        log_error "Failed to notify systemd watchdog!"
-                    fi
-                fi
-            fi
-
             sleep "${sleep_int:-120}" &
             wait $!
         done
@@ -966,17 +717,6 @@ function protonvpn_looper_cmd() {
                     fi
                 else
                     log_error "Failed to re-connect to ${PROTONVPN_SERVER}"
-                fi
-            else
-                if [[ $watchdog_pings == "true" ]]; then
-                    if __has_notify_socket; then
-                        log_debug "Sending WATCHDOG ping"
-                        if ! __systemd_notify "WATCHDOG=1"; then
-                            log_error "Failed to notify systemd watchdog!"
-                        fi
-                    else
-                        log_warning "NOTIFY_SOCKET is missing!"
-                    fi
                 fi
             fi
         done
@@ -1148,21 +888,13 @@ function protonvpn_healthcheck_status_file() {
         return 0
     fi
     __detect_paths
-    if [[ -n $IPCHECK_INTERVAL ]] &&
-        [[ ${WATCHDOG_USEC} =~ ^[1-9][0-9]+$ ]]; then
-        log_error "IPCHECK_INTERVAL(${IPCHECK_INTERVAL}) cannot be used with systemd watchdog WATCHDOG_USEC(${WATCHDOG_USEC})"
-        return 1
-    fi
 
     log_debug "Checking via file timestamp (${__PROTONWIRE_HCS})"
-    if [[ -z $IPCHECK_INTERVAL ]] &&
-        [[ ${WATCHDOG_USEC} =~ ^[1-9][0-9]+$ ]]; then
-        local check_interval="$((WATCHDOG_USEC / 2000000))"
-    elif [[ -n $IPCHECK_INTERVAL ]]; then
+    if [[ -n $IPCHECK_INTERVAL ]]; then
         local check_interval="$IPCHECK_INTERVAL"
     else
-        log_debug "No healthcheck interval defined, using default(60)"
-        local check_interval="60"
+        log_debug "No healthcheck interval defined, using default(120)"
+        local check_interval="120"
     fi
 
     if [[ -f ${__PROTONWIRE_HCS} ]]; then
@@ -1574,7 +1306,7 @@ function __build_route_table() {
                 if ! __is_bool_true "${KILL_SWITCH}"; then
                     log_warning "Existing killswitch routes found! but killswitch is not enabled! (IPv$proto)"
                 else
-                    log_notice "Validating Killswitch routes (IPv$proto)"
+                    log_debug "Validating Killswitch routes (IPv$proto)"
                 fi
 
                 local ksr_mismatch=0
@@ -2004,23 +1736,27 @@ function __protonvpn_connect() {
             "/etc/protonwire/protonwire-private-key"
             "/etc/protonwire/protonvpn-private-key"
             "/etc/protonwire/wireguard-private-key"
+
             "/run/secrets/private-key"
             "/run/secrets/protonwire-private-key"
             "/run/secrets/protonvpn-private-key"
             "/run/secrets/wireguard-private-key"
+
             "/run/secrets/protonwire/private-key"
             "/run/secrets/protonwire/protonwire-private-key"
             "/run/secrets/protonwire/protonvpn-private-key"
             "/run/secrets/protonwire/protonvpn-private-key"
-        )
 
-        # CREDENTIALS_DIRECTORY is defined if using systemd-creds
-        if [[ -n $CREDENTIALS_DIRECTORY ]]; then
-            lookup_paths+=("${CREDENTIALS_DIRECTORY%/}/private-key")
-            lookup_paths+=("${CREDENTIALS_DIRECTORY%/}/protonwire-private-key")
-            lookup_paths+=("${CREDENTIALS_DIRECTORY%/}/protonvpn-private-key")
-            lookup_paths+=("${CREDENTIALS_DIRECTORY%/}/wireguard-private-key")
-        fi
+            "/run/credentials/private-key"
+            "/run/credentials/protonwire-private-key"
+            "/run/credentials/protonvpn-private-key"
+            "/run/credentials/protonvpn-private-key"
+
+            "/run/credentials/protonwire/private-key"
+            "/run/credentials/protonwire/protonwire-private-key"
+            "/run/credentials/protonwire/protonvpn-private-key"
+            "/run/credentials/protonwire/protonvpn-private-key"
+        )
 
         for lookup_path in "${lookup_paths[@]}"; do
             if [[ -f ${lookup_path} ]]; then
@@ -2272,22 +2008,10 @@ function __protonvpn_connect() {
     if __is_skip_dns_config; then
         log_info "Skipping DNS configuration"
     else
-        if [[ $__PROTONWIRE_DNS_UPDATER == "systemd-resolved" ]]; then
-            if __resolvctl_up_hook; then
-                log_success "Successfully configured DNS (systemd-resolved)"
-            else
-                log_error "Failed to configure DNS (systemd-resolved)"
-                return 1
-            fi
-        elif [[ $__PROTONWIRE_DNS_UPDATER == "resolvconf" ]]; then
-            if __resolvconf_up_hook; then
-                log_success "Successfully configured DNS (resolvconf)"
-            else
-                log_error "Failed to configure DNS (resolvconf)"
-                return 1
-            fi
+        if __resolvconf_up_hook; then
+            log_success "Successfully configured DNS (protonwire)"
         else
-            log_error "Unknown DNS updater: $__PROTONWIRE_DNS_UPDATER"
+            log_error "Failed to configure DNS (protonwire)"
             return 1
         fi
     fi
@@ -2301,22 +2025,6 @@ function protonvpn_connect_cmd() {
     if ! __run_checks; then
         log_error "Please fix the errors and try again!"
         return 1
-    fi
-
-    if has_command systemctl; then
-        if systemctl is-enabled --quiet protonwire; then
-            if systemctl is-active --quiet protonwire; then
-                log_error "systemd unit protonwire.service is running"
-                log_error "Use systemctl to manage this unit or disable, this unit to manually connect"
-                return 1
-            elif systemctl is-failed --quiet protonwire; then
-                log_error "systemd unit protonwire.service is enabled, but is in failed state"
-                log_error "You should wither fix the unit and manage it via systemctl or disable it to manually connect"
-                return 1
-            fi
-        fi
-    else
-        log_debug "command systemctl not found, not checking if there are conflicts with systemd units"
     fi
 
     if __protonvpn_connect; then
@@ -2437,26 +2145,15 @@ function __protonvpn_disconnect() {
         log_debug "No systemd notify socket found, skiping stopping notification"
     fi
     local errs=0
-    # Order in which DNS is reconfigured ensures that we dont have broken dns during disconnect.
-    if [[ $__PROTONWIRE_DNS_UPDATER == "systemd-resolved" ]]; then
-        if __resolvctl_down_hook; then
-            log_success "Successfully restored DNS(systemd-resolved)"
-        else
-            log_error "Failed to restore DNS"
-            ((++errs))
-        fi
-    elif [[ $__PROTONWIRE_DNS_UPDATER == "resolvconf" ]]; then
+
+    if __is_skip_dns_config; then
+        log_info "Skipping DNS configuration"
         if __resolvconf_down_hook; then
             log_success "Successfully restored DNS(resolvconf)"
         else
             log_error "Failed to restore DNS"
             ((++errs))
         fi
-    elif [[ $__PROTONWIRE_DNS_UPDATER == "none" ]]; then
-        :
-    else
-        log_error "Unknown DNS updater: $__PROTONWIRE_DNS_UPDATER"
-        ((++errs))
     fi
 
     if ! __protonvpn_delete_wg_routes; then
@@ -2694,9 +2391,6 @@ Options:
   -k, --private-key FILE|KEY    Wireguard private key or
                                 file containing private key
       --container               Run as container
-                                (Cannot be used with --systemd)
-      --systemd                 Run as systemd service
-                                (Cannot be used with --container)
       --metadata-url URL        Server metadata endpoint URL
       --check-interval INT      IP check interval in seconds (default 60)
       --check-url URL           IP check endpoint URL
@@ -2738,6 +2432,7 @@ function main() {
     declare -i looper_lock=0
     local color_mode="auto"
     local cmd_mode="HELP"
+    local container_flag="false"
 
     if __is_bool_true "${DEBUG}"; then
         LOG_LVL="0"
@@ -2812,11 +2507,7 @@ function main() {
             ;;
         --container)
             ((++looper_lock))
-            __PROTONWIRE_LOOPER="container"
-            ;;
-        --systemd)
-            ((++looper_lock))
-            __PROTONWIRE_LOOPER="systemd"
+            container_flag="true"
             ;;
         connect | c)
             ((++cmd_lock))
@@ -2871,11 +2562,6 @@ function main() {
         ((++args_errors))
     fi
 
-    if [[ ${looper_lock} -gt 1 ]]; then
-        log_error "Cannot use --container and --systemd at the same time."
-        ((++args_errors))
-    fi
-
     if [[ $cmd_lock -gt 1 ]]; then
         log_error "More than one exclusive command specified!"
         ((++args_errors))
@@ -2899,14 +2585,12 @@ function main() {
         fi
     fi
 
-    if [[ $cmd_mode == "HEALTHCHECK" ]] && [[ $__PROTONWIRE_LOOPER == "container" ]]; then
+    if [[ $cmd_mode == "HEALTHCHECK" ]] && [[ $container_flag == "true" ]]; then
         cmd_mode="HEALTHCHECK_CONTAINER"
     fi
 
-    if [[ $cmd_mode == "CONNECT" ]]; then
-        if [[ $__PROTONWIRE_LOOPER == "container" ]] || [[ $__PROTONWIRE_LOOPER == "systemd" ]]; then
-            cmd_mode="LOOPER"
-        fi
+    if [[ $cmd_mode == "CONNECT" ]] && [[ $container_flag == "true" ]]; then
+        cmd_mode="LOOPER"
     fi
 
     if [[ -n ${IPCHECK_INTERVAL} ]]; then

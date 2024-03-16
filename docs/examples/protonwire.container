@@ -1,17 +1,27 @@
 [Unit]
-Description=Example application using protonwire VPN container
+Description=ProtonVPN Container
 Documentation=https://github.com/tprasadtp/protonvpn-docker
+After=protonwire-pod.service
 
 [Container]
+# Enable protonwire itself to handle systemd readiness protocol.
 Notify=true
 
 # Runtime configuration
 Image=ghcr.io/tprasadtp/protonwire:7
-AddCapability=NET_ADMIN
+Timezone=local
 RunInit=true
+
+# Server Configuration.
+EnvironmentFile=-/etc/protonwire
+
+# Private Key
+Secret=protonwire-private-key,mode=600
+
+# Image specific extra permissions.
+AddCapability=NET_ADMIN
 Sysctl=net.ipv4.conf.all.rp_filter=2
 Sysctl=net.ipv6.conf.all.disable_ipv6=1
-Timezone=local
 
 # Mounts
 Tmpfs=/tmp
@@ -23,10 +33,8 @@ HealthRetries=3
 HealthStartPeriod=30s
 HealthTimeout=20s
 
-# Ports
-# This example only publishes a single port. port 8000 both on host and container.
-# Add as many ports as your applications require.
-PublishPort=8000
+# Group all VPN apps into single pod.
+Pod=protonwire.pod
 
 [Install]
 WantedBy=default.target

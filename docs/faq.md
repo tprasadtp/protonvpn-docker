@@ -15,11 +15,6 @@ it might result in a single VPN server to be selected as "best" and might cause 
 - If response is something like `<ip-address> dev protonwire0 table 51821 src 10.2.0.2 uid 0`,
 then the IP address will be routed via VPN.
 
-## How to check if systemd-resolved is in use
-
-- If using Ubuntu/Fedora with defaults most likely using systemd-resolved is in use for local DNS.
-- Run `resolvectl status --no-pager`. If it has `resolv.conf mode: stub`.  `systemd-resolved` is in use.
-
 ## Whats with route table 51821
 
 - This route table is kept separate to avoid cluttering main route table and avoid conflicts.
@@ -114,11 +109,6 @@ Script **WILL** flush this routing table automatically if found to be non empty.
 ## NAT and KeepAlive packets
 
 WireGuard is not a chatty protocol. However for _most_ if not all use cases, end user devices are using some form of NAT via docker, Kubernetes, home router or some other means. So _Keep alive_ is enabled and set to 20 seconds which should be enough for almost all NAT firewalls.
-
-## Split horizon DNS
-
-- This is only possible with `systemd-resolved`. After connecting to VPN (via `protonwire connect <SERVER>`). Verify split dns configuration using `resolvectl query <domain>` and check the interface being used to resolve it.
-- Ensure that DHCP server/router or VPN gateway advertises search domains. They will be automatically picked up if using NetworkManager(most desktops) or `systemd-networkd` (most servers) or `ifupdown` hooks.
 
 ## Use with corporate/other VPN
 
