@@ -44,9 +44,8 @@ function main() {
             --init \
             -e DEBUG \
             -e PROTONVPN_SERVER \
-            -e KILL_SWITCH \
             -e IPCHECK_INTERVAL=${IPCHECK_INTERVAL:-10} \
-            -e KILL_SWITCH \
+            -e KILL_SWITCH=${KILL_SWITCH:-1} \
             -e SKIP_DNS_CONFIG \
             -e IPCHECK_URL \
             --cap-add=CAP_NET_ADMIN \
@@ -56,9 +55,9 @@ function main() {
             --mount type=bind,src="$(pwd)"/private.key,dst=/etc/protonwire/private-key,readonly \
             --sysctl net.ipv4.conf.all.rp_filter=2 \
             --tmpfs /tmp \
+            --entrypoint /bin/bash \
             "${extra_args[@]}" \
-            ghcr.io/tprasadtp/protonwire:dev \
-            bash
+            ghcr.io/tprasadtp/protonwire:dev
     else
         docker run \
             -it \
@@ -68,7 +67,7 @@ function main() {
             -e DEBUG \
             -e PROTONVPN_SERVER \
             -e IPCHECK_INTERVAL=${IPCHECK_INTERVAL:-10} \
-            -e KILL_SWITCH \
+            -e KILL_SWITCH=${KILL_SWITCH:-1} \
             -e SKIP_DNS_CONFIG \
             -e IPCHECK_URL \
             --cap-add=CAP_NET_ADMIN \

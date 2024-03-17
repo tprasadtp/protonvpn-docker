@@ -5,12 +5,11 @@ FROM base
 
 # hadolint ignore=DL3008,DL3009
 RUN --mount=type=tmpfs,target=/var/lib/apt/lists \
-    --mount=type=cache,sharing=private,target=/var/cache/apt \
+    --mount=type=tmpfs,target=/var/cache/apt \
     apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install \
         --yes \
         --no-install-recommends \
-        --option 'Binary::apt::APT::Keep-Downloaded-Packages=true' \
         ca-certificates \
         netcat-openbsd \
         curl \
@@ -33,4 +32,6 @@ COPY --chown=root:root --chmod=0755 protonwire /usr/bin/protonwire
 
 RUN ln -s /usr/bin/protonwire /usr/bin/protonvpn
 
-CMD [ "/usr/bin/protonwire", "connect", "--container" ]
+ENTRYPOINT [ "/usr/bin/protonwire" ]
+
+CMD [ "connect", "--container" ]

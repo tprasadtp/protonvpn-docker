@@ -1,0 +1,63 @@
+[Unit]
+Description=ProtonVPN Container
+Documentation=https://github.com/tprasadtp/protonvpn-docker
+
+[Container]
+# Enable protonwire itself to handle systemd readiness protocol.
+# For podman 5.0 or later it might be tempting to use Notify=healthy
+# but container also posts status information like connected server and
+# exit IP which might be important.
+Notify=true
+
+# Container Name.
+#
+# Alternatively, pod can be used. But pod files are only supported on
+# podman 5.0 or later and require using PodmanArgs as Sysctl is not
+# recognized by the generator.
+ContainerName=protonwire
+
+# Runtime configuration
+Image=ghcr.io/tprasadtp/protonwire:7
+Timezone=local
+RunInit=true
+
+# Server Configuration.
+Environment=PROTONVPN_SERVER=node-nl-03.protonvpn.net
+Environment=KILL_SWITCH=1
+Environment=DEBUG=1
+
+# Private Key
+#
+# This MUST be created before enabling the service.
+Secret=protonwire-private-key,mode=600
+
+# Image specific extra permissions.
+AddCapability=NET_ADMIN
+Sysctl=net.ipv4.conf.all.rp_filter=2
+Sysctl=net.ipv6.conf.all.disable_ipv6=1
+
+# Mounts
+Tmpfs=/tmp
+
+# Healthcheck
+HealthCmd=protonwire check --container --quiet
+HealthInterval=2m
+HealthRetries=3
+HealthStartPeriod=30s
+HealthTimeout=20s
+
+# Ports
+#
+# This example only publishes a single port. port 8000 both on host and container.
+# Add as many ports as your applications require.
+#
+# Try to setup a reverse proxy which understands podman/docker and only expose ports
+# 443 and 80 (should redirect to 443). This ensures that you can reach hosted applications
+# using reverse proxy without re-configuring protonwire container every time a new service
+# is added. This is only a recommendation and not a requirement.
+# Do note that binding to ports < 1024 may require additional work if running in rootless mode.
+# See https://github.com/containers/podman/blob/master/rootless.md
+PublishPort=8000
+
+[Install]
+WantedBy=default.target

@@ -177,6 +177,9 @@ docker_manifests:
     - 'ghcr.io/tprasadtp/protonvpn:{{ .Version }}-amd64'
     - 'ghcr.io/tprasadtp/protonvpn:{{ .Version }}-arm64'
 
+checksum:
+  disable: true
+
 release:
   mode: replace
   prerelease: auto
