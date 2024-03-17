@@ -11,6 +11,10 @@ on:
         - "yes"
         - "no"
   push:
+    branches:
+      - "**"
+    tags-ignore:
+      - "**"
   schedule:
     - cron: "30 * * * *"
 jobs:

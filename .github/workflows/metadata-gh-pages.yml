@@ -11,6 +11,10 @@ on:
           - "yes"
           - "no"
   push:
+    branches:
+      - "**"
+    tags-ignore:
+      - "**"
   schedule:
     - cron: "30 * * * *"
 jobs:
@@ -53,7 +57,7 @@ jobs:
         with:
           path: metadata
 
-      - name: Deploy to GitHub Pages
+      - name: Deploy to GitHub Pages (if on master)
         if: github.ref == 'refs/heads/master'
         id: deployment
         uses: actions/deploy-pages@v4
