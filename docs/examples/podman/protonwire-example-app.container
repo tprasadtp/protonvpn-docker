@@ -2,14 +2,18 @@
 Description=Example application using protonwire VPN container
 Documentation=https://github.com/tprasadtp/protonvpn-docker
 
+# Ensure protonwire container is started and healthy.
+Requires=protonwire.service
 After=protonwire.service
+
+# If protonwire container is stopped, this will be stopped as well.
 BindsTo=protonwire.service
 
 [Container]
-Pod=protonwire.pod
 Image=docker.io/library/caddy:latest
 Timezone=local
 RunInit=true
+Network=container:protonwire
 Exec=caddy reverse-proxy --change-host-header --from :8000 --to https://ip.me:443
 
 [Install]
