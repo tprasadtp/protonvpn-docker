@@ -156,7 +156,7 @@ Vagrant.configure("2") do |config|
 
     $libvirt_provision = <<-SCRIPT
     echo "---------------------------------"
-    echo "Installing qemu daemon"
+    echo "Installing qemu-guest-agent"
     echo "---------------------------------"
     apt-get update
     apt-get install -y qemu-guest-agent

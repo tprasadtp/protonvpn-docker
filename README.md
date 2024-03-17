@@ -26,7 +26,7 @@
 
 > [!WARNING]
 >
-> [gVisor](https://gvisor.dev) and cgroup v1 runtime is **NOT** supported!
+> [gVisor](https://gvisor.dev) and cgroup v1 are **NOT** supported!
 
 Images are published at [ghcr.io/tprasadtp/protonwire][ghcr].
 
@@ -65,7 +65,7 @@ Images are published at [ghcr.io/tprasadtp/protonwire][ghcr].
     AllowedIPs = 0.0.0.0/0
     Endpoint = 91.229.23.180:51820
     ```
-- Only thing needed from the above config is `PrivateKey`.
+- You will `PrivateKey` and optionally `Endpoint`(without port part) from the above config.
 - See https://protonvpn.com/support/wireguard-configurations/ for more info.
 
 ## Environment Variables & Config
@@ -78,6 +78,12 @@ in following locations.
   - `/run/secrets/protonwire-private-key`
   - `/run/secrets/protonwire/private-key`
   - `${CREDENTIALS_DIRECTORY}/private-key` (Only if `$CREDENTIALS_DIRECTORY` is set)
+  - `${CREDENTIALS_DIRECTORY}/protonwire-private-key` (Only if `$CREDENTIALS_DIRECTORY` is set)
+
+> [!IMPORTANT]
+>
+> Private key file **MUST NOT** be world-readable.
+
 
 | Name | Default/Required | Description
 |---|---|---
@@ -86,7 +92,7 @@ in following locations.
 | `IPCHECK_URL` | https://protonwire-api.vercel.app/v1/client/ip  | (String) URL to check client IP.
 | `IPCHECK_INTERVAL` | `60` | (Integer) Interval between internal health-checks in seconds. Set this to `0` to disable IP checks.
 | `SKIP_DNS_CONFIG` | false | (Boolean) Set this to `1` or `true` to skip configuring DNS.
-| `KILL_SWITCH`     | false | (Boolean) Enable KillSwitch (Experimental and can cause issues)
+| `KILL_SWITCH`     | false | (Boolean) Enable KillSwitch (Experimental)
 
 ## PROTONVPN_SERVER
 
@@ -260,19 +266,20 @@ This section covers running containers via podman. But for deployments use
 - Create a podman secret for private key
 
     ```console
-    sudo podman secret create protonwire-private-key <PRIVATE_KEY|PATH_TO_PRIVATE_KEY>
+    podman secret create protonwire-private-key <PRIVATE_KEY|PATH_TO_PRIVATE_KEY>
     ```
 
 - Run _protonwire_ container.
 
     ```console
-    sudo podman run \
+    podman run \
         -it \
+        --rm \
         --init \
         --replace \
         --tz=local \
         --tmpfs=/tmp \
-        --name=protonwire-demo \
+        --name=protonwire \
         --secret="protonwire-private-key,mode=600" \
         --env=PROTONVPN_SERVER="nl-free-127.protonvpn.net" \
         --env=DEBUG=0 \
@@ -293,12 +300,12 @@ we are using caddy to proxy website which shows IP info. Replace these with your
 container(s) like [pyload](https://github.com/pyload/pyload#docker-images), [firefox](https://docs.linuxserver.io/images/docker-firefox) etc.
 
     ```console
-    sudo podman run \
+    podman run \
         -it \
         --rm \
         --tz=local \
         --name=protonwire-demo-app \
-        --network=container:protonwire-demo \
+        --network=container:protonwire \
         docker.io/library/caddy:latest \
         caddy reverse-proxy --change-host-header --from :8000 --to https://ip.me:443
     ```
@@ -355,7 +362,6 @@ For example, we can run caddy to proxy `https://ip.me/` via VPN. Visiting http:/
         -it \
         --rm \
         --net=container:protonwire \
-        --name=protonwire-demo \
         caddy:latest \
         caddy reverse-proxy \
             --change-host-header \
