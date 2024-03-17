@@ -640,13 +640,13 @@ function protonvpn_looper_cmd() {
             log_warning "Not verifying connection, as healthchecks are disabled"
         fi
     else
-        log_error "Failed to connect to ${PROTONVPN_SERVER}"
+        log_error "Failed to connect to ${PROTONVPN_SERVER:-NA}"
         if [[ -z $(ip link show protonwire0 type wireguard 2>/dev/null) ]]; then
             log_debug "Wireguard interface for protonwire is not present."
             return 1
         fi
         if __has_notify_socket; then
-            __systemd_notify "STATUS=Failed to connect to - ${PROTONVPN_SERVER}"
+            __systemd_notify "STATUS=Failed to connect to - ${PROTONVPN_SERVER:-NA}"
         fi
         __protonvpn_disconnect
         return 1
@@ -696,7 +696,12 @@ function protonvpn_looper_cmd() {
             fi
 
             if [[ $__PROTONWIRE_HC_ERRORS -ge ${max_verify_attemps} ]]; then
-                log_error "Connection verification ($((__PROTONWIRE_HC_ERRORS))/${IPCHECK_THRESHOLD:-5}) failed"
+                log_error "Connection verification (${__PROTONWIRE_HC_ERRORS}/${max_verify_attemps}) failed"
+                if __has_notify_socket; then
+                    __systemd_notify "Connection verification failed (${__PROTONWIRE_HC_ERRORS}/${max_verify_attemps}) "
+                else
+                    log_debug "No systemd notify socket found, skiping reconnect notification"
+                fi
                 break
             fi
 
@@ -704,9 +709,16 @@ function protonvpn_looper_cmd() {
             wait $!
 
             if ! __protonvpn_verify_connection; then
-                log_error "Failed to verify connection ($((__PROTONWIRE_HC_ERRORS + 1))/${IPCHECK_THRESHOLD:-5})"
+                local xt=$((__PROTONWIRE_HC_ERRORS + 1))
+                log_error "Failed to verify connection (${xt}/${max_verify_attemps})"
                 ((++__PROTONWIRE_HC_ERRORS))
                 log_warning "Attempting to re-connect to ${PROTONVPN_SERVER}"
+                if __has_notify_socket; then
+                    __systemd_notify "Attempting to re-connect to ${PROTONVPN_SERVER} (${xt}/${max_verify_attemps})"
+                else
+                    log_debug "No systemd notify socket found, skiping reconnect notification"
+                fi
+
                 if __protonvpn_connect; then
                     sleep 2 & # avoid transient errors
                     wait $!
@@ -1732,31 +1744,29 @@ function __protonvpn_connect() {
     else
         log_debug "WIREGUARD_PRIVATE_KEY is not set"
         declare -a lookup_paths=(
-            "/etc/protonwire/private-key"
             "/etc/protonwire/protonwire-private-key"
             "/etc/protonwire/protonvpn-private-key"
             "/etc/protonwire/wireguard-private-key"
+            "/etc/protonwire/private-key"
 
-            "/run/secrets/private-key"
             "/run/secrets/protonwire-private-key"
             "/run/secrets/protonvpn-private-key"
             "/run/secrets/wireguard-private-key"
+            "/run/secrets/private-key"
 
-            "/run/secrets/protonwire/private-key"
             "/run/secrets/protonwire/protonwire-private-key"
             "/run/secrets/protonwire/protonvpn-private-key"
-            "/run/secrets/protonwire/protonvpn-private-key"
-
-            "/run/credentials/private-key"
-            "/run/credentials/protonwire-private-key"
-            "/run/credentials/protonvpn-private-key"
-            "/run/credentials/protonvpn-private-key"
-
-            "/run/credentials/protonwire/private-key"
-            "/run/credentials/protonwire/protonwire-private-key"
-            "/run/credentials/protonwire/protonvpn-private-key"
-            "/run/credentials/protonwire/protonvpn-private-key"
+            "/run/secrets/protonwire/wireguard-private-key"
+            "/run/secrets/protonwire/private-key"
         )
+
+        # If CREDENTIALS_DIRECTORY is defined, use it (for systemd-creds)
+        if [[ -n $CREDENTIALS_DIRECTORY ]]; then
+            lookup_paths+=("${CREDENTIALS_DIRECTORY%/}/protonwire-private-key")
+            lookup_paths+=("${CREDENTIALS_DIRECTORY%/}/protonvpn-private-key")
+            lookup_paths+=("${CREDENTIALS_DIRECTORY%/}/wireguard-private-key")
+            lookup_paths+=("${CREDENTIALS_DIRECTORY%/}/private-key")
+        fi
 
         for lookup_path in "${lookup_paths[@]}"; do
             if [[ -f ${lookup_path} ]]; then
@@ -2140,6 +2150,7 @@ function __protonvpn_disconnect() {
 
     if __has_notify_socket; then
         log_debug "Notify to systemd that vpn is disconnecting"
+        __systemd_notify "Disconnecting from ${PROTONVPN_SERVER:-NA}"
         __systemd_notify "STOPPING=1"
     else
         log_debug "No systemd notify socket found, skiping stopping notification"
@@ -2197,7 +2208,16 @@ function __protonvpn_disconnect() {
     fi
 
     if [[ $errs -eq 0 ]]; then
+        if __has_notify_socket; then
+            log_debug "Notify to systemd that vpn has disconnected"
+            __systemd_notify "Disconnected"
+        fi
         return 0
+    fi
+
+    if __has_notify_socket; then
+        log_debug "Notify to systemd that vpn disconnection errored"
+        __systemd_notify "Failed to disconnect"
     fi
     return 1
 }
