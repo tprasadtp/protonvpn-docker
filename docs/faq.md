@@ -110,17 +110,6 @@ Script **WILL** flush this routing table automatically if found to be non empty.
 
 WireGuard is not a chatty protocol. However for _most_ if not all use cases, end user devices are using some form of NAT via docker, Kubernetes, home router or some other means. So _Keep alive_ is enabled and set to 20 seconds which should be enough for almost all NAT firewalls.
 
-## Use with corporate/other VPN
-
-- If other VPN routes only private subnets you don't need to do anything! It just works!
-- Just make sure there search domain/routing domains are set on your corporate/other VPN interface (`resolvectl domain`) so that DNS queries for those domains will be resolved correctly.
-
-## Use with Tailscale
-
-Tailscale uses its own fwmark, routing table and routing rules.
-Because Tailscale addresses are CGNAT addresses and have fwmark on the packets
-passing via tailscale interface, it _just works_. Zero configuration changes required!
-
 ## How to see WireGuard settings
 
 ```bash
@@ -170,8 +159,8 @@ server is the assigned public IP.
 
 Bulk of the work is done via `scripts/generate-server-metadata`
 
-- https://protonwire-api.vercel.app/v1/server (default)
-- https://tprasadtp.github.io/protonvpn-docker/v1/server (beta)
+- `https://protonwire-api.vercel.app/v1/server` (default)
+- `https://tprasadtp.github.io/protonvpn-docker/v1/server` (beta)
 
 ## LAN/Local DNS Server and API endpoints
 

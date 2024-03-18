@@ -17,7 +17,7 @@
 
 ## Features
 
-- LAN, private and Tailscale networks remain accessible and are not routed over VPN.
+- LAN, private and CGNAT networks remain accessible and are not routed over VPN.
 **No special configuration required**.
 - Supports systemd integration when running via podman
 - Supports roaming clients
@@ -113,7 +113,7 @@ This should be server DNS name like, `node-nl-01.protonvpn.net` or IP address li
 > This feature is experimental and is **NOT** covered by semver compatibility guarantees.
 
 Kill-Switch is not a hard kill-switch but more of an _internet_ kill-switch.
-LAN addresses, Link-Local addresses and CGNAT(also Tailscale) addresses
+LAN addresses, Link-Local addresses and CGNAT (also Tailscale) addresses
 remain reachable. Unlike most VPN containers, kill-switch is implemented via
 routing policies, routing priorities and custom route tables rather than
 firewall rules.
@@ -121,10 +121,6 @@ firewall rules.
 - Kill-switch **WILL NOT** be disabled during reconnects.
 - Kill-switch **WILL NOT** be disabled when running `protonwire disconnect` unless `--kill-switch`
 flag is **ALSO** specified.
-- Kill-switch is **NOT** reliable when upgrading the protonwire package. This is because binary
-itself may change during upgrade and it might include breaking changes. This only applies to native
-packages as containers are immutable and re-created during upgrades.
-disable kill-switch will lead to kill-switch being re-created during service restarts.
 
 ## Usage
 
@@ -180,7 +176,7 @@ Environment:
 
 ## Health-checks
 
-- Script supports `healthcheck` command. By default, when running as a service,
+- Script supports `healthcheck` sub-command. By default, when running as a service,
 script will keep checking every `IPCHECK_INTERVAL` _(default=60)_ seconds using the
 `IPCHECK_URL` api endpoint. To disable healthchecks entirely set `IPCHECK_INTERVAL` to `0`
 - Use `protonwire healthcheck --silent --container` as the `HEALTHCHECK` command.
@@ -190,8 +186,7 @@ Same can be used as liveness probe and readiness probe for Kubernetes.
 
 If entire stack is in a single compose file, then `network_mode: service:protonwire`
 on the services which should be routed via VPN. If the VPN stack is **NOT** in same
-compose file use `network_mode: container:<protonwire-container-name>`. Use
-[`podman-compose`](https://github.com/containers/podman-compose) for use with podman.
+compose file use `network_mode: container:<protonwire-container-name>`.
 
 As an example, run caddy web-server, proxying https://ip.me, via VPN using the compose
 config given below. Once the stack is up, visiting the http://localhost:8000, or
@@ -323,6 +318,7 @@ container(s) like [pyload](https://github.com/pyload/pyload#docker-images), [fir
 > create/manage WireGuard interface.
 > * `mode=600` in secret mount is important, as script refuses to use
 > private key with insecure permissions.
+> * If using pods, sysctls **MUST** be defined on the pod no the protonwire container.
 
 ## Docker
 
@@ -375,11 +371,7 @@ See [Troubleshooting][] and [FAQ][]
 
 ## Building
 
-Building requires `goreleaser`(v1.9+), and `docker` with `buildx` plugin.
-
-```
-make docker
-```
+Building requires `goreleaser`, and `docker` with `buildx` plugin.
 
 [drop-in]: https://wiki.archlinux.org/title/systemd#Drop-in_files
 [nss-resolve]: https://www.freedesktop.org/software/systemd/man/nss-resolve.html
