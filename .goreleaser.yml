@@ -55,11 +55,11 @@ dockers:
       - --label=org.opencontainers.image.created={{.Date}}
       - --label=org.opencontainers.image.revision={{.FullCommit}}
       - --label=org.opencontainers.image.version={{.Version}}
-      - --label=org.opencontainers.image.vendor="Prasad Tengse <tprasadtp@users.noreply.github.com>"
-      - --label=org.opencontainers.image.source="https://github.com/tprasadtp/protonwire"
+      - --label=org.opencontainers.image.vendor=Prasad Tengse <tprasadtp@users.noreply.github.com>
+      - --label=org.opencontainers.image.source=https://github.com/tprasadtp/protonwire
       - --label=org.opencontainers.image.title=protonwire
-      - --label=org.opencontainers.image.description="ProtonVPN Wireguard Client for Linux"
-      - --label=org.opencontainers.image.documentation=https://tprasadtp.github.io/protonwire
+      - --label=org.opencontainers.image.description=ProtonVPN Wireguard Client for Linux
+      - --label=org.opencontainers.image.documentation=https://github.com/tprasadtp/protonvpn-docker
       - --label=org.opencontainers.image.licenses=GPLv3
       - --label=org.opencontainers.image.url=https://ghcr.io/tprasadtp/protonwire
       # Git Info
@@ -92,11 +92,11 @@ dockers:
       - --label=org.opencontainers.image.created={{.Date}}
       - --label=org.opencontainers.image.revision={{.FullCommit}}
       - --label=org.opencontainers.image.version={{.Version}}
-      - --label=org.opencontainers.image.vendor="Prasad Tengse <tprasadtp@users.noreply.github.com>"
-      - --label=org.opencontainers.image.source="https://github.com/tprasadtp/protonwire"
+      - --label=org.opencontainers.image.vendor=Prasad Tengse <tprasadtp@users.noreply.github.com>
+      - --label=org.opencontainers.image.source=https://github.com/tprasadtp/protonwire
       - --label=org.opencontainers.image.title=protonwire
-      - --label=org.opencontainers.image.description="ProtonVPN Wireguard Client for Linux"
-      - --label=org.opencontainers.image.documentation=https://tprasadtp.github.io/protonwire
+      - --label=org.opencontainers.image.description=ProtonVPN Wireguard Client for Linux
+      - --label=org.opencontainers.image.documentation=https://github.com/tprasadtp/protonvpn-docker
       - --label=org.opencontainers.image.licenses=GPLv3
       - --label=org.opencontainers.image.url=https://ghcr.io/tprasadtp/protonwire
       # Git Info
