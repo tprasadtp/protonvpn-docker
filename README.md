@@ -46,6 +46,10 @@ Images are published at [ghcr.io/tprasadtp/protonwire][ghcr].
 
 ## Generating WireGuard Private Key
 
+> [!IMPORTANT]
+>
+> It is recommended to use unique private key for each instance of the the VPN container.
+
 - Log in to ProtonVPN and go to **Downloads** → **WireGuard configuration**.
 - Enter a name for the key, and select features to enable like NetShield and VPN Accelerator & click create.
   Some users have reported issues (#236,#211) when NetShield is set to `Block malware, ads and trackers`.
@@ -97,7 +101,8 @@ in following locations.
 ## PROTONVPN_SERVER
 
 This should be server DNS name like, `node-nl-01.protonvpn.net` or IP address like
-`91.229.23.180`. Though server name like `NL#1`(or `NL-1`) is supported it is not recommended.
+`91.229.23.180`. Server name like `NL#1`(or `NL-1`) may work for pro servers, it is
+_not recommended_.
 
 > [!IMPORTANT]
 >
