@@ -94,6 +94,16 @@ protonwire server-info {SERVER_NAME_OR_IP}
 [•] 89.39.107.188        : MTNPR632U9GOxI+B8dMP+KgMJVEO2xQPrem2SuDfTkM= (Public Key)
 ```
 
+## Server verification fails due to incorrect exit IP
+
+```log
+[ERROR   ] Expected to be connected to server xx.xx.244.154, but is connected to NL-FREE#338117(node-nl-153.protonvpn.net)
+[ERROR   ] Retry (5/5) after 2 seconds
+[ERROR   ] Failed to verify connection!
+```
+
+Please verify that you are using DNS name or IP address for the server. See FAQ above for more info.
+
 ## tmpfs or `/tmp` issues with containers
 
 Please use `tmpfs` mounts for `/tmp`
