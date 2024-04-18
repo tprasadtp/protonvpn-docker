@@ -160,7 +160,6 @@ server is the assigned public IP.
 Bulk of the work is done via `scripts/generate-server-metadata`
 
 - `https://protonwire-api.vercel.app/v1/server` (default)
-- `https://tprasadtp.github.io/protonvpn-docker/v1/server` (beta)
 
 ## LAN/Local DNS Server and API endpoints
 
@@ -191,3 +190,38 @@ Best solution is to build your own pod definitions with __all__ the apps
 running in a __single pod__ and use protonwire container with command
 `protonwire connect --kill-switch` as init container. This ensures all the containers in
 your pod are using the VPN. Do note that `.cluster` domains like `<service>.<namespace>.svc.cluster` are **NOT** resolved (unless your use `SKIP_CONFIG_DNS=1`) as ProtonVPN DNS server is used. Do remember to apply required sysctls to the pod created.
+
+## Port Forwarding
+
+Port forwarding is not supported directly, but the image includes tools required to setup via custom
+script(`socat` and `natpmpc` etc). It is being tracked via [#125](https://github.com/tprasadtp/protonvpn-docker/issues/125). It might be necessary to write your `service` loop which keeps port forwarding updated. Following commands can be used to setup VPN connection and check it regularly.
+Do note that script will still take into consideration `IPCHECK_INTERVAL` for healthchecks, so keep
+your custom script compatible with it.
+
+- Connect to VPN server with kill-switch.
+
+    ```bash
+    protonwire connect --ks
+    ```
+
+- Verify that connection is active. **DO NOT** use `--container` flag, as it
+depends on protonwire running in the background.
+
+    ```bash
+    protonwire verify
+    ```
+
+- Setup your port forwarding using `natpmpc` and write mapped port to a shared volume.
+
+- In a loop verify the connection and keep refreshing port forwarding.
+
+    ```bash
+    protonwire verify || exit 1
+    natpmpc <args as required> || exit 1
+    ```
+
+- To disconnect, run
+
+    ```bash
+    protonwire disconnect
+    ```
