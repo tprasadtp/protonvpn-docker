@@ -586,7 +586,6 @@ class EnvDefault(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
         setattr(namespace, self.dest, values)
 
-
 def write_metadata(
     api_url: str,
     username: str,
@@ -621,6 +620,16 @@ def write_metadata(
             sys.exit(1)
     else:
         metadata_dir_json_v1_srv.mkdir(parents=True)
+
+    metadata_dir_json_v1_slsa_srv = metadata_dir_json_v1 / Path("slsa") / Path("server")
+    if metadata_dir_json_v1_slsa_srv.exists():
+        if not metadata_dir_json_v1_slsa_srv.is_dir():
+            logging.error(
+                "{metadata_dir_json_v1_slsa_srv} exits, but is not a directory"
+            )
+            sys.exit(1)
+    else:
+        metadata_dir_json_v1_slsa_srv.mkdir(parents=True)
 
     logging.info("Creating a API Session")
     try:
@@ -921,6 +930,32 @@ def write_metadata(
     with open(index_file, "w", encoding="utf-8") as f:
         json.dump(metadata_ts, f, indent=2)
     logging.info("Sever files - %d", stat_file_count)
+
+    # Generate hashes for all the server metadata files.
+    # There may be duplicates, so merge them into a list.
+    # Because leaking server names is not desired, each configuration
+    # file is hashed and the hash is added to the list and written to disk.
+    # slsa generators then hash the list of hashes and generate slsa provenance for it.
+    # Other builder stages will pick up the provenance and hash list and merge it into
+    # a single json file which may be uploaded to api endpoint. This is required
+    # to avoid race conditions where fetched hash list may not correspond to the provenance.
+    hash_list_sha256: List[str] = []
+    logging.info("Generating metadata hashes")
+    with os.scandir(metadata_dir_json_v1_srv) as items:
+        for item in items:
+            if item.is_file():
+                logging.debug("hashing file - %s", item.path)
+                with open(item.path, "rb") as f:
+                    sha256_hex_digest = hashlib.sha256(f.read()).hexdigest()
+                    if sha256_hex_digest not in hash_list_sha256:
+                        logging.debug("adding hash(%s) to list", sha256_hex_digest)
+                        hash_list_sha256.append(sha256_hex_digest)
+                    else:
+                        logging.debug("hash(%s) is already in the list", sha256_hex_digest)
+    hash_list_file=metadata_dir_json_v1_slsa_srv/Path("hash-list")
+    logging.info("Generating hash list: %s", hash_list_file)
+    with open(hash_list_file, "w", encoding="utf-8") as f:
+        f.write('\n'.join(hash_list_sha256))
 
 
 if __name__ == "__main__":

@@ -1,36 +1,66 @@
 name: build
 on:
   push:
+    branches:
+      - "**"
+    tags-ignore:
+      - "**"
   pull_request:
   workflow_dispatch:
+
+permissions: {}
+
 jobs:
-  shellcheck:
+  lint:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      - name: Install Task
+        run: go install github.com/go-task/task/v3/cmd/task@latest
+
       - name: Shellcheck
-        run: make shellcheck
+        run: task --verbose shellcheck
+
+      - name: Update README
+        run: task --verbose update-readme
+
+      - name: Check if README is up-to date
+        run: git diff --exit-code README.md
+
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           persist-credentials: false
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Install GoReleaser
-        uses: goreleaser/goreleaser-action@v5
+      - name: Setup Go
+        uses: actions/setup-go@v5
         with:
-          version: latest
-          install-only: true
+          go-version: stable
 
-      - name: Install help2man
-        run: sudo apt-get install -y help2man
+      - name: Install Task
+        run: go install github.com/go-task/task/v3/cmd/task@latest
 
-      - name: Run GoReleaser
-        run: make snapshot
+      - name: Install crane
+        run: go install github.com/google/go-containerregistry/cmd/crane@latest
+
+      - name: Build Images
+        run: task --verbose build-images

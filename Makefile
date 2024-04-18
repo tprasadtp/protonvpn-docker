@@ -37,28 +37,11 @@ docker: ## Build docker image
 		--tag ghcr.io/tprasadtp/protonwire:dev \
 		$(REPO_ROOT)
 
-.PHONY: snapshot
-snapshot: ## Build snapshot
-	goreleaser release \
-		--snapshot \
-		--clean
-
-.PHONY: release
-release: ## Build release
-	goreleaser release \
-		--clean \
-		--skip-publish \
-		--skip-validate  \
-		--skip-announce \
-		--skip-sign
-
-.PHONY: release-prod
-release-prod: ## Build release and publish
-	goreleaser release --clean
 
 .PHONY: clean
 clean: ## clean
 	rm -rf $(REPO_ROOT)/dist/
+	rm -rf $(REPO_ROOT)/build/
 	rm -rf $(REPO_ROOT)/metadata/
 
 .PHONY: update-readme
