@@ -1,0 +1,9 @@
+build/
+dist/
+.git/
+metadata/
+private.key
+private-key.pem
+wireguard.key
+protonwire.key
+protonvpn.key

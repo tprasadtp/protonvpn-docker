@@ -1,0 +1,530 @@
+# SPDX-FileCopyrightText: Copyright 2023 Prasad Tengse.
+# SPDX-License-Identifier: MIT
+#
+# yaml-language-server: $schema=https://json.schemastore.org/golangci-lint.json
+run:
+  # Timeout for analysis, e.g. 30s, 5m.
+  # Default: 1m
+  timeout: 5m
+
+# This file contains only configs which differ from defaults.
+# All possible options can be found here
+# https://github.com/golangci/golangci-lint/blob/master/.golangci.reference.yml
+linters-settings:
+  cyclop:
+    # The maximal code complexity to report.
+    # Default: 10
+    max-complexity: 50
+    # The maximal average package complexity.
+    # If it's higher than 0.0 (float) the check is enabled
+    # Default: 0.0
+    package-average: 0
+
+  # Check declaration order and count of types, constants, variables and functions.
+  decorder:
+    # If true, `init` func can be anywhere in file
+    # (does not have to be declared before all other functions).
+    # Default: true (disabled)
+    disable-init-func-first-check: false
+
+  gocyclo:
+    min-complexity: 50
+
+  dupl:
+    threshold: 200
+
+  errcheck:
+    # Report about not checking of errors in type assertions: `a := b.(MyStruct)`.
+    # Such cases aren't reported by default.
+    # Default: false
+    check-type-assertions: true
+    # Lint about assignment of errors to blank identifier: `num, _ := strconv.Atoi(numStr)`.
+    # Such cases aren't reported by default.
+    # Default: false
+    check-blank: false
+    exclude-functions:
+      - bytes/Buffer.Write
+      - bytes/Buffer.WriteByte
+      - bytes/Buffer.WriteString
+      - strings/Builder.WriteString
+      - strings/Builder.Write
+      - strings/Builder.WriteRune
+      - crypto/Hash.Write
+      - crypto/rand/Read # https://github.com/golang/go/issues/66821
+      - io/Discard.Write
+      - os/Stderr.Write
+      - os/Stdout.Write
+
+  exhaustive:
+    # Program elements to check for exhaustiveness.
+    # Default: [ switch ]
+    check:
+      - switch
+      - map
+    # Presence of "default" case in switch statements satisfies exhaustiveness,
+    # even if all enum members are not listed.
+    default-signifies-exhaustive: true
+
+  funlen:
+    # Checks the number of lines in a function.
+    # If lower than 0, disable the check.
+    # Default: 60
+    lines: 150
+    # Checks the number of statements in a function.
+    # If lower than 0, disable the check.
+    # Default: 40
+    statements: 100
+
+  gocognit:
+    # Minimal code complexity to report
+    min-complexity: 50
+
+  goconst:
+    match-constant: true
+    min-len: 3
+    min-occurrences: 9
+    ignore-tests: true
+    ignore-calls: true
+    numbers: false
+
+  gocritic:
+    # Settings passed to gocritic.
+    # The settings key is the name of a supported gocritic checker.
+    # The list of supported checkers can be find in https://go-critic.github.io/overview.
+    settings:
+      captLocal:
+        # Whether to restrict checker to params only.
+        # Default: true
+        paramsOnly: false
+      underef:
+        # Whether to skip (*x).method() calls where x is a pointer receiver.
+        # Default: true
+        skipRecvDeref: false
+
+  goheader:
+    # Supports two types 'const` and `regexp`.
+    # Values can be used recursively.
+    # Default: {}
+    values:
+      regexp:
+        # Define here regexp type values.
+        # for example:
+        license: "(BSD\\-3\\-Clause|GPL\\-3\\.0\\-only|GPL\\-2.0\\-only|AGPL\\-3\\.0\\-only|Apache\\-2\\.0|MIT|MPL\\-2.0)"
+        copyright: "([Cc]opyright\\s+((\\(c\\)|©)\\s+)?[0-9]{4}(.*))"
+    template: |-
+      SPDX-FileCopyrightText: {{ copyright }}
+      SPDX-License-Identifier: {{ license }}
+
+  gomoddirectives:
+    # Allow local `replace` directives.
+    # Default: false
+    replace-local: false
+    # List of allowed `replace` directives.
+    # Default: []
+    replace-allow-list: []
+    # Allow to not explain why the version has been retracted in the `retract` directives.
+    # Default: false
+    retract-allow-no-explanation: false
+    # Forbid the use of the `exclude` directives.
+    # Default: false
+    exclude-forbidden: false
+
+  gomodguard:
+    blocked:
+      # List of blocked modules.
+      # Default: []
+      modules:
+        # Use google.golang.org/protobuf.
+        - github.com/golang/protobuf:
+            reason: "See https://developers.google.com/protocol-buffers/docs/reference/go/faq#modules"
+            recommendations:
+              - google.golang.org/protobuf
+
+        # Use stdlib or custom replacements.
+        - github.com/mitchellh/go-homedir:
+            reason: "Use os.UserHomeDir() from stdlib."
+
+        # Go 1.20 introduced errors.Join use it.
+        - github.com/hashicorp/go-multierror:
+            reason: "Use errors.Join() from from stdlib."
+        - go.uber.org/multierr:
+            reason: "Use errors.Join() from from stdlib."
+        - github.com/pkg/errors:
+            reason: "Use error wrapping directive(%w) in stdlib"
+
+        # Go 1.19 introduced New atomic types.
+        - go.uber.org/atomic:
+            reason: "Use sync/atomic from stdlib."
+
+        # Go 1.20 introduced fallback roots use it.
+        - github.com/certifi/gocertifi:
+            recommendations:
+              - golang.org/x/crypto/x509roots/fallback
+        - github.com/breml/rootcerts:
+            recommendations:
+              - golang.org/x/crypto/x509roots/fallback
+        - github.com/gwatts/rootcerts:
+            recommendations:
+              - golang.org/x/crypto/x509roots/fallback
+        - github.com/alexflint/stdroots:
+            recommendations:
+              - golang.org/x/crypto/x509roots/fallback
+
+        # Go 1.20 introduced log/slog use it or github.com/tprasadtp/log wrapper
+        - github.com/hashicorp/go-hclog:
+            recommendations:
+              - log/slog
+              - github.com/tprasadtp/log
+        - github.com/rs/zerolog:
+            recommendations:
+              - log/slog
+              - github.com/tprasadtp/log
+        - github.com/sirupsen/logrus:
+            recommendations:
+              - log/slog
+              - github.com/tprasadtp/log
+        - go.uber.org/zap:
+            recommendations:
+              - log/slog
+              - github.com/tprasadtp/log
+
+        # Use github.com/tprasadtp/go-autotune
+        - go.uber.org/automaxprocs:
+            reason: >-
+              Does not handle fractional CPUs well and does not support Windows.
+            recommendations:
+              - github.com/tprasadtp/go-autotune
+        - github.com/KimMachineGun/automemlimit:
+            reason: >-
+              Does not support cgroups mounted at non standard location.
+              Also does not support memory.high and does not support Windows.
+            recommendations:
+              - github.com/tprasadtp/go-autotune
+
+        # Use github.com/tprasadtp/go-githubapp
+        - github.com/bradleyfalzon/ghinstallation:
+            reason: Does not support KMS backed keys or keys implementing crypto.Signer interface.
+            recommendations:
+              - github.com/tprasadtp/go-githubapp
+
+        - github.com/bradleyfalzon/ghinstallation/v2:
+            reason: "Does not support KMS backed keys or keys implementing crypto.Signer interface."
+            recommendations:
+              - github.com/tprasadtp/go-githubapp
+
+  forbidigo:
+    # Forbid the following identifiers (list of regexp).
+    # Default: ["^(fmt\\.Print(|f|ln)|print|println)$"]
+    forbid:
+      # Builtin function:
+      - p: ^print.*$
+        msg: "Do not commit print builtin statements."
+
+      # fmt.Prinf|Println
+      - p: "fmt.Print(f|ln)?(.*)"
+        msg: "Do not commit print statements."
+
+      # Too many false positives for tests.
+      - p: time.Sleep
+        msg: "Avoid using time.Sleep in your code."
+
+    # Exclude godoc examples from forbidigo checks.
+    # Default: true
+    exclude-godoc-examples: true
+    # Instead of matching the literal source code,
+    # use type information to replace expressions with strings that contain the package name
+    # and (for methods and fields) the type name.
+    # This makes it possible to handle import renaming and forbid struct fields and methods.
+    # Default: false
+    analyze-types: true
+
+  govet:
+    # Enable all analyzers.
+    # Default: false
+    enable-all: true
+    # Disable analyzers by name.
+    # Run `go tool vet help` to see all analyzers.
+    # Default: []
+    disable:
+      - fieldalignment # too strict
+    # Settings per analyzer.
+    settings:
+      shadow:
+        # Whether to be strict about shadowing; can be noisy.
+        # Default: false
+        strict: true
+
+  ireturn:
+    # Only allow error, stdlib, empty and generic interfaces.
+    # Default: [errors, empty, stdlib, anon]
+    allow:
+      - error # error interface
+      - empty # interface{} or any
+      - stdlib # interfaces in stdlib
+      - generic # generic interfaces added in go 1.18 (type constraints)
+
+  nakedret:
+    # Make an issue if func has more lines of code than this setting, and it has naked returns.
+    # Default: 30
+    max-func-lines: 0
+
+  nestif:
+    # [Default: 5]
+    min-complexity: 8
+
+  nolintlint:
+    # Exclude following linters from requiring an explanation.
+    # Default: []
+    allow-no-explanation:
+      - cyclop
+      - errcheck
+      - funlen
+      - gochecknoglobals
+      - gocognit
+      - gocyclo
+      - lll
+      - nestif
+    # Enable to require an explanation of nonzero length after each nolint directive.
+    # Default: false
+    require-explanation: true
+    # Enable to require nolint directives to mention the specific linter being suppressed.
+    # Default: false
+    require-specific: true
+
+  sloglint:
+    # Enforce using key-value pairs only (incompatible with attr-only).
+    # Default: false
+    kv-only: false
+    # Enforce using attributes only (incompatible with kv-only).
+    # Default: false
+    attr-only: true
+    # Enforce using methods that accept a context.
+    # Default: false
+    context-only: false
+    # Enforce using static values for log messages.
+    # Default: false
+    static-msg: true
+    # Enforce using constants instead of raw keys.
+    # Default: false
+    no-raw-keys: false
+    # Enforce a single key naming convention.
+    # Values: snake, kebab, camel, pascal
+    # Default: ""
+    key-naming-case: snake
+    # Enforce putting arguments on separate lines.
+    # Default: false
+    args-on-sep-lines: false
+
+  tenv:
+    # The option `all` will run against whole test files
+    # (`_test.go`) regardless of method/function signatures.
+    # Otherwise, only methods that take `*testing.T`, `*testing.B`,
+    # and `testing.TB` as arguments are checked.
+    # Default: false
+    all: true
+
+  thelper:
+    test:
+      # Check t.Helper() begins helper function.
+      # Default: true
+      begin: false
+    benchmark:
+      # Check b.Helper() begins helper function.
+      # Default: true
+      begin: false
+    tb:
+      # Check tb.Helper() begins helper function.
+      # Default: true
+      begin: false
+    fuzz:
+      # Check f.Helper() begins helper function.
+      # Default: true
+      begin: false
+
+linters:
+  disable-all: true
+  enable:
+    ## Enabled by default
+    - errcheck # checking for unchecked errors, these unchecked errors can be critical bugs in some cases
+    - gosimple # specializes in simplifying a code
+    - govet # reports suspicious constructs, such as Printf calls whose arguments do not align with the format string
+    - ineffassign # detects when assignments to existing variables are not used
+    - staticcheck # is a go vet on steroids, applying a ton of static analysis checks
+    - typecheck # like the front-end of a Go compiler, parses and type-checks Go code
+    - unused # checks for unused constants, variables, functions and types
+
+    ## Disabled by default
+    - asasalint # checks for pass []any as any in variadic func(...any)
+    - asciicheck # checks that your code does not contain non-ASCII identifiers
+    - bidichk # checks for dangerous unicode character sequences
+    - bodyclose # checks whether HTTP response body is closed successfully
+    - cyclop # checks function and package cyclomatic complexity
+    - dupl # tool for code clone detection
+    - decorder # check declaration order and count of types, constants, variables and functions.
+    - durationcheck # checks for two durations multiplied together
+    - errname # checks that sentinel errors are prefixed with the Err and error types are suffixed with the Error
+    - errorlint # finds code that will cause problems with the error wrapping scheme introduced in Go 1.13
+    - execinquery # checks query string in Query function which reads your Go src files and warning it finds
+    - exhaustive # checks exhaustiveness of enum switch statements
+    - exportloopref # checks for pointers to enclosing loop variables
+    - forbidigo # forbids identifiers
+    - funlen # tool for detection of long functions
+    - gochecknoinits # checks that no init functions are present in Go code
+    - gocognit # computes and checks the cognitive complexity of functions
+    - goconst # finds repeated strings that could be replaced by a constant
+    - gocritic # provides diagnostics that check for bugs, performance and style issues
+    - gocyclo # computes and checks the cyclomatic complexity of functions
+    - godot # checks if comments end in a period
+    - goimports # in addition to fixing imports, goimports also formats your code in the same style as gofmt
+    - gomoddirectives # manages the use of 'replace', 'retract', and 'excludes' directives in go.mod
+    - gomodguard # allow and block lists linter for direct Go module dependencies.
+    - goprintffuncname # checks that printf-like functions are named with f at the end
+    - gosec # inspects source code for security problems
+    - inamedparam # linter that reports interfaces with unnamed method parameters.
+    - makezero # finds slice declarations with non-zero initial length
+    - nakedret # finds naked returns in functions greater than a specified function length
+    - nestif # reports deeply nested if statements
+    - nilerr # finds the code that returns nil even if it checks that the error is not nil
+    - nilnil # checks that there is no simultaneous return of nil error and an invalid value
+    - noctx # finds sending http request without context.Context
+    - nolintlint # reports ill-formed or insufficient nolint directives
+    - nonamedreturns # reports all named returns
+    - nosprintfhostport # checks for misuse of Sprintf to construct a host with port in a URL
+    - predeclared # finds code that shadows one of Go's predeclared identifiers
+    - promlinter # checks Prometheus metrics naming via promlint
+    - reassign # checks that package variables are not reassigned
+    - revive # fast, configurable, extensible, flexible, and beautiful linter
+    - rowserrcheck # checks whether Err of rows is checked successfully
+    - sqlclosecheck # checks that sql.Rows and sql.Stmt are closed
+    - stylecheck # is a replacement for golint
+    - sloglint # lint log/slog usage
+    - tenv # detects using os.Setenv instead of t.Setenv since Go1.17
+    - tparallel # detects inappropriate usage of t.Parallel() method in your Go test codes
+    - unconvert # removes unnecessary type conversions
+    - unparam # reports unused function parameters
+    - usestdlibvars # detects the possibility to use variables/constants from the Go standard library
+    - wastedassign # finds wasted assignment statements
+    - whitespace # detects leading and trailing whitespace
+    - prealloc #  finds slice declarations that could potentially be preallocated
+    - interfacebloat # checks the number of methods inside an interface
+    - wrapcheck # checks that errors returned from external packages are wrapped
+    - loggercheck # checks key value pairs for common logger libraries (kitlog,klog,logr,zap)
+    - importas # enforces consistent import aliases
+    - goheader # checks for headers
+    - containedctx # detects struct contained context.Context field
+    - thelper # detects golang test helpers without t.Helper() call and checks the consistency of test helpers
+
+    ## you may want to enable
+    #- godox # detects FIXME, TODO and other comment keywords
+
+    ## disabled
+    #- gci # [conflicts with vscode gofumpt] controls golang package import order and makes it always deterministic
+    #- gomnd # [too noisy] detects magic numbers
+    #- lll # [mostly useless] reports long lines
+    #- exhaustruct # [mostly useless] checks if all structure fields are initialized
+    #- gochecknoglobals # [useless, unless you are a beginner] checks that no global variables exist
+    #- contextcheck # [too many false positives] checks the function whether use a non-inherited context
+    #- depguard # [replaced by gomodguard] checks if package imports are in a list of acceptable packages
+    #- dogsled # checks assignments with too many blank identifiers (e.g. x, _, _, _, := f())
+    #- dupword # [useless without config] checks for duplicate words in the source code
+    #- forcetypeassert # [replaced by errcheck] finds forced type assertions
+    #- goerr113 # [too strict] checks the errors handling expressions
+    #- gofmt # [replaced by goimports] checks whether code was gofmt-ed
+    #- gofumpt # [replaced by goimports, gofumports is not available yet] checks whether code was gofumpt-ed
+    #- grouper # analyzes expression groups
+    #- maintidx # measures the maintainability index of each function
+    #- misspell # [useless] finds commonly misspelled English words in comments
+    #- nlreturn # [too strict and mostly code is not more readable] checks for a new line before return and branch statements to increase code clarity
+    #- paralleltest # [too many false positives] detects missing usage of t.Parallel() method in your Go test
+    #- tagliatelle # checks the struct tags
+    #- wsl # [too strict and mostly code is not more readable] whitespace linter forces you to use empty lines
+    #- varnamelen [too noisy] # checks that the length of a variable's name matches its scope
+    #- ireturn # [useless as we use functional options with interfaces a lot] accept interfaces, return concrete types (with stdlib interfaces ignored)
+    #- testableexamples # checks if examples are testable (have an expected output)
+
+    ## deprecated
+    #- deadcode # [deprecated, replaced by unused] finds unused code
+    #- exhaustivestruct # [deprecated, replaced by exhaustruct] checks if all struct's fields are initialized
+    #- golint # [deprecated, replaced by revive] golint differs from gofmt. Gofmt reformats Go source code, whereas golint prints out style mistakes
+    #- ifshort # [deprecated] checks that your code uses short syntax for if-statements whenever possible
+    #- interfacer # [deprecated] suggests narrower interface types
+    #- maligned # [deprecated, replaced by govet fieldalignment] detects Go structs that would take less memory if their fields were sorted
+    #- nosnakecase # [deprecated, replaced by revive var-naming] detects snake case of variable naming and function name
+    #- scopelint # [deprecated, replaced by exportloopref] checks for unpinned variables in go programs
+    #- structcheck # [deprecated, replaced by unused] finds unused struct fields
+    #- varcheck # [deprecated, replaced by unused] finds unused global variables and constants
+
+issues:
+  # Maximum count of issues with the same text.
+  # Set to 0 to disable.
+  # Default: 3
+  max-same-issues: 50
+  exclude-rules:
+    # It is mostly okay to shadow err. ineffassign will warn,
+    # if error checking is not done immediately. However,
+    # same MUST NOT be done for ctx as context is a "container".
+    - linters:
+        - govet
+      text: 'shadow: declaration of "err" shadows declaration at'
+
+    # In many cases multiple conditions are expected, keep format consistant.
+    # for both single condition and multi-condition selects.
+    - linters:
+        - gosimple
+      text: "S1000: should use for range instead of for { select {} }"
+
+    # Ignore long lines for go generate.
+    - source: "^//\\s*go:generate\\s"
+      linters:
+        - lll
+
+    # Ignore TODO.
+    - source: "(noinspection|TODO)"
+      linters:
+        - godot
+
+    # Test might add more checks to the else branch and keep them uniform
+    # across all test cases. This also improves test code readability.
+    - path: '(.+)_test\.go'
+      text: "elseif: can replace 'else {if cond {}}' with 'else if cond {}'"
+
+    # Disable some linters for testing code.
+    - path: '(.+)_test\.go'
+      linters:
+        - dupl
+        - nestif
+        - funlen
+        - cyclop
+        - goconst
+        - gocyclo
+        - gocognit
+        - wrapcheck
+        - containedctx
+        - sloglint
+
+    # Disable some linters for generated code.
+    - path: 'testdata\.go'
+      linters:
+        - funlen
+        - gocyclo
+        - goconst
+        - gocyclo
+        - gocognit
+        - wrapcheck
+        - sloglint
+
+    # Disable some linters for ad-hoc scripts and example scripts.
+    - path: '(example|generate)\.go'
+      linters:
+        - wrapcheck
+        - forbidigo
+        - sloglint
+        - gocyclo
+        - gocognit
+
+    # Disable go-header checks for example files
+    - path: 'example_(.*)\.go'
+      linters:
+        - dupl
+        - goheader
+        - sloglint

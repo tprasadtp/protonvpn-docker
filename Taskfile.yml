@@ -1,0 +1,309 @@
+# SPDX-FileCopyrightText: Copyright 2024 Prasad Tengse
+# SPDX-License-Identifier: MIT
+
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+version: "3"
+
+vars:
+  PROTONWIRE_IMAGE: "ghcr.io/tprasadtp/protonwire"
+  PROTONVPN_IMAGE: "ghcr.io/tprasadtp/protonvpn"
+  SHELLCHECK_VERSION: '{{ default .SHELLCHECK_VERSION "v0.10.0"}}'
+
+tasks:
+  # -----------------------------------------------------------------
+  # Default Task. Shows List of available tasks.
+  #
+  # This intentionally lacks a desc field to hide it from help output.
+  # -----------------------------------------------------------------
+  default:
+    cmds:
+      - cmd: task --list
+        silent: true
+  # -----------------------------------------------------------------
+  # Creates a directory if not present.
+  # -----------------------------------------------------------------
+  internal:mkdir:
+    internal: true
+    label: mkdir
+    requires:
+      vars:
+        - DIRECTORY
+    status:
+      - >-
+        {{- if .DIRECTORY }}
+          test -d {{ .DIRECTORY|quote }}
+        {{- else }}
+          exit 0
+        {{- end }}
+    cmds:
+      # Do not use long form flag --parents as it is not supported on macOS.
+      - cmd: mkdir -p {{.DIRECTORY|quote}}
+        platforms:
+          - linux
+          - darwin
+          - freebsd
+          - netbsd
+          - dragonfly
+          - openbsd
+      - cmd: powershell.exe -NonInteractive -NoProfile -NoLogo -Command 'New-Item -ItemType Directory -Force -Path "{{.DIRECTORY}}"'
+        platforms:
+          - windows
+  # -----------------------------------------------------------------
+  # Removes files with PATTERN in the given DIRECTORY.
+  # -----------------------------------------------------------------
+  internal:rm-file-glob:
+    internal: true
+    label: "rm"
+    requires:
+      vars:
+        - DIRECTORY
+        - PATTERN
+    status:
+      - >-
+        {{- if .DIRECTORY }}
+          ! test -d {{ .DIRECTORY|quote }}
+        {{- else }}
+          exit 0
+        {{- end }}
+    cmds:
+      # Do not use long form flag --parents as it is not supported on macOS.
+      - cmd: rm -f {{ joinPath (.DIRECTORY | quote) .PATTERN }}
+        platforms:
+          - linux
+          - darwin
+          - freebsd
+          - netbsd
+          - dragonfly
+          - openbsd
+      - cmd: powershell.exe -NonInteractive -NoProfile -NoLogo -Command 'Remove-Item -Force -Path "{{ joinPath .DIRECTORY .PATTERN  }}"'
+        platforms:
+          - windows
+  # -----------------------------------------------------------------
+  # Removes an empty DIRECTORY.
+  # -----------------------------------------------------------------
+  internal:rmdir:
+    internal: true
+    label: "rmdir"
+    requires:
+      vars:
+        - DIRECTORY
+    status:
+      - >-
+        {{- if .DIRECTORY }}
+          ! test -d {{ .DIRECTORY|quote }}
+        {{- else }}
+          exit 0
+        {{- end }}
+    cmds:
+      - cmd: rmdir {{ .DIRECTORY | quote }}
+        platforms:
+          - linux
+          - darwin
+          - freebsd
+          - netbsd
+          - dragonfly
+          - openbsd
+      - cmd: powershell.exe -NonInteractive -NoProfile -NoLogo -Command 'Remove-Item -Force -Path "{{ .DIRECTORY }}"'
+        platforms:
+          - windows
+  # -----------------------------------------------------------------
+  # Run shellcheck
+  # -----------------------------------------------------------------
+  shellcheck:
+    desc: "Run shellcheck on protonwire script"
+    cmds:
+      - cmd: >-
+          docker run
+          --rm
+          --userns=host
+          --workdir=/app/
+          --network=none
+          --mount type=bind,src={{.ROOT_DIR}}/protonwire,dst=/protonwire,readonly
+          koalaman/shellcheck:{{.SHELLCHECK_VERSION}}
+          --color=always
+          --extended-analysis=true
+          /protonwire
+  # -----------------------------------------------------------------
+  # Update README with help from script and docker compose file.
+  # -----------------------------------------------------------------
+  update-readme:
+    desc: "Update README.md"
+    cmds:
+      - cmd: sed -i '/<!--diana::dynamic:protonwire-help:begin-->/,/<!--diana::dynamic:protonwire-help:end-->/!b;//!d;/<!--diana::dynamic:protonwire-help:end-->/e echo "<pre>" && ./protonwire --help && echo "</pre>"' README.md
+      - cmd: sed -i '/<!--diana::dynamic:protonwire-sample-compose-file:begin-->/,/<!--diana::dynamic:protonwire-sample-compose-file:end-->/!b;//!d;/<!--diana::dynamic:protonwire-sample-compose-file:end-->/e echo "\\\`\\\`\\\`yaml" && cat docs/examples/docker/docker-compose.yml && echo "\\\`\\\`\\\`"' README.md
+  # -----------------------------------------------------------------
+  # Build Docker images
+  # -----------------------------------------------------------------
+  internal:build-script:
+    internal: true
+    requires:
+      vars:
+        - "GIT_COMMIT"
+        - "VERSION"
+    cmds:
+      - task: internal:mkdir
+        vars:
+          DIRECTORY: "dist"
+      - cmd: ./scripts/build-script build -o=dist/protonwire main.commit={{.GIT_COMMIT}} main.version={{.VERSION}}
+  internal:build-image:
+    internal: true
+    requires:
+      vars:
+        - "PLATFORM"
+        - "GIT_COMMIT"
+        - "GIT_COMMIT_TIMESTAMP"
+        - "GIT_STATUS_PORCELAIN"
+    vars:
+      IMAGE_LABEL_FLAGS: >-
+        {{- printf `--label "%s=%s"` "org.opencontainers.image.revision" .GIT_COMMIT }}
+        {{- printf ` --label "%s=%s"` "org.opencontainers.image.created" .GIT_COMMIT_TIMESTAMP }}
+        {{- printf ` --label "%s=%s"` "org.opencontainers.image.vendor" "Prasad Tengse <tprasadtp@users.noreply.github.com>" }}
+        {{- printf ` --label "%s=%s"` "org.opencontainers.image.source" "https://github.com/tprasadtp/protonvpn-docker" }}
+        {{- printf ` --label "%s=%s"` "org.opencontainers.image.title" "protonwire" }}
+        {{- printf ` --label "%s=%s"` "org.opencontainers.image.description" "ProtonVPN Wireguard Client" }}
+        {{- printf ` --label "%s=%s"` "org.opencontainers.image.licenses" "GPLv3" }}
+        {{- printf ` --label "%s=%s"` "org.opencontainers.image.documentation" "https://github.com/tprasadtp/protonvpn-docker" }}
+        {{- printf ` --label "%s=%s"` "io.artifacthub.package.readme-url" "https://raw.githubusercontent.com/tprasadtp/go-autotune/master/README.md" }}
+      IMAGE_TAG: >-
+        {{- if .GIT_STATUS_PORCELAIN }}
+          {{- printf "%s-%s-dirty" .GIT_COMMIT (.PLATFORM | replace "/" "-") }}
+        {{- else }}
+          {{- printf "%s-%s" .GIT_COMMIT (.PLATFORM | replace "/" "-") }}
+        {{- end }}
+      IMAGE_TARBALL: '{{ printf "%s.tar" (joinPath "build" (.PLATFORM | replace "/" "-")) }}'
+    env:
+      DOCKER_BUILDKIT: "1"
+    cmds:
+      - cmd: cp Dockerfile dist/Dockerfile
+      - docker build {{.IMAGE_LABEL_FLAGS}} --tag={{.PROTONWIRE_IMAGE}}:{{.IMAGE_TAG}} --tag={{.PROTONVPN_IMAGE}}:{{.IMAGE_TAG}} --platform={{.PLATFORM}} dist/
+  build-images:
+    desc: "Build Docker Images"
+    aliases:
+      - "images-build"
+    vars:
+      GIT_COMMIT:
+        sh: git -c log.showSignature=false show --format=%H --quiet HEAD
+      GIT_TREE_STATE:
+        sh: git -c log.showSignature=false status --porcelain
+      GIT_COMMIT_TIMESTAMP:
+        sh: git -c log.showSignature=false show --format=%cI --quiet HEAD
+      GIT_STATUS_PORCELAIN:
+        sh: git -c log.showSignature=false status --porcelain
+      GIT_DESCRIBE:
+        sh: git -c log.showSignature=false describe HEAD
+    cmds:
+      - task: internal:build-script
+        vars:
+          DIST: "{{.DIST_DIR}}"
+          GIT_COMMIT: "{{.GIT_COMMIT}}"
+          VERSION: >-
+            {{- if .GIT_STATUS_PORCELAIN }}
+              {{- printf "%s-dirty" .GIT_DESCRIBE }}
+            {{- else }}
+              {{- printf "%s" .GIT_DESCRIBE }}
+            {{- end }}
+      - for: ["linux/amd64", "linux/arm64"]
+        task: internal:build-image
+        vars:
+          PLATFORM: "{{.ITEM}}"
+          DIST_DIR: "dist"
+          GIT_COMMIT: "{{.GIT_COMMIT}}"
+          GIT_COMMIT_TIMESTAMP: "{{.GIT_COMMIT_TIMESTAMP}}"
+          GIT_STATUS_PORCELAIN: "{{.GIT_STATUS_PORCELAIN}}"
+  push-images:
+    desc: "Push docker images"
+    vars:
+      IMAGE_REPOS: "{{.PROTONWIRE_IMAGE}},{{.PROTONVPN_IMAGE}}"
+      GIT_COMMIT:
+        sh: git -c log.showSignature=false show --format=%H --quiet HEAD
+      GIT_STATUS_PORCELAIN:
+        sh: git -c log.showSignature=false status --porcelain
+      GIT_DIRTY_SUFFIX: >-
+        {{- if .GIT_STATUS_PORCELAIN }}
+          {{- printf "-dirty" }}
+        {{- end }}
+    cmds:
+      - for: ["linux/amd64", "linux/arm64"]
+        cmd: docker push {{.PROTONWIRE_IMAGE}}:{{.GIT_COMMIT}}-{{ .ITEM | replace "/" "-" }}{{.GIT_DIRTY_SUFFIX}}
+      - for: ["linux/amd64", "linux/arm64"]
+        cmd: docker push {{.PROTONVPN_IMAGE}}:{{.GIT_COMMIT}}-{{ .ITEM | replace "/" "-" }}{{.GIT_DIRTY_SUFFIX}}
+  push-manifests:
+    # We cannot push images and manifests in single step as digest
+    # cannot be computed locally by docker.
+    # - https://github.com/distribution/distribution/issues/1662
+    desc: "Push docker image manifests/index"
+    vars:
+      IMAGE_REPOS: "{{.PROTONWIRE_IMAGE}},{{.PROTONVPN_IMAGE}}"
+      GIT_COMMIT:
+        sh: git -c log.showSignature=false show --format=%H --quiet HEAD
+      GIT_COMMIT_SHORT:
+        sh: git -c log.showSignature=false show --format=%h --quiet HEAD
+      GIT_TAG_POINTS_AT_HEAD:
+        sh: git -c log.showSignature=false tag --points-at HEAD --sort=-version:refname
+      GIT_DESCRIBE:
+        sh: git -c log.showSignature=false describe HEAD
+      GIT_STATUS_PORCELAIN:
+        sh: git -c log.showSignature=false status --porcelain
+      GIT_TAG: >-
+        {{- if .GIT_TAG }}
+          {{- printf "%s" .GIT_TAG }}
+        {{- else if .GIT_TAG_POINTS_AT_HEAD }}
+          {{- printf "%s" (index (splitLines .GIT_TAG_POINTS_AT_HEAD) 0) | trim }}
+        {{- else }}
+          {{- printf "%s" .GIT_DESCRIBE | trim }}
+        {{- end }}
+      VERSION:
+        sh: go run internal/tasks/main.go semver version {{.GIT_TAG}}
+      V_MAJOR:
+        sh: go run internal/tasks/main.go semver major {{.GIT_TAG}}
+      V_MINOR:
+        sh: go run internal/tasks/main.go semver minor {{.GIT_TAG}}
+      V_IS_PRE_RELEASE:
+        sh: go run internal/tasks/main.go semver is-pre-release {{.GIT_TAG}}
+      V_UNSTABLE_SUFFIX: >-
+        {{- if eq (.V_IS_PRE_RELEASE|trim) "true" }}
+          {{- printf "%s" "-unstable" }}
+        {{- end }}
+      V_DIRTY_SUFFIX: >-
+        {{- if .GIT_STATUS_PORCELAIN }}
+          {{- printf "-dirty" }}
+        {{- end }}
+      V_UNSTABLE_OR_LATEST: >-
+        {{- if eq .V_IS_PRE_RELEASE "true" }}
+          {{- printf "%s" "unstable" }}
+        {{- else if eq .GIT_TREE_STATE  }}
+            {{- printf "%s" "unstable" }}
+        {{- else }}
+            {{- printf "%s" "latest-debug" }}
+        {{- end }}
+      IMAGE_AMD64_DIGEST:
+        sh: crane digest {{.PROTONWIRE_IMAGE}}:{{.GIT_COMMIT}}-linux-amd64{{.V_DIRTY_SUFFIX}}
+      IMAGE_ARM64_DIGEST:
+        sh: crane digest {{.PROTONWIRE_IMAGE}}:{{.GIT_COMMIT}}-linux-arm64{{.V_DIRTY_SUFFIX}}
+    cmds:
+      # <IMAGE>:commit
+      - for: { var: IMAGE_REPOS, split: ',', as: IMAGE_REPO }
+        cmd: crane index append --tag {{.IMAGE_REPO}}:{{.GIT_COMMIT}}{{.V_DIRTY_SUFFIX}} -m {{.IMAGE_REPO}}@{{.IMAGE_AMD64_DIGEST}} -m {{.IMAGE_REPO}}@{{.IMAGE_ARM64_DIGEST}}
+      # <IMAGE>:commit-short
+      - for: { var: IMAGE_REPOS, split: ',', as: IMAGE_REPO }
+        cmd: crane index append --tag {{.IMAGE_REPO}}:{{.GIT_COMMIT_SHORT}}{{.V_DIRTY_SUFFIX}} -m {{.IMAGE_REPO}}@{{.IMAGE_AMD64_DIGEST}} -m {{.IMAGE_REPO}}@{{.IMAGE_ARM64_DIGEST}}
+      # <IMAGE>:git-tag
+      - for: { var: IMAGE_REPOS, split: ',', as: IMAGE_REPO }
+        cmd: crane index append --tag {{.IMAGE_REPO}}:{{.GIT_TAG}}{{.V_DIRTY_SUFFIX}} -m {{.IMAGE_REPO}}@{{.IMAGE_AMD64_DIGEST}} -m {{.IMAGE_REPO}}@{{.IMAGE_ARM64_DIGEST}}
+      # <IMAGE>:version, skipped if same as git tag i,e without prefix v.
+      - for: { var: IMAGE_REPOS, split: ',', as: IMAGE_REPO }
+        cmd: >-
+          {{- if eq .VERSION .GIT_TAG }}
+          echo "version and git tag are same ({{.VERSION }}) for image {{.IMAGE_REPO}}"
+          {{- else }}
+          crane index append --tag {{.IMAGE_REPO}}:{{.VERSION}}{{.V_DIRTY_SUFFIX}} -m {{.IMAGE_REPO}}@{{.IMAGE_AMD64_DIGEST}} -m {{.IMAGE_REPO}}@{{.IMAGE_ARM64_DIGEST}}
+          {{- end }}
+      # <IMAGE>:major.minor
+      - for: { var: IMAGE_REPOS, split: ',', as: IMAGE_REPO }
+        cmd: crane index append --tag {{.IMAGE_REPO}}:{{.V_MAJOR}}.{{.V_MINOR}}{{.V_UNSTABLE_SUFFIX}}{{.V_DIRTY_SUFFIX}} -m {{.IMAGE_REPO}}@{{.IMAGE_AMD64_DIGEST}} -m {{.IMAGE_REPO}}@{{.IMAGE_ARM64_DIGEST}}
+      # <IMAGE>:major
+      - for: { var: IMAGE_REPOS, split: ',', as: IMAGE_REPO }
+        cmd: crane index append --tag {{.IMAGE_REPO}}:{{.V_MAJOR}}{{.V_UNSTABLE_SUFFIX}}{{.V_DIRTY_SUFFIX}} -m {{.IMAGE_REPO}}@{{.IMAGE_AMD64_DIGEST}} -m {{.IMAGE_REPO}}@{{.IMAGE_ARM64_DIGEST}}
+      # <IMAGE>:latest or unstable
+      - for: { var: IMAGE_REPOS, split: ',', as: IMAGE_REPO }
+        cmd: crane index append --tag {{.IMAGE_REPO}}:{{.V_UNSTABLE_OR_LATEST}}{{.V_DIRTY_SUFFIX}} -m {{.IMAGE_REPO}}@{{.IMAGE_AMD64_DIGEST}} -m {{.IMAGE_REPO}}@{{.IMAGE_ARM64_DIGEST}}
