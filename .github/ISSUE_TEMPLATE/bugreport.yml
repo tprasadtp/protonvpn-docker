@@ -27,7 +27,7 @@ body:
           required: true
         - label: I have verified that my generated Wireguard private keys are valid and have required features (Netshield Ad-blocker, VPN accelerator etc) are enabled.
           required: true
-        - label: I am using a valid server name (either fully qualified DNS name like `nl-free-127.protonvpn.net` or server name like `NL#1`) as mentioned in the docs.
+        - label: I am using a valid server name (either fully qualified DNS name like `nl-free-127.protonvpn.net` or server IP) as mentioned in the docs.
           required: true
 
   - type: input

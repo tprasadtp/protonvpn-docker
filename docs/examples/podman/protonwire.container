@@ -17,7 +17,7 @@ Notify=true
 ContainerName=protonwire
 
 # Runtime configuration
-Image=ghcr.io/tprasadtp/protonwire:7
+Image=ghcr.io/tprasadtp/protonwire:latest
 Timezone=local
 RunInit=true
 

@@ -2463,7 +2463,7 @@ function main() {
         -h | --help | help)
             cmd_mode="HELP"
             ;;
-        --version)
+        --version|version)
             cmd_mode="VERSION"
             ;;
         --verbose | --debug | -v)
