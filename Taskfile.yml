@@ -271,10 +271,8 @@ tasks:
       V_UNSTABLE_OR_LATEST: >-
         {{- if eq .V_IS_PRE_RELEASE "true" }}
           {{- printf "%s" "unstable" }}
-        {{- else if eq .GIT_TREE_STATE  }}
-            {{- printf "%s" "unstable" }}
         {{- else }}
-            {{- printf "%s" "latest-debug" }}
+            {{- printf "%s" "latest" }}
         {{- end }}
       IMAGE_AMD64_DIGEST:
         sh: crane digest {{.PROTONWIRE_IMAGE}}:{{.GIT_COMMIT}}-linux-amd64{{.V_DIRTY_SUFFIX}}
