@@ -4,7 +4,6 @@
 # Protonwire - Docker Wireguard Client for ProtonVPN
 
 [![actions-build](https://github.com/tprasadtp/protonvpn-docker/actions/workflows/build.yml/badge.svg)](https://github.com/tprasadtp/protonvpn-docker/actions/workflows/build.yml)
-[![actions-docs](https://github.com/tprasadtp/protonvpn-docker/actions/workflows/docs.yml/badge.svg)](https://github.com/tprasadtp/protonvpn-docker/actions/workflows/docs.yml)
 [![actions-release](https://github.com/tprasadtp/protonvpn-docker/actions/workflows/release.yml/badge.svg)](https://github.com/tprasadtp/protonvpn-docker/actions/workflows/release.yml)
 [![version](https://img.shields.io/github/v/tag/tprasadtp/protonvpn-docker?label=version&sort=semver&logo=semver&labelColor=3a3a3a&include_prereleases)](https://github.com/tprasadtp/protonvpn-docker/releases)
 [![license](https://img.shields.io/github/license/tprasadtp/protonvpn-docker?logo=github&labelColor=3A3A3A)](https://github.com/tprasadtp/protonvpn-docker/blob/master/LICENSE)
@@ -13,8 +12,6 @@
 [![metadata-refresh](https://img.shields.io/badge/dynamic/json?label=metadata&query=timestamp&url=https%3A%2F%2Fprotonwire-api.vercel.app&logo=protonvpn&labelColor=3a3a3a&logoColor=white&color=7f50a6)](https://protonwire-api.vercel.app/)
 [![metadata-servers](https://img.shields.io/badge/dynamic/json?label=servers&query=server_count&url=https%3A%2F%2Fprotonwire-api.vercel.app&logo=protonvpn&labelColor=3a3a3a&logoColor=white&color=7f50a6)](https://protonwire-api.vercel.app/)
 [![slsa-badge][slsa-badge]][slsa-verify-docs]
-
-</div>
 
 </div>
 
@@ -379,8 +376,8 @@ See [Troubleshooting][] and [FAQ][]
 
 ## Building
 
-Building requires [`task`](https://taskfile.dev/installation/), [`go`](https://go.dev/dl/)
-and `docker` with `buildx` plugin.
+Building requires [`task`](https://taskfile.dev/installation/),
+[`go`](https://go.dev/dl/) [`crane`](https://github.com/google/go-containerregistry/tree/main/cmd/crane) and `docker` with `buildx` plugin.
 
 [drop-in]: https://wiki.archlinux.org/title/systemd#Drop-in_files
 [nss-resolve]: https://www.freedesktop.org/software/systemd/man/nss-resolve.html
