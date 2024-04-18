@@ -1,7 +1,7 @@
 
 <div align="center">
 
-# Protonwire - ProtonVPN Wireguard Client
+# Protonwire - Docker Wireguard Client for ProtonVPN
 
 [![actions-build](https://github.com/tprasadtp/protonvpn-docker/actions/workflows/build.yml/badge.svg)](https://github.com/tprasadtp/protonvpn-docker/actions/workflows/build.yml)
 [![actions-docs](https://github.com/tprasadtp/protonvpn-docker/actions/workflows/docs.yml/badge.svg)](https://github.com/tprasadtp/protonvpn-docker/actions/workflows/docs.yml)
@@ -12,6 +12,9 @@
 [![actions-metadata](https://github.com/tprasadtp/protonvpn-docker/actions/workflows/metadata.yml/badge.svg)](https://github.com/tprasadtp/protonvpn-docker/actions/workflows/metadata.yml)
 [![metadata-refresh](https://img.shields.io/badge/dynamic/json?label=metadata&query=timestamp&url=https%3A%2F%2Fprotonwire-api.vercel.app&logo=protonvpn&labelColor=3a3a3a&logoColor=white&color=7f50a6)](https://protonwire-api.vercel.app/)
 [![metadata-servers](https://img.shields.io/badge/dynamic/json?label=servers&query=server_count&url=https%3A%2F%2Fprotonwire-api.vercel.app&logo=protonvpn&labelColor=3a3a3a&logoColor=white&color=7f50a6)](https://protonwire-api.vercel.app/)
+[![slsa-badge][slsa-badge]][slsa-verify-docs]
+
+</div>
 
 </div>
 
@@ -376,7 +379,8 @@ See [Troubleshooting][] and [FAQ][]
 
 ## Building
 
-Building requires `goreleaser`, and `docker` with `buildx` plugin.
+Building requires [`task`](https://taskfile.dev/installation/), [`go`](https://go.dev/dl/)
+and `docker` with `buildx` plugin.
 
 [drop-in]: https://wiki.archlinux.org/title/systemd#Drop-in_files
 [nss-resolve]: https://www.freedesktop.org/software/systemd/man/nss-resolve.html
@@ -398,3 +402,5 @@ Building requires `goreleaser`, and `docker` with `buildx` plugin.
 [releases]: https://github.com/tprasadtp/protonwire/releases/latest
 [Troubleshooting]: ./docs/help.md
 [FAQ]: ./docs/faq.md
+[slsa-verify-docs]: ./docs/slsa.md
+[slsa-badge]: https://img.shields.io/badge/SLSA-level%203-39AC60?labelColor=3a3a3a&logoColor=959da5&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAMAAAAolt3jAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAABMlBMVEXvMQDvMADwMQDwMADwMADvMADvMADwMADwMQDvMQDvMQDwMADwMADvMADwMADwMADwMQDvMQDvMQDwMQDvMQDwMQDwMADwMADwMQDwMADwMADvMADvMQDvMQDwMADwMQDwMADvMQDwMADwMQDwMADwMADwMADwMADwMADwMADvMQDvMQDwMADwMQDwMADvMQDvMQDwMADvMQDvMQDwMADwMQDwMQDwMQDvMQDwMADvMADwMADwMQDvMQDwMADwMQDwMQDwMQDwMQDvMQDvMQDvMADwMADvMADvMADvMADwMQDwMQDvMADvMQDvMQDvMADvMADvMQDwMQDvMQDvMADvMADvMADvMQDwMQDvMQDvMQDvMADvMADwMADvMQDvMQDvMQDvMADwMADwMQDwMAAAAAA/HoSwAAAAY3RSTlMpsvneQlQrU/LQSWzvM5DzmzeF9Pi+N6vvrk9HuP3asTaPgkVFmO3rUrMjqvL6d0LLTVjI/PuMQNSGOWa/6YU8zNuDLihJ0e6aMGzl8s2IT7b6lIFkRj1mtvQ0eJW95rG0+Sid59x/AAAAAWJLR0Rltd2InwAAAAlwSFlzAAAOwwAADsMBx2+oZAAAAAd0SU1FB+YHGg0tGLrTaD4AAACqSURBVAjXY2BgZEqGAGYWVjYGdg4oj5OLm4eRgZcvBcThFxAUEk4WYRAVE09OlpCUkpaRTU6WY0iWV1BUUlZRVQMqUddgSE7W1NLS1gFp0NXTB3KTDQyNjE2Sk03NzC1A3GR1SytrG1s7e4dkBogtjk7OLq5uyTCuu4enl3cyhOvj66fvHxAIEmYICg4JDQuPiAQrEmGIio6JjZOFOjSegSHBBMpOToxPAgCJfDZC/m2KHgAAACV0RVh0ZGF0ZTpjcmVhdGUAMjAyMi0wNy0yNlQxMzo0NToyNCswMDowMC8AywoAAAAldEVYdGRhdGU6bW9kaWZ5ADIwMjItMDctMjZUMTM6NDU6MjQrMDA6MDBeXXO2AAAAGXRFWHRTb2Z0d2FyZQB3d3cuaW5rc2NhcGUub3Jnm+48GgAAAABJRU5ErkJggg==

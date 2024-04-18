@@ -34,3 +34,7 @@ insert_final_newline = false
 
 [Vagrantfile]
 indent_size = 2
+
+[metadata/**/*]
+insert_final_newline = false
+trim_trailing_whitespace = false

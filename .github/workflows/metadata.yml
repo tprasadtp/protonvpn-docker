@@ -11,8 +11,10 @@ on:
         - "yes"
         - "no"
   push:
-    branches:
-      - "**"
+    branches-ignore:
+      - "slsa-verify*"
+      - "dependabot*"
+      - "dependabot/**"
     tags-ignore:
       - "**"
   schedule:
@@ -20,8 +22,8 @@ on:
 jobs:
   metadata:
     runs-on: ubuntu-latest
-    # exclude dependabot from running this workflow.
-    if: ${{ github.actor != 'dependabot[bot]' }}
+    permissions:
+      id-token: write
     steps:
       - name: Checkout project repo
         uses: actions/checkout@v4
@@ -47,21 +49,21 @@ jobs:
         uses: actions/create-github-app-token@v1
         id: bot-token
         with:
-          app-id: ${{ vars.METADATA_BOT_APP_ID }}
-          repositories: ${{ vars.METADATA_REPO_NAME }}
           owner: ${{ vars.METADATA_REPO_OWNER }}
+          app-id: ${{ vars.METADATA_BOT_APP_ID }}
           private-key: ${{ secrets.METADATA_BOT_APP_PRIVATE_KEY }}
+          repositories: ${{ vars.METADATA_REPO_NAME }}
 
-      - name: Checkout metadata repo to protonwire-api-deploy
+      - name: Checkout metadata repo to protonwire-api
         uses: actions/checkout@v4
         with:
-          repository: ${{ vars.METADATA_REPO }}
-          path: protonwire-api-deploy
+          path: protonwire-api
           token: ${{ steps.bot-token.outputs.token }}
+          repository: ${{ vars.METADATA_REPO }}
           persist-credentials: true
 
       - name: Configure git and remove stale data
-        working-directory: protonwire-api-deploy
+        working-directory: protonwire-api
         run: |
           git config user.name ${{ vars.METADATA_BOT_GIT_USERNAME }}
           git config user.email ${{ vars.METADATA_BOT_GIT_EMAIL }}
@@ -73,10 +75,10 @@ jobs:
             --archive \
             --human-readable \
             ./metadata/ \
-            ${GITHUB_WORKSPACE}/protonwire-api-deploy/
+            ${GITHUB_WORKSPACE}/protonwire-api/
 
       - name: Push Metadata (if on master)
-        working-directory: protonwire-api-deploy
+        working-directory: protonwire-api
         if: github.ref == 'refs/heads/master'
         run: |
           git add --all

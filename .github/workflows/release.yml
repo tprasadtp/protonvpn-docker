@@ -1,22 +1,44 @@
 name: release
 on:
-  workflow_dispatch:
   push:
     tags:
       - "**"
+  workflow_dispatch:
+
+permissions: {}
+
 jobs:
-  shellcheck:
+  lint:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      - name: Install Task
+        run: go install github.com/go-task/task/v3/cmd/task@latest
+
       - name: Shellcheck
-        run: make shellcheck
+        run: task --verbose shellcheck
+
+      - name: Update README
+        run: task --verbose update-readme
+
+      - name: Check if README is up-to date
+        run: git diff --exit-code README.md
+
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
       packages: write
-      id-token: write
+    outputs:
+       manifest-digest: ${{ steps.get-manifest-digest.outputs.digest }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -29,17 +51,19 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Install GoReleaser
-        uses: goreleaser/goreleaser-action@v5
+      - name: Setup Go
+        uses: actions/setup-go@v5
         with:
-          version: latest
-          install-only: true
+          go-version: stable
 
-      - name: Install Cosign
-        uses: sigstore/cosign-installer@v3.4.0
+      - name: Install Task
+        run: go install github.com/go-task/task/v3/cmd/task@latest
 
-      - name: Install help2man
-        run: sudo apt-get install -y help2man
+      - name: Install crane
+        run: go install github.com/google/go-containerregistry/cmd/crane@latest
+
+      - name: Build Images
+        run: task --verbose build-images
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
@@ -48,7 +72,143 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Run GoReleaser
-        run: make release-prod
+      - name: Push Images
+        run: task --verbose push-images
+
+      - name: Push Manifests
+        run: task --verbose push-manifests
+
+      - name: Get Manifest Digest
+        id: get-manifest-digest
+        run: |
+          set -euo pipefail
+          digest=$(crane digest ghcr.io/tprasadtp/protonwire:${{github.sha}})
+          if [[ -z $digest ]]; then
+            echo "failed to get digest"
+            exit 1
+          fi
+          echo "digest=${digest}" >> "$GITHUB_OUTPUT"
+
+  sign:
+    runs-on: ubuntu-latest
+    needs:
+      - lint
+      - build
+    permissions:
+      contents: read
+      actions: read
+      packages: write
+      id-token: write
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - ghcr.io/tprasadtp/protonwire
+          - ghcr.io/tprasadtp/protonvpn
+    steps:
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Sign Images
+        run: >-
+          cosign sign
+          --yes
+          --recursive
+          --oidc-provider=github-actions
+          ${{ matrix.image }}@${{ needs.build.outputs.manifest-digest }}
+
+  provenance:
+    needs:
+      - lint
+      - build
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - ghcr.io/tprasadtp/protonwire
+          - ghcr.io/tprasadtp/protonvpn
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v1.10.0
+    with:
+      registry-username: ${{ github.actor }}
+      digest: ${{ needs.build.outputs.manifest-digest }}
+      image: ${{ matrix.image }}
+    secrets:
+      registry-password: ${{ secrets.GITHUB_TOKEN }}
+
+  verification:
+    needs:
+      - build
+      - sign
+      - provenance
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - ghcr.io/tprasadtp/protonwire
+          - ghcr.io/tprasadtp/protonvpn
+    steps:
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Install SLSA verifier
+        uses: slsa-framework/slsa-verifier/actions/installer@v2.5.1
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify SLSA Provenance
+        run: >-
+          slsa-verifier
+          --source-uri github.com/${{ github.repository }}
+          verify-image ${{ matrix.image }}@${{ needs.build.outputs.manifest-digest }}
+
+      - name: Verify Cosign Signature
+        run: >-
+          cosign verify ${{ matrix.image }}@${{ needs.build.outputs.manifest-digest }}
+          --certificate-identity-regexp "^https://github.com/${{ github.repository }}"
+          --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
+          --certificate-github-workflow-repository "${{ github.repository }}"
+          --certificate-github-workflow-sha ${{ github.sha }}
+  create-release:
+    runs-on: ubuntu-latest
+    needs:
+      - build
+      - sign
+      - provenance
+      - verification
+    if: ${{ github.ref_type == 'tag' }}
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Create Github Release
+        uses: goreleaser/goreleaser-action@v5
+        with:
+          version: latest
+          args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
