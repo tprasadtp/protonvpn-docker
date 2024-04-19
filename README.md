@@ -131,6 +131,55 @@ flag is **ALSO** specified.
 
 <!--diana::dynamic:protonwire-help:begin-->
 <pre>
+
+ProtonVPN WireGuard Client
+
+Usage: protonwire [OPTIONS...]
+or: protonwire [OPTIONS...] c|connect [SERVER]
+or: protonwire [OPTIONS...] d|disconnect
+or: protonwire [OPTIONS...] check
+or: protonwire [OPTIONS...] disable-killswitch
+or: protonwire [OPTIONS...] server-info [SERVER]
+
+Options:
+  -k, --private-key FILE|KEY    Wireguard private key or
+                                file containing private key
+      --service                 Run as service
+      --service-status-file     Use status file created by --service
+                                for healthchecks. Only valid when both process
+                                are running within the same container.
+      --metadata-url URL        Server metadata endpoint URL
+      --check-interval INT      IP check interval in seconds (default 60)
+      --check-url URL           IP check endpoint URL
+      --skip-dns-config         Skip configuring DNS.
+                                (Useful for Kubernetes and Consul)
+      --kill-switch             Enable killswitch (Experimental)
+      --p2p                     Verify if specified server supports P2P
+      --streaming               Verify if specified server supports streaming
+      --tor                     Verify if specified server supports Tor
+      --secure-core             Verify if specified server supports secure core
+  -q, --quiet                   Show only errors
+  -v, --verbose                 Show debug logs
+  -h, --help                    Display this help and exit
+      --version                 Display version and exit
+
+Examples:
+  protonwire connect nl-1       Connect to server nl-1
+  protonwire d --kill-switch    Disconnect from current server and disable kill-switch
+  protonwire verify [SERVER]    Check if connected to a server
+
+Files:
+  /etc/protonwire/private-key   WireGuard private key
+
+Environment:
+  WIREGUARD_PRIVATE_KEY         WireGuard private key or file
+  PROTONVPN_SERVER              ProtonVPN server
+  IPCHECK_INTERVAL              Custom IP check interval in seconds (default 60)
+  IPCHECK_URL                   IP check endpoint URL (must be https://)
+  SKIP_DNS_CONFIG               Set to '1' to skip configuring DNS
+  KILL_SWITCH                   Set to '1' to enable killswitch (Experimental)
+  DEBUG                         Set to '1' to enable debug logs
+</pre>
 <!--diana::dynamic:protonwire-help:end-->
 
 ## Health-checks
@@ -235,7 +284,7 @@ This section covers running containers via podman. But for deployments use
         --tmpfs=/tmp \
         --name=protonwire \
         --secret="protonwire-private-key,mode=600" \
-        --env=PROTONVPN_SERVER="nl-free-127.protonvpn.net" \
+        --env=PROTONVPN_SERVER="node-nl-03.protonvpn.net" \
         --env=DEBUG=0 \
         --env=KILL_SWITCH=1 \
         --cap-add=NET_ADMIN \
@@ -369,8 +418,8 @@ Building requires [`task`](https://taskfile.dev/installation/),
 [releases]: https://github.com/tprasadtp/protonwire/releases/latest
 [Troubleshooting]: ./docs/help.md
 [FAQ]: ./docs/faq.md
+[cosign]: https://docs.sigstore.dev/system_config/installation/
 [slsa-verify-docs]: ./docs/slsa.md
 [slsa-badge-level3]: ./docs/images/slsa-level3-logo.svg
 [slsa-level3]: https://slsa.dev/spec/v1.0/levels#build-l3
-
 [slsa-badge]: https://img.shields.io/badge/SLSA-level%203-39AC60?labelColor=3a3a3a&logoColor=959da5&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAMAAAAolt3jAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAABMlBMVEXvMQDvMADwMQDwMADwMADvMADvMADwMADwMQDvMQDvMQDwMADwMADvMADwMADwMADwMQDvMQDvMQDwMQDvMQDwMQDwMADwMADwMQDwMADwMADvMADvMQDvMQDwMADwMQDwMADvMQDwMADwMQDwMADwMADwMADwMADwMADwMADvMQDvMQDwMADwMQDwMADvMQDvMQDwMADvMQDvMQDwMADwMQDwMQDwMQDvMQDwMADvMADwMADwMQDvMQDwMADwMQDwMQDwMQDwMQDvMQDvMQDvMADwMADvMADvMADvMADwMQDwMQDvMADvMQDvMQDvMADvMADvMQDwMQDvMQDvMADvMADvMADvMQDwMQDvMQDvMQDvMADvMADwMADvMQDvMQDvMQDvMADwMADwMQDwMAAAAAA/HoSwAAAAY3RSTlMpsvneQlQrU/LQSWzvM5DzmzeF9Pi+N6vvrk9HuP3asTaPgkVFmO3rUrMjqvL6d0LLTVjI/PuMQNSGOWa/6YU8zNuDLihJ0e6aMGzl8s2IT7b6lIFkRj1mtvQ0eJW95rG0+Sid59x/AAAAAWJLR0Rltd2InwAAAAlwSFlzAAAOwwAADsMBx2+oZAAAAAd0SU1FB+YHGg0tGLrTaD4AAACqSURBVAjXY2BgZEqGAGYWVjYGdg4oj5OLm4eRgZcvBcThFxAUEk4WYRAVE09OlpCUkpaRTU6WY0iWV1BUUlZRVQMqUddgSE7W1NLS1gFp0NXTB3KTDQyNjE2Sk03NzC1A3GR1SytrG1s7e4dkBogtjk7OLq5uyTCuu4enl3cyhOvj66fvHxAIEmYICg4JDQuPiAQrEmGIio6JjZOFOjSegSHBBMpOToxPAgCJfDZC/m2KHgAAACV0RVh0ZGF0ZTpjcmVhdGUAMjAyMi0wNy0yNlQxMzo0NToyNCswMDowMC8AywoAAAAldEVYdGRhdGU6bW9kaWZ5ADIwMjItMDctMjZUMTM6NDU6MjQrMDA6MDBeXXO2AAAAGXRFWHRTb2Z0d2FyZQB3d3cuaW5rc2NhcGUub3Jnm+48GgAAAABJRU5ErkJggg==
