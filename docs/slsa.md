@@ -30,11 +30,6 @@ All _artifacts_ provided by this repository meet [SLSA L3][slsa-level3].
         ghcr.io/tprasadtp/protonwire@<IMAGE_DIGEST>
     ```
 
-## SLSA provenance for metadata
-
-Generating slsa provenance for metadata is tricky without leaking all the server names.
-As slsa L3 workflows need to save intermediate artifacts which contain server names.
-
 [cosign]: https://docs.sigstore.dev/system_config/installation/
 [slsa-verifier]: https://github.com/slsa-framework/slsa-verifier
 [slsa-badge-level3]: ./images/slsa-level3-logo.svg

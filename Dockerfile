@@ -34,4 +34,4 @@ RUN ln -s /usr/bin/protonwire /usr/bin/protonvpn
 
 ENTRYPOINT [ "/usr/bin/protonwire" ]
 
-CMD [ "connect", "--container" ]
+CMD [ "connect", "--service" ]

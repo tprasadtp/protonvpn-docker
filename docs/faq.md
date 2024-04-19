@@ -195,8 +195,6 @@ your pod are using the VPN. Do note that `.cluster` domains like `<service>.<nam
 
 Port forwarding is not supported directly, but the image includes tools required to setup via custom
 script(`socat` and `natpmpc` etc). It is being tracked via [#125](https://github.com/tprasadtp/protonvpn-docker/issues/125). It might be necessary to write your `service` loop which keeps port forwarding updated. Following commands can be used to setup VPN connection and check it regularly.
-Do note that script will still take into consideration `IPCHECK_INTERVAL` for healthchecks, so keep
-your custom script compatible with it.
 
 - Connect to VPN server with kill-switch.
 
@@ -204,22 +202,15 @@ your custom script compatible with it.
     protonwire connect --ks
     ```
 
-- Verify that connection is active. **DO NOT** use `--container` flag, as it
+- Verify that connection is active. **DO NOT** use `--service` flag, as it
 depends on protonwire running in the background.
 
     ```bash
     protonwire verify
     ```
 
-- Setup your port forwarding using `natpmpc` and write mapped port to a shared volume.
-
-- In a loop verify the connection and keep refreshing port forwarding.
-
-    ```bash
-    protonwire verify || exit 1
-    natpmpc <args as required> || exit 1
-    ```
-
+- Setup your port forwarding using `natpmpc` and write mapped port to a shared volume
+- In a loop verify the connection and keep refreshing port forwarding at regular intervals.
 - To disconnect, run
 
     ```bash

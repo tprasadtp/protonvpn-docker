@@ -2410,7 +2410,10 @@ or: protonwire [OPTIONS...] server-info [SERVER]
 Options:
   -k, --private-key FILE|KEY    Wireguard private key or
                                 file containing private key
-      --container               Run as container
+      --service                 Run as service
+      --service-status-file     Use status file created by --service
+                                for healthchecks. Only valid when both process
+                                are running within the same container.
       --metadata-url URL        Server metadata endpoint URL
       --check-interval INT      IP check interval in seconds (default 60)
       --check-url URL           IP check endpoint URL
@@ -2449,10 +2452,10 @@ function main() {
     declare -i log_lvl_v_lock=0
     declare -i log_lvl_q_lock=0
     declare -i cmd_lock=0
-    declare -i looper_lock=0
     local color_mode="auto"
     local cmd_mode="HELP"
-    local container_flag="false"
+    local looper_flag="false"
+    local healthcheck_service_status_file="false"
 
     if __is_bool_true "${DEBUG}"; then
         LOG_LVL="0"
@@ -2463,7 +2466,7 @@ function main() {
         -h | --help | help)
             cmd_mode="HELP"
             ;;
-        --version|version)
+        --version | version)
             cmd_mode="VERSION"
             ;;
         --verbose | --debug | -v)
@@ -2525,9 +2528,13 @@ function main() {
             shift
             __PROTONWIRE_FEATURE_COUNTRY="$1"
             ;;
-        --container)
-            ((++looper_lock))
-            container_flag="true"
+        # --container flag is deprecated, but is left here for
+        # CLI compatibility reasons.
+        --container | --service)
+            looper_flag="true"
+            ;;
+        --service-status-file)
+            healthcheck_service_status_file="true"
             ;;
         connect | c)
             ((++cmd_lock))
@@ -2541,7 +2548,7 @@ function main() {
             cmd_mode="HEALTHCHECK"
             ((++cmd_lock))
             ;;
-        lookup | server-info | server-lookup)
+        lookup | server-info | server-lookup | lookup-server)
             cmd_mode="SERVER_LOOKUP"
             ((++cmd_lock))
             ;;
@@ -2605,11 +2612,16 @@ function main() {
         fi
     fi
 
-    if [[ $cmd_mode == "HEALTHCHECK" ]] && [[ $container_flag == "true" ]]; then
-        cmd_mode="HEALTHCHECK_CONTAINER"
+    if [[ $cmd_mode == "HEALTHCHECK" ]]; then
+        if [[ $looper_flag == "true" ]]; then
+            cmd_mode="HEALTHCHECK_SERVICE_STATUS_FILE"
+        fi
+        if [[ $healthcheck_service_status_file == "true" ]]; then
+            cmd_mode="HEALTHCHECK_SERVICE_STATUS_FILE"
+        fi
     fi
 
-    if [[ $cmd_mode == "CONNECT" ]] && [[ $container_flag == "true" ]]; then
+    if [[ $cmd_mode == "CONNECT" ]] && [[ $looper_flag == "true" ]]; then
         cmd_mode="LOOPER"
     fi
 
@@ -2659,7 +2671,7 @@ function main() {
         protonvpn_verify_cmd
         exit $?
         ;;
-    HEALTHCHECK_CONTAINER)
+    HEALTHCHECK_SERVICE_STATUS_FILE)
         protonvpn_healthcheck_status_file
         exit $?
         ;;
