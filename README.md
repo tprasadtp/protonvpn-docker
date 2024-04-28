@@ -187,7 +187,7 @@ Environment:
 - Script supports `healthcheck` sub-command. By default, when running as a service,
 script will keep checking every `IPCHECK_INTERVAL` _(default=60)_ seconds using the
 `IPCHECK_URL` api endpoint. To disable healthchecks entirely set `IPCHECK_INTERVAL` to `0`
-- Use `protonwire healthcheck --silent --service` as the `HEALTHCHECK` command.
+- Use `protonwire healthcheck --silent --service-status-file` as the `HEALTHCHECK` command.
 Same can be used as liveness probe and readiness probe for Kubernetes.
 
 ## Docker Compose
@@ -292,7 +292,7 @@ This section covers running containers via podman. But for deployments use
         --sysctl=net.ipv6.conf.all.disable_ipv6=1 \
         --publish=8000:8000 \
         --health-start-period=20s \
-        --health-cmd="protonwire check --service --silent" \
+        --health-cmd="protonwire check --service-status-file --silent" \
         --health-interval=120s \
         --health-on-failure=stop \
         ghcr.io/tprasadtp/protonwire:latest
