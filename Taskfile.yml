@@ -305,3 +305,53 @@ tasks:
       # <IMAGE>:latest or unstable
       - for: { var: IMAGE_REPOS, split: ',', as: IMAGE_REPO }
         cmd: crane index append --tag {{.IMAGE_REPO}}:{{.V_UNSTABLE_OR_LATEST}}{{.V_DIRTY_SUFFIX}} -m {{.IMAGE_REPO}}@{{.IMAGE_AMD64_DIGEST}} -m {{.IMAGE_REPO}}@{{.IMAGE_ARM64_DIGEST}}
+  # -----------------------------------------------------------------
+  # Cleanup generated data, cache and build artifacts
+  # -----------------------------------------------------------------
+  clean:
+    desc: "Clean cache, build artifacts etc."
+    aliases:
+      - "go:clean"
+    cmds:
+      - task: internal:rm-file-glob
+        vars:
+          DIRECTORY: '{{ joinPath .ROOT_DIR "dist" }}'
+          PATTERN: "{{.ITEM}}"
+        for:
+          - "*.json"
+          - "*.yml"
+          - "*.yaml"
+      - task: internal:rm-file-glob
+        vars:
+          DIRECTORY: '{{ joinPath .ROOT_DIR "build" }}'
+          PATTERN: "{{.ITEM}}"
+        for:
+          - "*.tar"
+          - "*.tar.gz"
+          - "*.sbom"
+          - "*.sbom.att"
+          - "*.sbom.att.json"
+          - "*.sbom.spdx"
+          - "*.sbom.spdx.json"
+          - "*.sbom.spdx.json"
+          - "*.sbom.cyclonedx.xml"
+          - "*.sbom.cyclonedx.json"
+          - "*.sigstore.pem"
+          - "*.sigstore.sig"
+          - "*.sigstore.bundle"
+          - "*.intoto.json"
+          - "*.in-toto.json"
+          - "*.jsonl"
+      - task: internal:rm-file-glob
+        vars:
+          DIRECTORY: '{{ joinPath .ROOT_DIR ".task" "checksum" }}'
+          PATTERN: "*"
+      - task: internal:rmdir
+        vars:
+          DIRECTORY: "{{ .ITEM }}"
+        for:
+          - "{{ .GO_COVER_DIR }}"
+          - '{{ joinPath .ROOT_DIR "bin" }}'
+          - '{{ joinPath .ROOT_DIR ".task" "checksum" }}'
+          - '{{ joinPath .ROOT_DIR ".task" }}'
+          - '{{ joinPath .ROOT_DIR "dist" }}'

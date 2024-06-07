@@ -2282,7 +2282,7 @@ function protonvpn_disconnect_cmd() {
 function __automatic_server_selection_error_msg() {
     log_error "Automatic server selection for (${PROTONVPN_SERVER}) is not supported due to upstream API changes."
     log_error "Specify a valid server DNS name like node-nl-01.protonvpn.net or server name like NL-1."
-    log_error "Please see https://github.com/tprasadtp/protonvpn-docker/blob/master/docs/faq.md for more info."
+    log_error "See - https://github.com/tprasadtp/protonvpn-docker/blob/master/docs/faq.md#overriding-entrypointcommand"
 }
 
 function server_lookup_cmd() {
@@ -2454,9 +2454,21 @@ function main() {
     declare -i log_lvl_q_lock=0
     declare -i cmd_lock=0
     local color_mode="auto"
-    local cmd_mode="HELP"
     local looper_flag="false"
     local healthcheck_service_status_file="false"
+    local cmd_mode=""
+
+    # cmd mode needs to be handled differently
+    # as user may invoke just the script without arguments expecting a help
+    # or with unknown/malformed arguments which needs to be handled gracefully.
+    # so, set cmd_mode to HELP only if no other arguments are specified.
+    # also keep a copy or arguments as it will be nuked via shift.
+    # See https://github.com/tprasadtp/protonvpn-docker/issues/312.
+    declare -a args_copy
+    args_copy=("$@")
+    if [[ $# -eq 0 ]]; then
+        cmd_mode="HELP"
+    fi
 
     if __is_bool_true "${DEBUG}"; then
         LOG_LVL="0"
@@ -2706,7 +2718,10 @@ function main() {
         exit $?
         ;;
     *)
-        log_error "Unknown PROTONVPN_EXE_MODE - $cmd_mode"
+        log_error "Unknown COMMAND - ${args_copy[*]} See usage below."
+        log_error "If overriding entrypoint/cmd specify it in array form."
+        log_error "See FAQ - https://github.com/tprasadtp/protonvpn-docker/blob/master/docs/faq.md for more info."
+        display_usage
         exit 10
         ;;
     esac

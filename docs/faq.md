@@ -174,10 +174,6 @@ guarantees. If your are _not_ using default metadata and ip check endpoints this
 - `protonwire-api.vercel.app`
 - `icanhazip.com`
 
-## Known Issues
-
-- Running multiple instances of this __outside of containers__ on _same host_ is not supported.
-
 ## Kubernetes
 
 Currently no egress gateway supports proxying both TCP and UDP
@@ -196,7 +192,8 @@ your pod are using the VPN. Do note that `.cluster` domains like `<service>.<nam
 Port forwarding is not supported directly, but the image includes tools required to setup via custom
 script(`socat` and `natpmpc` etc). It is being tracked via [#125](https://github.com/tprasadtp/protonvpn-docker/issues/125). It might be necessary to write your `service` loop which keeps port forwarding updated. Following commands can be used to setup VPN connection and check it regularly.
 
-- Connect to VPN server with kill-switch.
+- Connect to VPN server with kill-switch. Note that this does not use `--service` or `--container`
+flag, thus it **SHOULD NOT** be running in background as this command will return once connection is established.
 
     ```bash
     protonwire connect --ks
@@ -210,9 +207,13 @@ depends on protonwire running in the background.
     ```
 
 - Setup your port forwarding using `natpmpc` and write mapped port to a shared volume
-- In a loop verify the connection and keep refreshing port forwarding at regular intervals.
+- In a **loop** verify the connection and keep refreshing port forwarding at regular intervals.
 - To disconnect, run
 
     ```bash
     protonwire disconnect
     ```
+
+## Overriding Entrypoint/Command
+
+When using custom scripts as entrypoint or cmd, specify them in array form. i.e `["/bin/my-script", "args"]` instead of `/bin/my-script args`.
