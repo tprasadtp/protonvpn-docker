@@ -2264,12 +2264,13 @@ function protonvpn_disconnect_cmd() {
         ((++errs))
     fi
 
-    if __is_bool_true "${KILL_SWITCH}"; then
+    log_variable "__PROTONWIRE_DISCONNECT_DISABLE_KILL_SWITCH"
+    if __is_bool_true "${__PROTONWIRE_DISCONNECT_DISABLE_KILL_SWITCH}"; then
         if ! __protonvpn_disable_ks; then
             ((++errs))
         fi
     else
-        log_debug "Killswitch state is left unchanged"
+        log_info "Killswitch state is left unchanged"
     fi
 
     if [[ $errs -eq 0 ]]; then
@@ -2511,6 +2512,7 @@ function main() {
             ;;
         --killswitch | --kill-switch | --ks | -ks)
             KILL_SWITCH="true"
+            __PROTONWIRE_DISCONNECT_DISABLE_KILL_SWITCH="true"
             ;;
         --p2p)
             __PROTONWIRE_FEATURE_P2P="true"
