@@ -1,5 +1,5 @@
 #syntax=docker/dockerfile:1.2
-FROM debian@sha256:fac2c0fd33e88dfd3bc88a872cfb78dcb167e74af6162d31724df69e482f886c as base
+FROM debian@sha256:67f3931ad8cb1967beec602d8c0506af1e37e8d73c2a0b38b181ec5d8560d395 as base
 
 FROM base
 
