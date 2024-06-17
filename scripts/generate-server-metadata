@@ -798,93 +798,98 @@ def write_metadata(
                             )
                             exit_ips.append(__srv["ExitIP"])
 
-        logical_node = LogicalNode(
-            name=logical_server_name,
-            dns_name=logical_server_domain,
-            exit_country=logical_server["ExitCountry"],
-            tier=logical_server["Tier"],
-            p2p="P2P" in features,
-            streaming="STREAMING" in features,
-            secure_core="SECURE_CORE" in features,
-            tor="TOR" in features,
-            nodes=servers,
-            exit_ips=sorted(exit_ips),
-            server_status=logical_server_status,
-        )
-
-        logical_node_lowercase_name = LogicalNode(
-            name=logical_server_name.lower(),
-            dns_name=logical_server_domain,
-            exit_country=logical_server["ExitCountry"],
-            tier=logical_server["Tier"],
-            p2p="P2P" in features,
-            streaming="STREAMING" in features,
-            secure_core="SECURE_CORE" in features,
-            tor="TOR" in features,
-            nodes=servers,
-            exit_ips=sorted(exit_ips),
-            server_status=logical_server_status,
-        )
-
-        logical_node_list.append(logical_node)
-        try:
-            logging.debug("Writing(JSON) - %s", logical_node.Name)
-            logical_node_file_upper = metadata_dir_json_v1_srv / Path(
-                logical_node.Name.replace("#", "-").upper()
+        # For https://github.com/tprasadtp/protonvpn-docker/issues/304
+        # This ensures all logical nodes without nodes are ignored.
+        if len(servers) > 0:
+            logical_node = LogicalNode(
+                name=logical_server_name,
+                dns_name=logical_server_domain,
+                exit_country=logical_server["ExitCountry"],
+                tier=logical_server["Tier"],
+                p2p="P2P" in features,
+                streaming="STREAMING" in features,
+                secure_core="SECURE_CORE" in features,
+                tor="TOR" in features,
+                nodes=servers,
+                exit_ips=sorted(exit_ips),
+                server_status=logical_server_status,
             )
-            with open(logical_node_file_upper, "w", encoding="utf-8") as f:
-                f.writelines(
-                    (json.dumps(obj=logical_node, indent=2, default=vars))
-                )
-                stat_file_count += 1
-            logical_node_file_lc = metadata_dir_json_v1_srv / Path(
-                logical_node_lowercase_name.Name.replace("#", "-")
-            )
-            with open(logical_node_file_lc, "w", encoding="utf-8") as f:
-                f.writelines(
-                    (json.dumps(obj=logical_node_lowercase_name, indent=2, default=vars))
-                )
-                stat_file_count += 1
-        except Exception:
-            logging.exception(
-                "Failed to write JSON - %s",
-                logical_node.Name.replace("#", "-"),
-            )
-            sys.exit(1)
 
-        try:
-            logging.debug("Writing(JSON) - %s", logical_node.DNS)
-            logical_node_file_dns = metadata_dir_json_v1_srv / Path(
-                logical_node.DNS
+            logical_node_lowercase_name = LogicalNode(
+                name=logical_server_name.lower(),
+                dns_name=logical_server_domain,
+                exit_country=logical_server["ExitCountry"],
+                tier=logical_server["Tier"],
+                p2p="P2P" in features,
+                streaming="STREAMING" in features,
+                secure_core="SECURE_CORE" in features,
+                tor="TOR" in features,
+                nodes=servers,
+                exit_ips=sorted(exit_ips),
+                server_status=logical_server_status,
             )
-            with open(logical_node_file_dns, "w", encoding="utf-8") as f:
-                f.writelines(
-                    (json.dumps(obj=logical_node, indent=2, default=vars))
-                )
-                stat_file_count += 1
-        except Exception:
-            logging.exception("Failed to write JSON - %s", logical_node.DNS)
-            sys.exit(1)
 
-        # IP Mappings
-        for srv_node in logical_node.Nodes:
+            logical_node_list.append(logical_node)
             try:
-                logical_node_single_endpoint = copy.deepcopy(logical_node)
-                logical_node_single_endpoint.Nodes = [srv_node]
-                if len(logical_node_single_endpoint.Nodes) != 1:
-                    logging.error("More than one node found for : %s", srv_node.Endpoint)
-                logging.debug("Writing(IP) - %s", srv_node.Endpoint)
-                srv_ip_file_dns = metadata_dir_json_v1_srv / Path(
-                    srv_node.Endpoint
+                logging.debug("Writing(JSON) - %s", logical_node.Name)
+                logical_node_file_upper = metadata_dir_json_v1_srv / Path(
+                    logical_node.Name.replace("#", "-").upper()
                 )
-                with open(srv_ip_file_dns, "w", encoding="utf-8") as f:
+                with open(logical_node_file_upper, "w", encoding="utf-8") as f:
                     f.writelines(
-                        (json.dumps(obj=logical_node_single_endpoint, indent=2, default=vars))
+                        (json.dumps(obj=logical_node, indent=2, default=vars))
+                    )
+                    stat_file_count += 1
+                logical_node_file_lc = metadata_dir_json_v1_srv / Path(
+                    logical_node_lowercase_name.Name.replace("#", "-")
+                )
+                with open(logical_node_file_lc, "w", encoding="utf-8") as f:
+                    f.writelines(
+                        (json.dumps(obj=logical_node_lowercase_name, indent=2, default=vars))
                     )
                     stat_file_count += 1
             except Exception:
-                logging.exception("Failed to write JSON - %s", srv_node.Endpoint)
+                logging.exception(
+                    "Failed to write JSON - %s",
+                    logical_node.Name.replace("#", "-"),
+                )
                 sys.exit(1)
+
+            try:
+                logging.debug("Writing(JSON) - %s", logical_node.DNS)
+                logical_node_file_dns = metadata_dir_json_v1_srv / Path(
+                    logical_node.DNS
+                )
+                with open(logical_node_file_dns, "w", encoding="utf-8") as f:
+                    f.writelines(
+                        (json.dumps(obj=logical_node, indent=2, default=vars))
+                    )
+                    stat_file_count += 1
+            except Exception:
+                logging.exception("Failed to write JSON - %s", logical_node.DNS)
+                sys.exit(1)
+
+            # IP Mappings
+            for srv_node in logical_node.Nodes:
+                try:
+                    logical_node_single_endpoint = copy.deepcopy(logical_node)
+                    logical_node_single_endpoint.Nodes = [srv_node]
+                    if len(logical_node_single_endpoint.Nodes) != 1:
+                        logging.error("More than one node found for : %s", srv_node.Endpoint)
+                    logging.debug("Writing(IP) - %s", srv_node.Endpoint)
+                    srv_ip_file_dns = metadata_dir_json_v1_srv / Path(
+                        srv_node.Endpoint
+                    )
+                    with open(srv_ip_file_dns, "w", encoding="utf-8") as f:
+                        f.writelines(
+                            (json.dumps(obj=logical_node_single_endpoint, indent=2, default=vars))
+                        )
+                        stat_file_count += 1
+                except Exception:
+                    logging.exception("Failed to write JSON - %s", srv_node.Endpoint)
+                    sys.exit(1)
+        else:
+            logging.error("No server/endpoint nodes found for logical server: %s", logical_server_name)
 
     if generate_list:
         logical_node_list_file = metadata_dir_json_v1 / Path("list")
@@ -915,7 +920,7 @@ def write_metadata(
     logging.info("Writing - %s", metadata_ts_file)
     metadata_ts = {
         "info": "Protonwire - Metadata API",
-        "repo": "https://github.com/tprasadtp/protonwire",
+        "repo": "https://github.com/tprasadtp/protonvpn-docker",
         "stat": {
             "files": stat_file_count,
         },
@@ -930,32 +935,6 @@ def write_metadata(
     with open(index_file, "w", encoding="utf-8") as f:
         json.dump(metadata_ts, f, indent=2)
     logging.info("Sever files - %d", stat_file_count)
-
-    # Generate hashes for all the server metadata files.
-    # There may be duplicates, so merge them into a list.
-    # Because leaking server names is not desired, each configuration
-    # file is hashed and the hash is added to the list and written to disk.
-    # slsa generators then hash the list of hashes and generate slsa provenance for it.
-    # Other builder stages will pick up the provenance and hash list and merge it into
-    # a single json file which may be uploaded to api endpoint. This is required
-    # to avoid race conditions where fetched hash list may not correspond to the provenance.
-    hash_list_sha256: List[str] = []
-    logging.info("Generating metadata hashes")
-    with os.scandir(metadata_dir_json_v1_srv) as items:
-        for item in items:
-            if item.is_file():
-                logging.debug("hashing file - %s", item.path)
-                with open(item.path, "rb") as f:
-                    sha256_hex_digest = hashlib.sha256(f.read()).hexdigest()
-                    if sha256_hex_digest not in hash_list_sha256:
-                        logging.debug("adding hash(%s) to list", sha256_hex_digest)
-                        hash_list_sha256.append(sha256_hex_digest)
-                    else:
-                        logging.debug("hash(%s) is already in the list", sha256_hex_digest)
-    hash_list_file=metadata_dir_json_v1_slsa_srv/Path("hash-list")
-    logging.info("Generating hash list: %s", hash_list_file)
-    with open(hash_list_file, "w", encoding="utf-8") as f:
-        f.write('\n'.join(hash_list_sha256))
 
 
 if __name__ == "__main__":
