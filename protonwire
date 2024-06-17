@@ -1562,12 +1562,16 @@ function __protonvpn_pre_connect_get_endpoints_and_keys() {
             <<<"${__PROTONWIRE_SRV_INFO}" 2>/dev/null)
         if [[ ${#endpoint_keys[@]} -gt 1 ]]; then
             log_warning "Endpoint($endpoint) has multiple pub keys, only using first key"
-            __PROTONWIRE_KEY_MAP["$endpoint"]="${endpoint_keys[0]}"
+            __PROTONWIRE_KEY_MAP["${endpoint}"]="${endpoint_keys[0]}"
         elif [[ ${#endpoint_keys[@]} -eq 1 ]]; then
-            log_debug "Endpoint($endpoint) has pubkey - ${endpoint_keys[0]}"
-            __PROTONWIRE_KEY_MAP["$endpoint"]="${endpoint_keys[0]}"
+            if [[ -z ${endpoint} ]]; then
+                log_error "Endpoint IP is empty!"
+            else
+                log_debug "Endpoint($endpoint) has pubkey - ${endpoint_keys[0]}"
+            fi
+            __PROTONWIRE_KEY_MAP["${endpoint}"]="${endpoint_keys[0]}"
         else
-            log_error "Endpoint($endpoint) for server ${PROTONVPN_SERVER} returned no pubkeys"
+            log_error "Endpoint(${endpoint}) for server ${PROTONVPN_SERVER} returned no pubkeys"
             return 1
         fi
     done
@@ -2379,12 +2383,17 @@ function server_lookup_cmd() {
             '[.Nodes[] | select(.Endpoint==$endpoint)] | .[].PublicKey' \
             <<<"${__PROTONWIRE_SRV_INFO}" 2>/dev/null)
         if [[ ${#endpoint_keys[@]} -gt 1 ]]; then
-            log_warning "Endpoint($endpoint) has multiple pub keys, only using first key"
-            __PROTONWIRE_KEY_MAP["$endpoint"]="${endpoint_keys[0]}"
+            log_warning "Endpoint(${endpoint}) has multiple pub keys, only using first key"
+            __PROTONWIRE_KEY_MAP["${endpoint}"]="${endpoint_keys[0]}"
         elif [[ ${#endpoint_keys[@]} -eq 1 ]]; then
-            __PROTONWIRE_KEY_MAP["$endpoint"]="${endpoint_keys[0]}"
+            if [[ -z ${endpoint} ]]; then
+                log_error "Endpoint IP is empty!"
+            else
+                log_debug "Endpoint($endpoint) has pubkey - ${endpoint_keys[0]}"
+            fi
+            __PROTONWIRE_KEY_MAP["${endpoint}"]="${endpoint_keys[0]}"
         else
-            log_error "Endpoint($endpoint) for server ${PROTONVPN_SERVER} returned no pubkeys"
+            log_error "Endpoint(${endpoint}) for server ${PROTONVPN_SERVER} returned no pubkeys"
             return 1
         fi
     done
