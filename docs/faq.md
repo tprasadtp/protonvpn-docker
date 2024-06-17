@@ -126,7 +126,7 @@ Also these addresses cannot belong to any __other__ interfaces on the machine/co
 ## IP check endpoint URLs
 
 You can use any of the following services for verification. They **MUST RETURN ONLY your public IP address**.
-  * https://protonwire-api.vercel.app/v1/client/ip (default)
+  * https://icanhazip.com/ (default)
   * https://icanhazip.com/
   * https://checkip.amazonaws.com/
 
