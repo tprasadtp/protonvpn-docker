@@ -498,7 +498,7 @@ function __run_checks() {
         done
     fi
 
-    if [[ $IPCHECK_URL != "https://protonwire-api.vercel.app/v1/client/ip" ]]; then
+    if [[ $IPCHECK_URL != "https://icanhazip.com/" ]]; then
         if ! __is_valid_ipcheck_url; then
             ((++errs))
         fi
@@ -2655,7 +2655,7 @@ function main() {
     fi
 
     if [[ -z ${IPCHECK_URL} ]]; then
-        IPCHECK_URL="https://protonwire-api.vercel.app/v1/client/ip"
+        IPCHECK_URL="https://icanhazip.com/"
         log_variable "IPCHECK_URL"
     fi
 

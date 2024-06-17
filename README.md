@@ -95,7 +95,7 @@ in following locations.
 |---|---|---
 | `PROTONVPN_SERVER` | REQUIRED | (String) ProtonVPN server to connect to.
 | `WIREGUARD_PRIVATE_KEY` | Required if not specified via mount or secrets  | (String) Wireguard Private key
-| `IPCHECK_URL` | https://protonwire-api.vercel.app/v1/client/ip  | (String) URL to check client IP.
+| `IPCHECK_URL` | https://icanhazip.com/  | (String) URL to check client IP.
 | `IPCHECK_INTERVAL` | `60` | (Integer) Interval between internal health-checks in seconds. Set this to `0` to disable IP checks.
 | `SKIP_DNS_CONFIG` | false | (Boolean) Set this to `1` or `true` to skip configuring DNS.
 | `KILL_SWITCH`     | false | (Boolean) Enable KillSwitch (Experimental)
