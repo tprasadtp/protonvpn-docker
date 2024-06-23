@@ -86,7 +86,7 @@ jobs:
 
       - name: Push Metadata (if on master)
         working-directory: protonwire-api
-        if:
+        if: ${{ github.ref == 'refs/heads/master' }}
         run: |
           git add --all
           git commit -m "Updated at - $(date)"

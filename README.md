@@ -14,7 +14,7 @@
 [![actions-metadata](https://github.com/tprasadtp/protonvpn-docker/actions/workflows/metadata.yml/badge.svg)](https://github.com/tprasadtp/protonvpn-docker/actions/workflows/metadata.yml)
 [![metadata-refresh](https://img.shields.io/badge/dynamic/json?label=metadata&query=timestamp&url=https%3A%2F%2Fprotonwire-api.vercel.app&logo=protonvpn&labelColor=3a3a3a&logoColor=white&color=7f50a6)](https://protonwire-api.vercel.app/)
 [![metadata-servers](https://img.shields.io/badge/dynamic/json?label=servers&query=server_count&url=https%3A%2F%2Fprotonwire-api.vercel.app&logo=protonvpn&labelColor=3a3a3a&logoColor=white&color=7f50a6)](https://protonwire-api.vercel.app/)
-[![api-status](https://uptime.betterstack.com/status-badges/v2/monitor/1en46.svg)](https://protonwire.betteruptime.com/)
+[![api-status](https://uptime.betterstack.com/status-badges/v1/monitor/1en46.svg)](https://protonwire.betteruptime.com/)
 
 
 </div>
