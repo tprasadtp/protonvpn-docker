@@ -8,11 +8,13 @@
 [![version](https://img.shields.io/github/v/tag/tprasadtp/protonvpn-docker?label=version&sort=semver&logo=semver&labelColor=3a3a3a&include_prereleases)](https://github.com/tprasadtp/protonvpn-docker/releases)
 [![license](https://img.shields.io/github/license/tprasadtp/protonvpn-docker?logo=github&labelColor=3A3A3A)](https://github.com/tprasadtp/protonvpn-docker/blob/master/LICENSE)
 [![stars](https://img.shields.io/github/stars/tprasadtp/protonvpn-docker?logo=github&labelColor=3a3a3a&style=flat)](https://github.com/tprasadtp/protonvpn-docker/stargazers/)
+[![slsa-badge][slsa-badge]][slsa-verify-docs]
+[![cosign-badge][cosign-badge]][cosign-verify-docs]
+
 [![actions-metadata](https://github.com/tprasadtp/protonvpn-docker/actions/workflows/metadata.yml/badge.svg)](https://github.com/tprasadtp/protonvpn-docker/actions/workflows/metadata.yml)
 [![metadata-refresh](https://img.shields.io/badge/dynamic/json?label=metadata&query=timestamp&url=https%3A%2F%2Fprotonwire-api.vercel.app&logo=protonvpn&labelColor=3a3a3a&logoColor=white&color=7f50a6)](https://protonwire-api.vercel.app/)
 [![metadata-servers](https://img.shields.io/badge/dynamic/json?label=servers&query=server_count&url=https%3A%2F%2Fprotonwire-api.vercel.app&logo=protonvpn&labelColor=3a3a3a&logoColor=white&color=7f50a6)](https://protonwire-api.vercel.app/)
-[![slsa-badge][slsa-badge]][slsa-verify-docs]
-[![cosign-badge][cosign-badge]][cosign-verify-docs]
+[![api-status](https://uptime.betterstack.com/status-badges/v2/monitor/1en46.svg)](https://protonwire.betteruptime.com/)
 
 
 </div>

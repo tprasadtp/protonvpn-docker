@@ -86,8 +86,12 @@ jobs:
 
       - name: Push Metadata (if on master)
         working-directory: protonwire-api
-        if: github.ref == 'refs/heads/master'
+        if:
         run: |
           git add --all
           git commit -m "Updated at - $(date)"
           git push -u origin master
+
+      - name: Ping URL
+        if: ${{ github.event_name == 'schedule' && github.ref == 'refs/heads/master' }}
+        run: curl -X POST -sfL ${{ secrets.METADATA_UPDATE_PING_URL }}
