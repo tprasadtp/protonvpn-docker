@@ -1392,7 +1392,7 @@ function __build_route_table() {
                 fi
             done
         else
-            log_success "Routes are algrady configured (IPv$proto)"
+            log_success "Routes are already configured (IPv$proto)"
         fi
 
         if __is_bool_true "${KILL_SWITCH}"; then
@@ -1407,7 +1407,7 @@ function __build_route_table() {
                     fi
                 done
             else
-                log_success "Killswitch is algrady configured (IPv$proto)"
+                log_success "Killswitch is already configured (IPv$proto)"
             fi
         else
             log_debug "KillSwitch is disabled (IPv$proto)"
