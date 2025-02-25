@@ -2030,9 +2030,53 @@ function __protonvpn_connect() {
         fi
     fi
 
+    # NAT-PMP
+    if __is_bool_true "$NATPMP"; then
+        if ! __protonvpn_natpmpc udp || ! __protonvpn_natpmpc tcp; then
+            log_error "Failed to set up initial NAT-PMP"
+            return 1
+        fi
+        __protonvpn_natpmp_loop &
+    fi
+
     if __has_notify_socket; then
         __systemd_notify "STATUS=Connected to ${PROTONVPN_SERVER}"
     fi
+}
+
+function __protonvpn_natpmpc() {
+    local proto output code port
+    proto="$1"
+    output=$(natpmpc -a 1 0 "$proto" 60 -g 10.2.0.1)
+    code=$?
+    if [ "$code" -ne 0 ]; then
+        log_error "natpmpc for $proto failed with exit code $code"
+        return "$code"
+    fi
+    port=$(echo "$output" | grep -oP 'public\ port\ \K\w+')
+    echo "$port" > "/config/protonvpn-port-$proto.txt"
+    log_success "NAT-PMP $proto port $port configured"
+}
+
+function __protonvpn_natpmp_loop() {
+    local attempts interval max_attempts
+    attempts=0
+    interval=${NATPMP_INTERVAL:-45}
+    max_attempts=${MAX_NATPMP_ATTEMPTS:-5}
+    while true ; do
+        sleep "$interval"
+        log_info "Refreshing NAT PMP connection"
+        if ! __protonvpn_natpmpc udp || ! __protonvpn_natpmpc tcp; then
+            if [ "$attempts" -ge "$max_attempts" ]; then
+                log_error "Maximum amount of $max_attempts NAT-PMP retries exceeded"
+                return 1
+            fi
+            ((++attempts))
+            sleep "$interval"
+            continue
+        fi
+        attempts=0
+    done
 }
 
 function protonvpn_connect_cmd() {
